@@ -69,7 +69,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `vocabulary_items` (lemma, normalized_lemma, translation, part_of_speech, article/gender, plural, extra JSONB for verb forms etc., CEFR level, status, user_id, language_id), unique `(user_id, language_id, normalized_lemma, part_of_speech)` for duplicate prevention; `vocabulary_examples`; `grammar_topics` (title, description, personal_notes, cefr_level, status `LEARNING|LEARNED|MASTERED`); `study_sessions` + join tables.
   _Done when:_ migrations apply and JPA entities map without `ddl-auto` errors (`validate` mode).
 
-- [ ] **DB-04 — Practice & progress migrations** (S) — _deps: DB-03_
+- [x] **DB-04 — Practice & progress migrations** (S) — _deps: DB-03_
   `flashcards`, `flashcard_reviews`, `srs_state` (ease_factor, interval_days, repetitions, due_at, lapses), `exercise_sets`, `exercises` (type, prompt JSONB, solution JSONB, grammar_topic_id, vocabulary refs), `exercise_attempts`, `mistakes`, `practice_sessions`, `ai_requests`. Indexes on `(user_id, due_at)` and `(user_id, grammar_topic_id)`.
   _Done when:_ migrations apply; Testcontainers test runs full migration chain.
 

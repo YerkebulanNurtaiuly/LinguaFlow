@@ -41,7 +41,7 @@ class MigrationTests {
 	void allMigrationsAreAppliedAndValid() {
 		MigrationInfo[] applied = flyway.info().applied();
 		assertThat(applied).isNotEmpty().allMatch(m -> m.getState() == MigrationState.SUCCESS);
-		assertThat(Arrays.stream(applied).map(m -> m.getVersion().getVersion())).contains("1", "2");
+		assertThat(Arrays.stream(applied).map(m -> m.getVersion().getVersion())).contains("1", "2", "3");
 		assertThat(flyway.info().pending()).isEmpty();
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 	}
@@ -241,6 +241,193 @@ class MigrationTests {
 				UUID.randomUUID()))
 			.isInstanceOf(DataIntegrityViolationException.class)
 			.hasMessageContaining("grammar_topic_catalog_slug_format_ck");
+	}
+
+	// ---- V3: practice, progress, AI ------------------------------------------------------------
+
+	@Test
+	void requiredQueryIndexesExist() {
+		assertThat(indexDefinition("srs_state_due_ix")).contains("(user_id, due_at)");
+		assertThat(indexDefinition("mistakes_topic_ix")).contains("(user_id, grammar_topic_id)");
+		assertThat(indexDefinition("ai_jobs_queue_ix")).contains("(status, next_run_at)");
+	}
+
+	@Test
+	void flashcardMustBelongToTheOwnerOfItsWord() {
+		UUID owner = learner("owner@example.de");
+		UUID other = learner("other@example.de");
+		UUID item = insertVocabulary(owner, "tisch", "NOUN");
+		assertThatThrownBy(() -> insertFlashcard(other, item)).isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("flashcards_item_fk");
+	}
+
+	@Test
+	void reviewSubmissionIsIdempotentPerToken() {
+		UUID user = learner("review@example.de");
+		UUID card = insertFlashcard(user, insertVocabulary(user, "stuhl", "NOUN"));
+		UUID token = UUID.randomUUID();
+		insertReview(user, card, token);
+		assertThatThrownBy(() -> insertReview(user, card, token)).isInstanceOf(DuplicateKeyException.class)
+			.hasMessageContaining("flashcard_reviews_token_uq");
+	}
+
+	@Test
+	void easeFactorCannotDropBelowTheSm2Floor() {
+		UUID user = learner("ease@example.de");
+		UUID card = insertFlashcard(user, insertVocabulary(user, "lampe", "NOUN"));
+		assertThatThrownBy(() -> jdbc.update("insert into srs_state (flashcard_id, user_id, ease_factor) values (?, ?, 1.2)",
+				card, user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("srs_state_ease_ck");
+	}
+
+	@Test
+	void scheduledCardsNeedADueDate() {
+		UUID user = learner("due@example.de");
+		UUID card = insertFlashcard(user, insertVocabulary(user, "tür", "NOUN"));
+		assertThatThrownBy(() -> jdbc.update(
+				"insert into srs_state (flashcard_id, user_id, state) values (?, ?, 'REVIEW')", card, user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("srs_state_due_ck");
+	}
+
+	@Test
+	void deletingAWordRemovesItsCardsButKeepsMistakeHistory() {
+		UUID user = learner("history@example.de");
+		UUID item = insertVocabulary(user, "fenster", "NOUN");
+		UUID card = insertFlashcard(user, item);
+		jdbc.update("insert into srs_state (flashcard_id, user_id) values (?, ?)", card, user);
+		insertReview(user, card, UUID.randomUUID());
+		UUID exercise = insertExercise(user);
+		jdbc.update("insert into exercise_vocabulary values (?, ?)", exercise, item);
+		insertMistake(user, insertAttempt(user, exercise), null, item);
+
+		jdbc.update("delete from vocabulary_items where id = ?", item);
+
+		assertThat(count("flashcards", user)).isZero();
+		assertThat(count("srs_state", user)).isZero();
+		assertThat(count("flashcard_reviews", user)).isZero();
+		assertThat(count("exercises", user)).isEqualTo(1);
+		assertThat(jdbc.queryForObject("select count(*) from exercise_vocabulary", Integer.class)).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from mistakes where user_id = ? and vocabulary_item_id is null",
+				Integer.class, user))
+			.isEqualTo(1);
+	}
+
+	@Test
+	void deletingAGrammarTopicKeepsExercisesAndMistakes() {
+		UUID user = learner("topic@example.de");
+		UUID topic = UUID.randomUUID();
+		jdbc.update("insert into grammar_topics (id, user_id, language_code, title, normalized_title) "
+				+ "values (?, ?, 'de', 'Dativ', 'dativ')", topic, user);
+		UUID exercise = insertExercise(user);
+		jdbc.update("insert into exercise_grammar_topics values (?, ?)", exercise, topic);
+		jdbc.update("insert into grammar_topic_progress (grammar_topic_id, user_id) values (?, ?)", topic, user);
+		insertMistake(user, insertAttempt(user, exercise), topic, null);
+
+		jdbc.update("delete from grammar_topics where id = ?", topic);
+
+		assertThat(count("exercises", user)).isEqualTo(1);
+		assertThat(count("exercise_attempts", user)).isEqualTo(1);
+		assertThat(count("grammar_topic_progress", user)).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from mistakes where user_id = ? and grammar_topic_id is null",
+				Integer.class, user))
+			.isEqualTo(1);
+	}
+
+	@Test
+	void practiceItemReferencesExactlyOneMatchingItem() {
+		UUID user = learner("items@example.de");
+		UUID session = insertPracticeSession(user);
+		UUID exercise = insertExercise(user);
+		assertThatThrownBy(() -> jdbc.update("insert into practice_session_items "
+				+ "(practice_session_id, position, item_type, exercise_id) values (?, 0, 'FLASHCARD', ?)", session,
+				exercise))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("practice_session_items_type_ck");
+	}
+
+	@Test
+	void completedPracticeSessionNeedsCompletionTime() {
+		UUID user = learner("complete@example.de");
+		assertThatThrownBy(() -> jdbc.update("insert into practice_sessions "
+				+ "(id, user_id, language_code, mode, config, status, started_at) "
+				+ "values (?, ?, 'de', 'MIXED', '{}', 'COMPLETED', now())", UUID.randomUUID(), user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("practice_sessions_completed_ck");
+	}
+
+	@Test
+	void deletingAUserRemovesAllTheirPracticeAndAiData() {
+		UUID user = learner("gdpr@example.de");
+		UUID card = insertFlashcard(user, insertVocabulary(user, "buch", "NOUN"));
+		jdbc.update("insert into srs_state (flashcard_id, user_id) values (?, ?)", card, user);
+		insertReview(user, card, UUID.randomUUID());
+		UUID session = insertPracticeSession(user);
+		jdbc.update("insert into practice_session_items (practice_session_id, position, item_type, flashcard_id) "
+				+ "values (?, 0, 'FLASHCARD', ?)", session, card);
+		UUID exercise = insertExercise(user);
+		insertMistake(user, insertAttempt(user, exercise), null, null);
+		UUID job = UUID.randomUUID();
+		jdbc.update("insert into ai_jobs (id, user_id, type, payload) values (?, ?, 'VOCABULARY_ENRICHMENT', '{}')", job,
+				user);
+		jdbc.update("insert into ai_requests (id, user_id, job_id, use_case, model, prompt_version, success) "
+				+ "values (?, ?, ?, 'enrich', 'test-model', 'v1', true)", UUID.randomUUID(), user, job);
+
+		jdbc.update("delete from users where id = ?", user);
+
+		for (String table : List.of("flashcards", "srs_state", "flashcard_reviews", "practice_sessions", "exercise_sets",
+				"exercises", "exercise_attempts", "mistakes", "ai_jobs", "ai_requests")) {
+			assertThat(count(table, user)).as(table).isZero();
+		}
+		assertThat(jdbc.queryForObject("select count(*) from practice_session_items", Integer.class)).isZero();
+	}
+
+	private UUID insertFlashcard(UUID user, UUID item) {
+		UUID id = UUID.randomUUID();
+		jdbc.update("insert into flashcards (id, user_id, vocabulary_item_id, direction) "
+				+ "values (?, ?, ?, 'TARGET_TO_NATIVE')", id, user, item);
+		return id;
+	}
+
+	private void insertReview(UUID user, UUID card, UUID token) {
+		jdbc.update("insert into flashcard_reviews (id, flashcard_id, user_id, review_token, grade, reviewed_at, "
+				+ "interval_before, interval_after, ease_before, ease_after) "
+				+ "values (?, ?, ?, ?, 'GOOD', now(), 0, 1, 2.5, 2.5)", UUID.randomUUID(), card, user, token);
+	}
+
+	private UUID insertPracticeSession(UUID user) {
+		UUID id = UUID.randomUUID();
+		jdbc.update("insert into practice_sessions (id, user_id, language_code, mode, config, started_at) "
+				+ "values (?, ?, 'de', 'MIXED', '{}', now())", id, user);
+		return id;
+	}
+
+	private UUID insertExercise(UUID user) {
+		UUID set = UUID.randomUUID();
+		UUID id = UUID.randomUUID();
+		jdbc.update("insert into exercise_sets (id, user_id, language_code, source, request) "
+				+ "values (?, ?, 'de', 'MANUAL', '{}')", set, user);
+		jdbc.update("insert into exercises (id, exercise_set_id, user_id, position, type, prompt, solution) "
+				+ "values (?, ?, ?, 0, 'FILL_BLANK', '{}', '{}')", id, set, user);
+		return id;
+	}
+
+	private UUID insertAttempt(UUID user, UUID exercise) {
+		UUID id = UUID.randomUUID();
+		jdbc.update("insert into exercise_attempts (id, exercise_id, user_id, answer, correct, score, evaluated_by, "
+				+ "attempted_at) values (?, ?, ?, '{}', false, 0, 'RULES', now())", id, exercise, user);
+		return id;
+	}
+
+	private void insertMistake(UUID user, UUID attempt, UUID grammarTopic, UUID vocabularyItem) {
+		jdbc.update("insert into mistakes (id, attempt_id, user_id, grammar_topic_id, vocabulary_item_id, error_type) "
+				+ "values (?, ?, ?, ?, ?, 'WRONG_CASE')", UUID.randomUUID(), attempt, user, grammarTopic,
+				vocabularyItem);
+	}
+
+	private String indexDefinition(String name) {
+		return jdbc.queryForObject("select indexdef from pg_indexes where indexname = ?", String.class, name);
 	}
 
 	private UUID learner(String email) {
