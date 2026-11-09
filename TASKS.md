@@ -49,7 +49,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   springdoc with JWT bearer security scheme, API grouping per module, `/swagger-ui` enabled in dev only.
   _Done when:_ Swagger UI lets you authorize and call endpoints.
 
-- [ ] **INF-09 — Generated frontend API client** (S) — _deps: INF-03, INF-08_
+- [x] **INF-09 — Generated frontend API client** (S) — _deps: INF-03, INF-08_
   Generate TypeScript types from the OpenAPI spec (`openapi-typescript` or `orval`); npm script `api:generate`.
   _Done when:_ frontend uses generated types instead of hand-written DTOs.
 

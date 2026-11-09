@@ -36,6 +36,8 @@ springdoc:
   swagger-ui:
     enabled: false
   default-produces-media-type: application/json
+  # Sorted keys keep the committed spec snapshot (frontend/openapi.json) diff-friendly
+  writer-with-order-by-keys: true
   group-configs:
     # "all" is the full API (used for the generated frontend client, INF-09)
     - group: all

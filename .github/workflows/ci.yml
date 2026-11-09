@@ -64,6 +64,15 @@ jobs:
       - name: Check formatting
         run: npm run format:check
 
+      # openapi.json itself is checked by the backend's OpenApiDocsTests
+      - name: Check generated API types match openapi.json
+        run: |
+          npm run api:generate
+          git diff --exit-code -- src/api/schema.ts || {
+            echo "::error::src/api/schema.ts is stale. Run 'npm run api:generate' in frontend/ and commit it."
+            exit 1
+          }
+
       - name: Lint
         run: npm run lint
 
