@@ -4,6 +4,9 @@
 spring:
   config:
     import: optional:file:.env[.properties]
+  flyway:
+    # Dev only: also load the demo data (db/dev/R__dev_seed.sql, DB-05)
+    locations: classpath:db/migration,classpath:db/dev
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/linguaflow}
     username: ${DB_USERNAME:linguaflow}

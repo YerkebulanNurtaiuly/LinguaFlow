@@ -73,7 +73,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `flashcards`, `flashcard_reviews`, `srs_state` (ease_factor, interval_days, repetitions, due_at, lapses), `exercise_sets`, `exercises` (type, prompt JSONB, solution JSONB, grammar_topic_id, vocabulary refs), `exercise_attempts`, `mistakes`, `practice_sessions`, `ai_requests`. Indexes on `(user_id, due_at)` and `(user_id, grammar_topic_id)`.
   _Done when:_ migrations apply; Testcontainers test runs full migration chain.
 
-- [ ] **DB-05 — Dev seed data** (S) — _deps: DB-04_
+- [x] **DB-05 — Dev seed data** (S) — _deps: DB-04_
   Profile-gated `R__dev_seed.sql` (or `CommandLineRunner`) with a demo user, ~50 German words, ~10 grammar topics.
   _Done when:_ fresh dev DB has usable demo content.
 

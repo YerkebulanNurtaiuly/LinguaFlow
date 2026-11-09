@@ -47,6 +47,14 @@ class MigrationTests {
 	}
 
 	@Test
+	void demoDataIsNotLoadedOutsideTheDevProfile() {
+		assertThat(jdbc.queryForObject("select count(*) from users where email = 'demo@linguaflow.local'",
+				Integer.class))
+			.isZero();
+		assertThat(Arrays.stream(flyway.info().applied()).map(m -> m.getScript())).doesNotContain("R__dev_seed.sql");
+	}
+
+	@Test
 	void seedsGermanAndEnglish() {
 		List<String> codes = jdbc.queryForList("select code from languages order by code", String.class);
 		assertThat(codes).containsExactly("de", "en");
