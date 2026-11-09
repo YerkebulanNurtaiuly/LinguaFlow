@@ -1,5 +1,7 @@
 package com.linguaflow.common.config;
 
+import java.util.List;
+
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -14,7 +16,13 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties("linguaflow")
-public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @NotNull Ai ai) {
+public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @NotNull Ai ai, Cors cors) {
+
+	public LinguaFlowProperties {
+		if (cors == null) {
+			cors = new Cors(List.of());
+		}
+	}
 
 	public record Security(@Valid @NotNull Jwt jwt) {
 	}
@@ -30,6 +38,15 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @No
 
 		public boolean hasApiKey() {
 			return apiKey != null && !apiKey.isBlank();
+		}
+
+	}
+
+	/** Browser origins allowed to call /api cross-origin; empty means same-origin only. */
+	public record Cors(List<String> allowedOrigins) {
+
+		public Cors {
+			allowedOrigins = (allowedOrigins == null) ? List.of() : List.copyOf(allowedOrigins);
 		}
 
 	}

@@ -41,7 +41,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   _Done when:_ PRs show green/red checks.
   _Note:_ Docker image build job deferred until INF-04 adds the Dockerfiles.
 
-- [ ] **INF-07 — Common backend infrastructure** (M) — _deps: INF-02_
+- [x] **INF-07 — Common backend infrastructure** (M) — _deps: INF-02_
   Global exception handler returning RFC 7807 `ProblemDetail`; standard error codes; validation error mapping; pagination/sorting DTO; base auditing entity (`createdAt`, `updatedAt`) via JPA auditing; request logging with correlation ID; CORS config for the frontend origin.
   _Done when:_ invalid requests return consistent JSON errors, covered by tests.
 

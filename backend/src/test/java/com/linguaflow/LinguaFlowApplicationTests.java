@@ -35,7 +35,8 @@ class LinguaFlowApplicationTests {
 	@Test
 	void otherEndpointsRequireAuthentication() throws Exception {
 		mockMvc.perform(get("/api/anything"))
-			.andExpect(status().isForbidden());
+			.andExpect(status().isUnauthorized())
+			.andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
 	}
 
 }

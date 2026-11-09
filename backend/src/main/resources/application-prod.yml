@@ -1,6 +1,6 @@
 # Deployed environments. Required environment variables (startup fails without them):
 #   DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET
-# Optional: AI_API_KEY
+# Optional: AI_API_KEY, CORS_ALLOWED_ORIGINS (only if the frontend is on another origin)
 springdoc:
   api-docs:
     enabled: false

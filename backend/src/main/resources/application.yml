@@ -18,6 +18,16 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  data:
+    web:
+      pageable:
+        default-page-size: 20
+        max-page-size: 100
+
+logging:
+  pattern:
+    # Adds the request's correlation ID (CorrelationIdFilter) to every log line
+    correlation: "[%X{correlationId:-}] "
 
 management:
   endpoints:
@@ -36,3 +46,6 @@ linguaflow:
   ai:
     # Optional: without a key the app falls back to the fake LLM client (AI-01)
     api-key: ${AI_API_KEY:}
+  cors:
+    # Comma-separated origins allowed to call /api from the browser; empty = same-origin only
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:}

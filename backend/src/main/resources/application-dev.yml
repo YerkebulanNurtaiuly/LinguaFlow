@@ -19,3 +19,6 @@ linguaflow:
     jwt:
       # Dev-only signing key; prod requires JWT_SECRET from the environment
       secret: ${JWT_SECRET:dev-only-insecure-jwt-secret-change-me-0123456789}
+  cors:
+    # Vite dev server and the docker compose frontend
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:3000}

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01, INF-02, INF-03, INF-05 and INF-06 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
+LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-07 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
 - `docs/database/` and `docs/technical-specification/` are still placeholders.
@@ -37,7 +37,7 @@ Run Maven from `backend/` with the wrapper. In WSL, call `./mvnw`; on Windows, u
 
 How the app and its tests are set up:
 - Full-context tests `@Import(TestcontainersConfiguration.class)`. That class's `@ServiceConnection` wires the datasource to the container.
-- `/actuator/health` is the only public endpoint. Every other request returns 403 until the JWT security from AUTH-04 replaces `SecurityConfig`.
+- `/actuator/health` is the only public endpoint. Every other request returns 401 until the JWT security from AUTH-04 replaces `SecurityConfig`. CSRF protection is still on, so POST tests need `.with(csrf())`.
 - `ddl-auto=validate` is already on. Any JPA entity needs a matching Flyway migration, or the context fails to start.
 - **Config files:** `application.yml` holds the shared settings, and `application-{dev,test,prod}.yml` override it.
   - `dev` is the default profile. It has local defaults and also reads `backend/.env` through `spring.config.import`. See `backend/.env.example`.
@@ -47,6 +47,20 @@ How the app and its tests are set up:
 - **Secrets:** never put real secrets in the yml files. Reference them as `${ENV_VAR}`, and only give a default in `application-dev.yml` or `application-test.yml`.
 
 Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugin` for both compile and testCompile.
+
+### Backend conventions (common module, INF-07)
+
+- **Errors:** every error response is RFC 7807 `application/problem+json`. Besides the standard fields it has `code` (a `common.error.ErrorCode` name), `correlationId` and `timestamp`, plus `errors: [{field, message}]` for `VALIDATION_FAILED`. `GlobalExceptionHandler` is the single exit point, and Spring Security's 401/403 errors are routed into it as well.
+  - Signal business errors by throwing `NotFoundException`, `ConflictException` or `ApiException(code, detail)`. Don't build error responses in controllers.
+  - When a resource belongs to another user, return `NotFoundException`.
+  - The 500 response body never contains the exception message; it's logged on the server instead.
+- **Pagination:** controllers take a `Pageable` (`page` is zero-based, `size` defaults to 20 and is capped at 100, `sort=field,dir`) and return `PageResponse.from(page, mapper)`. Never return a Spring `Page` directly.
+- **Entities:** they extend `common.persistence.AuditableEntity`, which fills `created_at` and `updated_at` (`timestamptz not null`) from the injected `Clock`.
+- **Time:** inject `java.time.Clock` instead of calling `Instant.now()`.
+- **Test-only JPA entities:** they live outside `com.linguaflow` (see `testsupport.auditing`). Otherwise the app's entity scan picks them up and schema validation fails.
+- **Correlation IDs:** `CorrelationIdFilter` reads or creates `X-Correlation-Id`, puts it in the MDC, which adds it to every log line, and logs one line per request.
+- **CORS:** applies to `/api/**`, with origins from `linguaflow.cors.allowed-origins` (env `CORS_ALLOWED_ORIGINS`; dev defaults to `:5173` and `:3000`).
+- **Web slice tests:** `@WebMvcTest` doesn't load `LinguaFlowProperties`, so `@Import` `SecurityConfig` and `CorsConfig` plus an `@EnableConfigurationProperties(LinguaFlowProperties.class)` test config. See `ErrorHandlingTests`.
 
 ## Frontend
 
