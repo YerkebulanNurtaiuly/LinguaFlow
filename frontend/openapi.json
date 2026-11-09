@@ -1327,6 +1327,7 @@
         "tags" : [ "Languages" ]
       },
       "patch" : {
+        "description" : "Partial update: absent fields (including fields inside settings) stay unchanged.",
         "operationId" : "update_1",
         "parameters" : [ {
           "in" : "query",
@@ -1416,7 +1417,7 @@
             "description" : "Unexpected server error"
           }
         },
-        "summary" : "Change explanation language or level, or make this the active language",
+        "summary" : "Change explanation language, level or learning settings, or make this the active language",
         "tags" : [ "Languages" ]
       }
     },
@@ -1661,6 +1662,37 @@
           }
         }
       },
+      "LearningSettings" : {
+        "type" : "object",
+        "properties" : {
+          "dailyReviewGoal" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Target number of reviews per day",
+            "example" : 50
+          },
+          "newCardsPerDay" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Maximum new flashcards introduced per day",
+            "example" : 20
+          },
+          "practiceSessionLength" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Items per practice session",
+            "example" : 20
+          },
+          "preferredExerciseTypes" : {
+            "type" : "array",
+            "description" : "Preferred exercise formats; empty = no preference",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "FILL_BLANK", "MULTIPLE_CHOICE", "TRANSLATION", "SENTENCE_CONSTRUCTION", "ERROR_CORRECTION", "WORD_ORDER", "TRANSFORMATION" ]
+            }
+          }
+        }
+      },
       "Link" : {
         "type" : "object",
         "properties" : {
@@ -1764,6 +1796,42 @@
         },
         "required" : [ "newPassword", "token" ]
       },
+      "SettingsUpdate" : {
+        "type" : "object",
+        "properties" : {
+          "dailyReviewGoal" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 50,
+            "maximum" : 1000,
+            "minimum" : 1
+          },
+          "newCardsPerDay" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 20,
+            "maximum" : 500,
+            "minimum" : 0
+          },
+          "practiceSessionLength" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 20,
+            "maximum" : 200,
+            "minimum" : 5
+          },
+          "preferredExerciseTypes" : {
+            "type" : "array",
+            "description" : "Empty list = no preference; duplicates are ignored",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "FILL_BLANK", "MULTIPLE_CHOICE", "TRANSLATION", "SENTENCE_CONSTRUCTION", "ERROR_CORRECTION", "WORD_ORDER", "TRANSFORMATION" ]
+            },
+            "maxItems" : 20,
+            "minItems" : 0
+          }
+        }
+      },
       "TokenResponse" : {
         "type" : "object",
         "properties" : {
@@ -1801,6 +1869,9 @@
           "selfAssessedLevel" : {
             "type" : "string",
             "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "settings" : {
+            "$ref" : "#/components/schemas/SettingsUpdate"
           }
         }
       },
@@ -1850,6 +1921,9 @@
           "selfAssessedLevel" : {
             "type" : "string",
             "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "settings" : {
+            "$ref" : "#/components/schemas/LearningSettings"
           }
         }
       },

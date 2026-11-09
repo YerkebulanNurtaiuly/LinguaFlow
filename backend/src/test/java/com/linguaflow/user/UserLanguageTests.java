@@ -3,6 +3,7 @@ package com.linguaflow.user;
 import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.auth.AccessTokenService;
 import com.linguaflow.auth.RegistrationService;
+import com.linguaflow.common.domain.ExerciseType;
 import com.linguaflow.common.error.ApiException;
 import com.linguaflow.common.error.ErrorCode;
 import com.linguaflow.testsupport.TestUsers;
@@ -166,6 +167,75 @@ class UserLanguageTests {
 			.isZero();
 		assertThat(activeLanguages.requireActive(me.id())).isEqualTo("es");
 		authed(delete("/api/users/me/languages/de")).andExpect(status().isNotFound());
+	}
+
+	// ---- learning settings (USR-03) -------------------------------------------------------
+
+	@Autowired
+	private UserLanguageService userLanguageService;
+
+	@Test
+	void newLanguagesStartWithDefaultSettings() throws Exception {
+		authed(post("/api/users/me/languages"), GERMAN_WITH_ENGLISH).andExpect(status().isCreated())
+			.andExpect(jsonPath("$.settings.dailyReviewGoal").value(50))
+			.andExpect(jsonPath("$.settings.newCardsPerDay").value(20))
+			.andExpect(jsonPath("$.settings.preferredExerciseTypes.length()").value(0))
+			.andExpect(jsonPath("$.settings.practiceSessionLength").value(20));
+	}
+
+	@Test
+	void settingsArePartiallyUpdatedAndStoredPerLanguage() throws Exception {
+		authed(post("/api/users/me/languages"), GERMAN_WITH_ENGLISH);
+
+		authed(patch("/api/users/me/languages/de"), """
+				{"settings": {"dailyReviewGoal": 80,
+				              "preferredExerciseTypes": ["WORD_ORDER", "FILL_BLANK", "WORD_ORDER"]}}
+				""")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.settings.dailyReviewGoal").value(80))
+			.andExpect(jsonPath("$.settings.newCardsPerDay").value(20))
+			.andExpect(jsonPath("$.settings.preferredExerciseTypes.length()").value(2));
+
+		authed(patch("/api/users/me/languages/de"), "{\"settings\": {\"newCardsPerDay\": 0}}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.settings.dailyReviewGoal").value(80))
+			.andExpect(jsonPath("$.settings.newCardsPerDay").value(0));
+
+		LearningSettings stored = userLanguageService.settingsFor(me.id(), "de");
+		assertThat(stored.dailyReviewGoal()).isEqualTo(80);
+		assertThat(stored.newCardsPerDay()).isZero();
+		assertThat(stored.preferredExerciseTypes()).containsExactly(ExerciseType.FILL_BLANK, ExerciseType.WORD_ORDER);
+		assertThat(stored.practiceSessionLength()).isEqualTo(20);
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@CsvSource(delimiter = '|', textBlock = """
+			dailyReviewGoal       | 0
+			dailyReviewGoal       | 1001
+			newCardsPerDay        | -1
+			newCardsPerDay        | 501
+			practiceSessionLength | 4
+			practiceSessionLength | 201
+			""")
+	void rejectsSettingsOutOfRange(String field, int value) throws Exception {
+		authed(post("/api/users/me/languages"), GERMAN_WITH_ENGLISH);
+		authed(patch("/api/users/me/languages/de"), "{\"settings\": {\"%s\": %d}}".formatted(field, value))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
+			.andExpect(jsonPath("$.errors[0].field").value("settings." + field));
+	}
+
+	@Test
+	void rejectsUnknownExerciseTypes() throws Exception {
+		authed(post("/api/users/me/languages"), GERMAN_WITH_ENGLISH);
+		authed(patch("/api/users/me/languages/de"), "{\"settings\": {\"preferredExerciseTypes\": [\"KARAOKE\"]}}")
+			.andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void settingsOfALanguageTheUserDoesNotLearnAreNotFound() {
+		assertThatThrownBy(() -> userLanguageService.settingsFor(me.id(), "de"))
+			.isInstanceOf(com.linguaflow.common.error.NotFoundException.class);
 	}
 
 	@Test

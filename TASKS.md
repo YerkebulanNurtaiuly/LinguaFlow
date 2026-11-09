@@ -112,7 +112,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `GET /api/languages`; `GET/POST/DELETE /api/users/me/languages` — target language (German), native/explanation language, self-assessed CEFR level, active language. All learning data is scoped by `(user, target language)`.
   _Done when:_ a user can set German as target with English explanations.
 
-- [ ] **USR-03 — Learning settings** (S) — _deps: USR-02_
+- [x] **USR-03 — Learning settings** (S) — _deps: USR-02_
   Daily review goal, new-cards-per-day limit, preferred exercise types, session length. Stored per user-language.
 
 ### Epic 5: Frontend Foundation (`FE`)

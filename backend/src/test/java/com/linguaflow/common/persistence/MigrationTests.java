@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.linguaflow.TestcontainersConfiguration;
+import com.linguaflow.common.domain.ExerciseType;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationState;
@@ -258,6 +259,16 @@ class MigrationTests {
 		assertThat(indexDefinition("srs_state_due_ix")).contains("(user_id, due_at)");
 		assertThat(indexDefinition("mistakes_topic_ix")).contains("(user_id, grammar_topic_id)");
 		assertThat(indexDefinition("ai_jobs_queue_ix")).contains("(status, next_run_at)");
+	}
+
+	@Test
+	void exerciseTypeEnumMatchesTheDatabaseCheck() {
+		String check = jdbc.queryForObject(
+				"select pg_get_constraintdef(oid) from pg_constraint where conname = 'exercises_type_ck'", String.class);
+		for (ExerciseType type : ExerciseType.values()) {
+			assertThat(check).as("exercises_type_ck").contains("'" + type.name() + "'");
+		}
+		assertThat(check.split("'", -1).length / 2).as("number of values").isEqualTo(ExerciseType.values().length);
 	}
 
 	@Test

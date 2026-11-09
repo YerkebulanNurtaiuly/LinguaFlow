@@ -59,7 +59,8 @@ class LanguageController {
 	}
 
 	@PatchMapping("/api/users/me/languages/{languageCode}")
-	@Operation(summary = "Change explanation language or level, or make this the active language")
+	@Operation(summary = "Change explanation language, level or learning settings, or make this the active language",
+			description = "Partial update: absent fields (including fields inside settings) stay unchanged.")
 	UserLanguageResponse update(@CurrentUserId UUID userId, @PathVariable String languageCode,
 			@Valid @RequestBody UpdateLanguageRequest request) {
 		return UserLanguageResponse.from(userLanguages.update(userId, languageCode, request));

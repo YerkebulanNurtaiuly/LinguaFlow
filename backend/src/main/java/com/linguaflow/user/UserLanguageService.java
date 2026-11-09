@@ -38,6 +38,14 @@ public class UserLanguageService {
 		return userLanguages.findAllForUser(userId);
 	}
 
+	/** Learning settings of one of the user's languages (for the review queue, practice, ...). */
+	@Transactional(readOnly = true)
+	public LearningSettings settingsFor(UUID userId, String languageCode) {
+		return userLanguages.findById(new UserLanguage.Key(userId, languageCode))
+			.map(UserLanguage::settings)
+			.orElseThrow(UserLanguageService::notLearning);
+	}
+
 	@Transactional(noRollbackFor = ApiException.class)
 	public UserLanguage add(UUID userId, AddLanguageRequest request) {
 		Language target = languages.findById(request.languageCode())
@@ -68,6 +76,11 @@ public class UserLanguageService {
 		}
 		if (request.selfAssessedLevel() != null) {
 			language.setSelfAssessedLevel(request.selfAssessedLevel());
+		}
+		if (request.settings() != null) {
+			var settings = request.settings();
+			language.updateSettings(settings.dailyReviewGoal(), settings.newCardsPerDay(),
+					settings.preferredExerciseTypes(), settings.practiceSessionLength());
 		}
 		if (Boolean.FALSE.equals(request.active())) {
 			throw new InvalidFieldException("active", "activate another language instead");

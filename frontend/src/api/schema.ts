@@ -272,7 +272,10 @@ export interface paths {
         delete: operations["remove"];
         options?: never;
         head?: never;
-        /** Change explanation language or level, or make this the active language */
+        /**
+         * Change explanation language, level or learning settings, or make this the active language
+         * @description Partial update: absent fields (including fields inside settings) stay unchanged.
+         */
         patch: operations["update_1"];
         trace?: never;
     };
@@ -376,6 +379,28 @@ export interface components {
             /** @description Can be learned (target language) */
             supportedAsTarget?: boolean;
         };
+        LearningSettings: {
+            /**
+             * Format: int32
+             * @description Target number of reviews per day
+             * @example 50
+             */
+            dailyReviewGoal?: number;
+            /**
+             * Format: int32
+             * @description Maximum new flashcards introduced per day
+             * @example 20
+             */
+            newCardsPerDay?: number;
+            /**
+             * Format: int32
+             * @description Items per practice session
+             * @example 20
+             */
+            practiceSessionLength?: number;
+            /** @description Preferred exercise formats; empty = no preference */
+            preferredExerciseTypes?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
+        };
         Link: {
             href?: string;
             templated?: boolean;
@@ -421,6 +446,25 @@ export interface components {
             /** @description Token from the reset link */
             token: string;
         };
+        SettingsUpdate: {
+            /**
+             * Format: int32
+             * @example 50
+             */
+            dailyReviewGoal?: number;
+            /**
+             * Format: int32
+             * @example 20
+             */
+            newCardsPerDay?: number;
+            /**
+             * Format: int32
+             * @example 20
+             */
+            practiceSessionLength?: number;
+            /** @description Empty list = no preference; duplicates are ignored */
+            preferredExerciseTypes?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
+        };
         TokenResponse: {
             accessToken?: string;
             /** Format: date-time */
@@ -441,6 +485,7 @@ export interface components {
             explanationLanguageCode?: string;
             /** @enum {string} */
             selfAssessedLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            settings?: components["schemas"]["SettingsUpdate"];
         };
         UpdateProfileRequest: {
             /** @example Anna */
@@ -466,6 +511,7 @@ export interface components {
             languageCode?: string;
             /** @enum {string} */
             selfAssessedLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            settings?: components["schemas"]["LearningSettings"];
         };
         UserProfileResponse: {
             /** Format: date-time */

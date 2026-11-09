@@ -7,11 +7,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 public record UserLanguageResponse(@Schema(example = "de") String languageCode,
 		@Schema(example = "en") String explanationLanguageCode, CefrLevel selfAssessedLevel, boolean active,
-		Instant createdAt) {
+		LearningSettings settings, Instant createdAt) {
 
 	static UserLanguageResponse from(UserLanguage language) {
 		return new UserLanguageResponse(language.getLanguageCode(), language.getExplanationLanguageCode(),
-				language.getSelfAssessedLevel(), language.isActive(), language.getCreatedAt());
+				language.getSelfAssessedLevel(), language.isActive(), language.settings(), language.getCreatedAt());
 	}
 
 }

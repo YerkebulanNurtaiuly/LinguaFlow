@@ -124,6 +124,10 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Delete:** it cascades away **all** learning data for that language, so the frontend must confirm it. If the deleted language was active, the most recently added remaining one becomes active.
   - **Scoping learning endpoints:** learning modules scope new and listed material with `ActiveLanguageService.requireActive(userId)`. Before onboarding, that returns 409 `NO_ACTIVE_LANGUAGE`.
   - **Tests:** `TestUsers.user(email)` creates a user with no language (for onboarding flows); `learner(email)` creates one with active German.
+- **Learning settings (USR-03):** each `UserLanguage` carries `LearningSettings`: `dailyReviewGoal` 1–1000 (default 50), `newCardsPerDay` 0–500 (default 20), `preferredExerciseTypes` (empty means no preference), and `practiceSessionLength` 5–200 (default 20).
+  - They're returned nested as `settings` in the language resource and partially updated with `PATCH /api/users/me/languages/{code}` and `{"settings": {...}}`.
+  - Read them in other modules with `UserLanguageService.settingsFor(userId, languageCode)`.
+  - `common.domain.ExerciseType` must match the `exercises_type_ck` check; a migration test enforces this.
 - **`InvalidFieldException(field, message)`** renders a business-rule failure exactly like Bean Validation: 400 `VALIDATION_FAILED` with `errors[]`. Use it for checks that need the database, such as "is incorrect" or "already used".
 - **Error codes:** add a specific `ErrorCode` (like `EMAIL_TAKEN`) when the frontend needs to react to one particular error. Adding one changes the OpenAPI spec, so regenerate the snapshot and the frontend types.
 - **`@WebMvcTest`:** always set `controllers = ...`. Otherwise the slice picks up every app controller and fails on their missing services.
