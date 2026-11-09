@@ -1,2 +1,4 @@
-/mvnw text eol=lf
+# Shell scripts must keep LF so they run on Linux/macOS/WSL; Windows scripts keep CRLF.
+*.sh text eol=lf
+**/mvnw text eol=lf
 *.cmd text eol=crlf

@@ -1,8 +1,23 @@
-HELP.md
+### OS / editors ###
+.DS_Store
+Thumbs.db
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+### Environment / secrets ###
+.env
+.env.*
+!.env.example
+
+### Backend (Maven / Spring Boot) ###
 target/
-.mvn/wrapper/maven-wrapper.jar
 !**/src/main/**/target/
 !**/src/test/**/target/
+**/.mvn/wrapper/maven-wrapper.jar
+HELP.md
 
 ### STS ###
 .apt_generated
@@ -13,21 +28,23 @@ target/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/
-/dist/
 /nbdist/
 /.nb-gradle/
+
+### Build output ###
 build/
+dist/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+### Frontend (Node / Vite) ###
+node_modules/
+coverage/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
