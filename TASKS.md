@@ -65,7 +65,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `V1__init.sql` for `users`, `languages`, `user_languages`; seed German (`de`) and English (`en`) in `languages`.
   _Done when:_ app migrates a fresh DB on start; `flyway validate` passes in CI.
 
-- [ ] **DB-03 — Learning material migrations** (S) — _deps: DB-02_
+- [x] **DB-03 — Learning material migrations** (S) — _deps: DB-02_
   `vocabulary_items` (lemma, normalized_lemma, translation, part_of_speech, article/gender, plural, extra JSONB for verb forms etc., CEFR level, status, user_id, language_id), unique `(user_id, language_id, normalized_lemma, part_of_speech)` for duplicate prevention; `vocabulary_examples`; `grammar_topics` (title, description, personal_notes, cefr_level, status `LEARNING|LEARNED|MASTERED`); `study_sessions` + join tables.
   _Done when:_ migrations apply and JPA entities map without `ddl-auto` errors (`validate` mode).
 

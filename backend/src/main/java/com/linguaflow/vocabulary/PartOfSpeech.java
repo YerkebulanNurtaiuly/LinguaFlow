@@ -1,0 +1,7 @@
+package com.linguaflow.vocabulary;
+
+public enum PartOfSpeech {
+
+	NOUN, VERB, ADJECTIVE, ADVERB, PRONOUN, PREPOSITION, CONJUNCTION, ARTICLE, NUMERAL, INTERJECTION, PHRASE, OTHER
+
+}

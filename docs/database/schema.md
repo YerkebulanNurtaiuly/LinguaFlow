@@ -169,6 +169,8 @@ Indexes and constraints:
 | position | smallint not null | Display order. **UQ** `(vocabulary_item_id, position)` |
 | ai_generated | boolean not null | |
 
+Also `created_at` and `updated_at`, because the user can edit examples (added in V2).
+
 #### `tags` and `vocabulary_item_tags` (VOC-03)
 - `tags`: `id` PK; `user_id, language_code` FK → user_languages **CASCADE**; `name text not null` (CK length 1–50). **UQ** `(user_id, language_code, lower(name))`.
 - `vocabulary_item_tags`: PK `(vocabulary_item_id, tag_id)`. Both FKs **CASCADE**. **IX** `(tag_id)` for filtering by tag.

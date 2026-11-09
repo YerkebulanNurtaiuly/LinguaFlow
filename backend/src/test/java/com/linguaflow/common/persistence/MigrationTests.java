@@ -41,7 +41,7 @@ class MigrationTests {
 	void allMigrationsAreAppliedAndValid() {
 		MigrationInfo[] applied = flyway.info().applied();
 		assertThat(applied).isNotEmpty().allMatch(m -> m.getState() == MigrationState.SUCCESS);
-		assertThat(Arrays.stream(applied).map(m -> m.getVersion().getVersion())).contains("1");
+		assertThat(Arrays.stream(applied).map(m -> m.getVersion().getVersion())).contains("1", "2");
 		assertThat(flyway.info().pending()).isEmpty();
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 	}
@@ -149,6 +149,111 @@ class MigrationTests {
 		jdbc.update(sql, UUID.randomUUID(), user, UUID.randomUUID());
 		assertThatThrownBy(() -> jdbc.update(sql, UUID.randomUUID(), user, UUID.randomUUID()))
 			.isInstanceOf(DuplicateKeyException.class);
+	}
+
+	// ---- V2: learning material ------------------------------------------------------------
+
+	@Test
+	void sameLemmaWithUnknownPartOfSpeechIsADuplicate() {
+		UUID user = learner("dup@example.de");
+		insertVocabulary(user, "hund", null);
+		assertThatThrownBy(() -> insertVocabulary(user, "hund", null)).isInstanceOf(DuplicateKeyException.class)
+			.hasMessageContaining("vocabulary_items_lemma_uq");
+	}
+
+	@Test
+	void sameLemmaWithDifferentPartOfSpeechIsAllowed() {
+		UUID user = learner("essen@example.de");
+		insertVocabulary(user, "essen", "NOUN");
+		insertVocabulary(user, "essen", "VERB");
+		assertThat(count("vocabulary_items", user)).isEqualTo(2);
+	}
+
+	@Test
+	void vocabularyRequiresTheUserToLearnThatLanguage() {
+		UUID user = insertUser("nolang@example.de");
+		assertThatThrownBy(() -> insertVocabulary(user, "hund", null))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("vocabulary_items_user_language_fk");
+	}
+
+	@Test
+	void tagNamesAreUniqueIgnoringCase() {
+		UUID user = learner("tags@example.de");
+		String sql = "insert into tags (id, user_id, language_code, name) values (?, ?, 'de', ?)";
+		jdbc.update(sql, UUID.randomUUID(), user, "Food");
+		assertThatThrownBy(() -> jdbc.update(sql, UUID.randomUUID(), user, "food"))
+			.isInstanceOf(DuplicateKeyException.class)
+			.hasMessageContaining("tags_name_uq");
+	}
+
+	@Test
+	void onlyOneActiveStudySessionPerLanguage() {
+		UUID user = learner("sessions@example.de");
+		String sql = "insert into study_sessions (id, user_id, language_code, title, studied_on, active) "
+				+ "values (?, ?, 'de', ?, current_date, ?)";
+		jdbc.update(sql, UUID.randomUUID(), user, "Lesson 1", false);
+		jdbc.update(sql, UUID.randomUUID(), user, "Lesson 2", true);
+		assertThatThrownBy(() -> jdbc.update(sql, UUID.randomUUID(), user, "Lesson 3", true))
+			.isInstanceOf(DuplicateKeyException.class)
+			.hasMessageContaining("study_sessions_one_active_uq");
+	}
+
+	@Test
+	void deletingVocabularyRemovesItsLinksButKeepsTheSession() {
+		UUID user = learner("links@example.de");
+		UUID item = insertVocabulary(user, "katze", "NOUN");
+		UUID tag = UUID.randomUUID();
+		UUID session = UUID.randomUUID();
+		jdbc.update("insert into tags (id, user_id, language_code, name) values (?, ?, 'de', 'Tiere')", tag, user);
+		jdbc.update("insert into vocabulary_item_tags values (?, ?)", item, tag);
+		jdbc.update("insert into study_sessions (id, user_id, language_code, title, studied_on) "
+				+ "values (?, ?, 'de', 'Lesson 1', current_date)", session, user);
+		jdbc.update("insert into session_vocabulary (study_session_id, vocabulary_item_id) values (?, ?)", session,
+				item);
+
+		jdbc.update("delete from vocabulary_items where id = ?", item);
+
+		assertThat(jdbc.queryForObject("select count(*) from vocabulary_item_tags", Integer.class)).isZero();
+		assertThat(jdbc.queryForObject("select count(*) from session_vocabulary", Integer.class)).isZero();
+		assertThat(count("study_sessions", user)).isEqualTo(1);
+		assertThat(count("tags", user)).isEqualTo(1);
+	}
+
+	@Test
+	void droppingALanguageRemovesItsLearningMaterial() {
+		UUID user = learner("drop@example.de");
+		insertVocabulary(user, "baum", "NOUN");
+		jdbc.update("insert into grammar_topics (id, user_id, language_code, title, normalized_title) "
+				+ "values (?, ?, 'de', 'Dativ', 'dativ')", UUID.randomUUID(), user);
+
+		jdbc.update("delete from user_languages where user_id = ?", user);
+
+		assertThat(count("vocabulary_items", user)).isZero();
+		assertThat(count("grammar_topics", user)).isZero();
+	}
+
+	@Test
+	void catalogSlugMustBeKebabCase() {
+		assertThatThrownBy(() -> jdbc.update(
+				"insert into grammar_topic_catalog (id, language_code, slug, title, description, cefr_level) "
+						+ "values (?, 'de', 'Not A Slug', 'x', 'x', 'A1')",
+				UUID.randomUUID()))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("grammar_topic_catalog_slug_format_ck");
+	}
+
+	private UUID learner(String email) {
+		UUID user = insertUser(email);
+		insertUserLanguage(user, "de", "en", true);
+		return user;
+	}
+
+	private UUID insertVocabulary(UUID user, String normalizedLemma, String partOfSpeech) {
+		UUID id = UUID.randomUUID();
+		jdbc.update("insert into vocabulary_items (id, user_id, language_code, lemma, normalized_lemma, part_of_speech) "
+				+ "values (?, ?, 'de', ?, ?, ?)", id, user, normalizedLemma, normalizedLemma, partOfSpeech);
+		return id;
 	}
 
 	private UUID insertUser(String email) {

@@ -8,7 +8,7 @@ LinguaFlow is an AI-assisted language-learning platform (German first), built as
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
-- Flyway migrations up to `V1__init.sql` exist (DB-02: `languages` seeded with `de`/`en`, `users`, `refresh_tokens`, `user_languages`). There are no JPA entities or Docker Compose yet.
+- Flyway migrations exist up to `V2__learning_material.sql`. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions. The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. There's no `User` entity yet (AUTH-01) and no Docker Compose.
 
 - `README.md` describes the product vision, features, and the target architecture.
 - `TASKS.md` is the full implementation backlog. Task IDs look like `INF-02`, `VOC-05`, and so on, and each has deps and a "Done when" check. It also gives the milestones and the critical path. When the user refers to a task ID, look it up there and treat its "Done when" line as the acceptance criteria.
@@ -54,6 +54,16 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - Signal business errors by throwing `NotFoundException`, `ConflictException` or `ApiException(code, detail)`. Don't build error responses in controllers.
   - When a resource belongs to another user, return `NotFoundException`.
   - The 500 response body never contains the exception message; it's logged on the server instead.
+- **Entities:**
+  - IDs: `@Id @UuidGenerator(style = VERSION_7) UUID id`.
+  - Base class: mutable entities extend `AuditableEntity`.
+  - Locking: entities users edit concurrently get `@Version long version`.
+  - Lombok: `@Getter`, `@NoArgsConstructor(access = PROTECTED)`, and `@Setter` only on fields that may change freely. Never use `@Data` on entities.
+  - Value types: enums are `@Enumerated(STRING)`, matching the table's CHECK list. `jsonb` columns use `@JdbcTypeCode(SqlTypes.JSON)` with a `Map` or a record; `text[]` uses `@JdbcTypeCode(SqlTypes.ARRAY) List<String>`; `smallint` maps to `short`.
+  - Cross-module links: references to another module's rows, including `user_id`, are plain `UUID` columns, never JPA relations. Relations are only used inside a module, for example `VocabularyItem` with its examples and tags. Link tables that have extra columns get a small entity with an `@EmbeddedId` record key (`SessionVocabulary`).
+  - Shared enums: `CefrLevel` and `KnowledgeStatus` are in `common.domain`.
+  - Domain rules live in the entity where they can, e.g. `GrammarTopic` refuses to start as `MASTERED` and records every status change.
+  - Tests: round-trip new entities in a `@DataJpaTest` with validate mode, Testcontainers and `JpaAuditingConfig` plus `ClockConfig` imported (see `LearningMaterialMappingTests`).
 - **Migrations:** they live in `backend/src/main/resources/db/migration/` and follow `docs/database/schema.md`, including its migration plan.
   - Name every constraint (`<table>_<what>_{pk,fk,uq,ck,ix}`) so a violation can be mapped to an API error.
   - Never edit a migration that's already been applied; add a new `V<n>__*.sql` instead.
