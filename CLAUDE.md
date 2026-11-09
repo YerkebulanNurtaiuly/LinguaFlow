@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-09 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
-- `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
+- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
 - Flyway migrations exist up to `V4__user_action_tokens.sql` (V4 is AUTH-07). V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet; they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use. There's no Docker Compose yet.
 
@@ -178,7 +178,15 @@ Conventions:
 - **Imports:** `@/` points to `src/`.
 - **TypeScript:** pinned to `~6.0` because `typescript-eslint` doesn't support 6.1+ or TS 7 yet. Strict mode and `noUncheckedIndexedAccess` are on.
 - **HTTP:** API calls go through `src/lib/api.ts`, an Axios instance with base URL `VITE_API_BASE_URL`, default `/api`. Validate responses with Zod schemas.
-- **Routes:** defined once in `src/app/routes.tsx`. Tests render them with `renderRoute(path)` from `src/test/renderWithProviders.tsx`, which uses a memory router and a fresh QueryClient.
+- **Routes:** all routes are defined in `src/app/routes.tsx`.
+  - `AuthLayout` (a centered card, no navigation) wraps `/login` and `/register`.
+  - `AppLayout` wraps the sections from `src/app/navigation.ts` (`NAV_ITEMS`: path, label, lucide icon, description). `AppLayout` has a sidebar at `lg` and up, and a top bar with a `MobileNav` drawer below that.
+  - `/` redirects to `/dashboard`, and `*` shows `NotFoundPage`.
+  - Every route sets `handle: { title }`; `RouteTitle` turns it into `document.title` ("Vocabulary · LinguaFlow").
+  - To build a section, replace its `PlaceholderPage` element in `routes.tsx`. Add new sections to `NAV_ITEMS`.
+  - Tests render routes with `renderRoute(path)` from `src/test/renderWithProviders.tsx`, which uses a memory router and a fresh QueryClient. `src/app/routes.test.tsx` covers the shell.
+- **Icons:** `lucide-react`. Import named icons only, so the bundle keeps only the icons used.
+- **Accessibility:** navigation landmarks have `aria-label="Main"`, `NavLink` sets `aria-current="page"`, the drawer is `role="dialog"`, closes on Escape and focuses its close button, and icon-only buttons carry `sr-only` labels.
 - **Formatting:** Prettier with no semicolons and single quotes.
 - **API types are generated, never hand-written** (INF-09). The pipeline:
   1. The backend's `OpenApiDocsTests` keeps the committed snapshot `frontend/openapi.json` in sync with `/v3/api-docs/all`. The test fails when the snapshot is stale.
