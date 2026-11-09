@@ -45,7 +45,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Global exception handler returning RFC 7807 `ProblemDetail`; standard error codes; validation error mapping; pagination/sorting DTO; base auditing entity (`createdAt`, `updatedAt`) via JPA auditing; request logging with correlation ID; CORS config for the frontend origin.
   _Done when:_ invalid requests return consistent JSON errors, covered by tests.
 
-- [ ] **INF-08 — OpenAPI / Swagger setup** (S) — _deps: INF-02_
+- [x] **INF-08 — OpenAPI / Swagger setup** (S) — _deps: INF-02_
   springdoc with JWT bearer security scheme, API grouping per module, `/swagger-ui` enabled in dev only.
   _Done when:_ Swagger UI lets you authorize and call endpoints.
 

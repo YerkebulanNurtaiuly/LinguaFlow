@@ -9,6 +9,18 @@ spring:
     username: ${DB_USERNAME:linguaflow}
     password: ${DB_PASSWORD:linguaflow}
 
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+    persist-authorization: true
+    operations-sorter: alpha
+    tags-sorter: alpha
+  # Lists /actuator/health in the "all" group, so there is something to call before AUTH lands
+  show-actuator: true
+
 management:
   endpoint:
     health:

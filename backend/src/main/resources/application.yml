@@ -29,6 +29,36 @@ logging:
     # Adds the request's correlation ID (CorrelationIdFilter) to every log line
     correlation: "[%X{correlationId:-}] "
 
+# OpenAPI docs + Swagger UI: disabled by default, enabled in the dev profile only
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+  default-produces-media-type: application/json
+  group-configs:
+    # "all" is the full API (used for the generated frontend client, INF-09)
+    - group: all
+      paths-to-match: /api/**, /actuator/**
+    - group: auth
+      packages-to-scan: com.linguaflow.auth
+    - group: user
+      packages-to-scan: com.linguaflow.user
+    - group: vocabulary
+      packages-to-scan: com.linguaflow.vocabulary
+    - group: grammar
+      packages-to-scan: com.linguaflow.grammar
+    - group: learning
+      packages-to-scan: com.linguaflow.learning
+    - group: flashcard
+      packages-to-scan: com.linguaflow.flashcard
+    - group: exercise
+      packages-to-scan: com.linguaflow.exercise
+    - group: progress
+      packages-to-scan: com.linguaflow.progress
+    - group: ai
+      packages-to-scan: com.linguaflow.ai
+
 management:
   endpoints:
     web:
