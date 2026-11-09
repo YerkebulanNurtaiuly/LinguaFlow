@@ -1,6 +1,6 @@
 # LinguaFlow Database Schema
 
-Status: **draft for review** (DB-01). Target: PostgreSQL 16, migrations with Flyway, JPA with `ddl-auto=validate`.
+Status: **approved** (DB-01, 2026-11-09). The open questions in section 6 were resolved with the recommended options. Target: PostgreSQL 16, migrations with Flyway, JPA with `ddl-auto=validate`.
 
 This document is the contract the migrations (DB-02 to DB-04 and later module tasks) implement. When the schema changes, update this file in the same PR as the migration.
 
@@ -411,7 +411,9 @@ This table is shared between users. It may only hold **language data**, such as 
 
 Applied migrations are never edited. Every change is a new `V<n>__…` file.
 
-## 6. Open questions for review
+## 6. Decisions taken at review
+
+All five were approved as proposed:
 
 1. **UUIDv7 vs `bigint` identity keys (Q1).** I recommend UUIDv7, for the reasons in section 1. The cost is 16-byte keys instead of 8 and IDs that are less readable when debugging.
 2. **Duplicate rule while the part of speech is unknown (Q2).** The unique constraint includes `part_of_speech`, so the noun "Essen" and the verb "essen" can coexist. A word added before AI has filled in the part of speech has `NULL`, though. Proposal: the service also checks `normalized_lemma` alone and returns 409 with the existing ID unless the user picks a different part of speech. When AI fills in the part of speech and that collides, the item is marked as a duplicate for the user to resolve.

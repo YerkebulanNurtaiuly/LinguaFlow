@@ -7,8 +7,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-09 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
-- `docs/database/schema.md` is the schema design from DB-01, still a draft awaiting review. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
-- There are no Flyway migrations, entities, Docker Compose or CI yet.
+- `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
+- Flyway migrations up to `V1__init.sql` exist (DB-02: `languages` seeded with `de`/`en`, `users`, `refresh_tokens`, `user_languages`). There are no JPA entities or Docker Compose yet.
 
 - `README.md` describes the product vision, features, and the target architecture.
 - `TASKS.md` is the full implementation backlog. Task IDs look like `INF-02`, `VOC-05`, and so on, and each has deps and a "Done when" check. It also gives the milestones and the critical path. When the user refers to a task ID, look it up there and treat its "Done when" line as the acceptance criteria.
@@ -54,6 +54,10 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - Signal business errors by throwing `NotFoundException`, `ConflictException` or `ApiException(code, detail)`. Don't build error responses in controllers.
   - When a resource belongs to another user, return `NotFoundException`.
   - The 500 response body never contains the exception message; it's logged on the server instead.
+- **Migrations:** they live in `backend/src/main/resources/db/migration/` and follow `docs/database/schema.md`, including its migration plan.
+  - Name every constraint (`<table>_<what>_{pk,fk,uq,ck,ix}`) so a violation can be mapped to an API error.
+  - Never edit a migration that's already been applied; add a new `V<n>__*.sql` instead.
+  - Extend `common.persistence.MigrationTests` (`@JdbcTest` on a Testcontainers PostgreSQL) with constraint checks for each new migration. A violated constraint aborts the Postgres transaction, so each test may trigger at most one violation, as its last statement.
 - **Pagination:** controllers take a `Pageable` (`page` is zero-based, `size` defaults to 20 and is capped at 100, `sort=field,dir`) and return `PageResponse.from(page, mapper)`. Never return a Spring `Page` directly.
 - **Entities:** they extend `common.persistence.AuditableEntity`, which fills `created_at` and `updated_at` (`timestamptz not null`) from the injected `Clock`.
 - **Time:** inject `java.time.Clock` instead of calling `Instant.now()`.

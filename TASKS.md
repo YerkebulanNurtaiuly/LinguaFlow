@@ -55,13 +55,13 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 2: Database Schema (`DB`)
 
-- [ ] **DB-01 — Design ERD & document it** (M)
+- [x] **DB-01 — Design ERD & document it** (M)
   Produce `docs/database/schema.md` (+ diagram) covering all entities below, keys, indexes, constraints, and cascade rules.
   Core tables: `users`, `refresh_tokens`, `languages`, `user_languages`, `study_sessions`, `vocabulary_items`, `vocabulary_examples`, `grammar_topics`, `session_vocabulary`, `session_grammar`, `flashcards`, `flashcard_reviews`, `srs_state`, `exercise_sets`, `exercises`, `exercise_attempts`, `mistakes`, `ai_requests` (audit/cost log), `practice_sessions`.
   _Done when:_ schema reviewed and approved.
-  _Status:_ draft in `docs/database/schema.md`, awaiting review (open questions in section 6).
+  _Status:_ approved 2026-11-09 (`docs/database/schema.md`).
 
-- [ ] **DB-02 — Flyway setup + baseline migration** (S) — _deps: INF-02, DB-01_
+- [x] **DB-02 — Flyway setup + baseline migration** (S) — _deps: INF-02, DB-01_
   `V1__init.sql` for `users`, `languages`, `user_languages`; seed German (`de`) and English (`en`) in `languages`.
   _Done when:_ app migrates a fresh DB on start; `flyway validate` passes in CI.
 
