@@ -16,6 +16,9 @@
     "bearerAuth" : [ ]
   } ],
   "tags" : [ {
+    "description" : "Available languages and the user's learning languages",
+    "name" : "Languages"
+  }, {
     "description" : "The current user's account",
     "name" : "Profile"
   }, {
@@ -757,6 +760,78 @@
         "tags" : [ "Auth" ]
       }
     },
+    "/api/languages" : {
+      "get" : {
+        "operationId" : "listLanguages",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/LanguageResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List all languages and what they can be used for",
+        "tags" : [ "Languages" ]
+      }
+    },
     "/api/users/me" : {
       "delete" : {
         "description" : "Permanent. Requires the password. Clears the refresh cookie.",
@@ -995,6 +1070,356 @@
         "tags" : [ "Profile" ]
       }
     },
+    "/api/users/me/languages" : {
+      "get" : {
+        "operationId" : "listMine",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/UserLanguageResponse"
+                  }
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List the languages the current user learns",
+        "tags" : [ "Languages" ]
+      },
+      "post" : {
+        "description" : "The first language becomes active automatically; pass active=true to switch to it.",
+        "operationId" : "add",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddLanguageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserLanguageResponse"
+                }
+              }
+            },
+            "description" : "Language added"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserLanguageResponse"
+                }
+              }
+            },
+            "description" : "Already learning this language (code CONFLICT)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Start learning a language",
+        "tags" : [ "Languages" ]
+      }
+    },
+    "/api/users/me/languages/{languageCode}" : {
+      "delete" : {
+        "description" : "Permanently deletes ALL learning data for this language (vocabulary, grammar, sessions, reviews, progress). Clients must ask for confirmation first.",
+        "operationId" : "remove",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "languageCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Removed"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Stop learning a language",
+        "tags" : [ "Languages" ]
+      },
+      "patch" : {
+        "operationId" : "update_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "languageCode",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateLanguageRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/UserLanguageResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Change explanation language or level, or make this the active language",
+        "tags" : [ "Languages" ]
+      }
+    },
     "/api/users/me/password" : {
       "put" : {
         "description" : "Logs out every other device. Returns a fresh access token and sets a new refresh cookie, so this client stays logged in.",
@@ -1094,13 +1519,41 @@
   },
   "components" : {
     "schemas" : {
+      "AddLanguageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "boolean",
+            "description" : "Make it the active language (the first language always becomes active)"
+          },
+          "explanationLanguageCode" : {
+            "type" : "string",
+            "description" : "Language for translations and explanations",
+            "example" : "en",
+            "minLength" : 1,
+            "pattern" : "[a-z]{2,3}"
+          },
+          "languageCode" : {
+            "type" : "string",
+            "description" : "Target language to learn",
+            "example" : "de",
+            "minLength" : 1,
+            "pattern" : "[a-z]{2,3}"
+          },
+          "selfAssessedLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          }
+        },
+        "required" : [ "explanationLanguageCode", "languageCode" ]
+      },
       "ApiProblem" : {
         "description" : "RFC 7807 problem details returned for every error",
         "properties" : {
           "code" : {
             "type" : "string",
             "description" : "Stable machine-readable error code",
-            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
+            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
           },
           "correlationId" : {
             "type" : "string",
@@ -1180,6 +1633,31 @@
           },
           "message" : {
             "type" : "string"
+          }
+        }
+      },
+      "LanguageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "example" : "de"
+          },
+          "name" : {
+            "type" : "string",
+            "example" : "German"
+          },
+          "nativeName" : {
+            "type" : "string",
+            "example" : "Deutsch"
+          },
+          "supportedAsExplanation" : {
+            "type" : "boolean",
+            "description" : "Can be used for translations and explanations"
+          },
+          "supportedAsTarget" : {
+            "type" : "boolean",
+            "description" : "Can be learned (target language)"
           }
         }
       },
@@ -1308,6 +1786,24 @@
           }
         }
       },
+      "UpdateLanguageRequest" : {
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "boolean",
+            "description" : "true = make this the active language"
+          },
+          "explanationLanguageCode" : {
+            "type" : "string",
+            "example" : "en",
+            "pattern" : "[a-z]{2,3}"
+          },
+          "selfAssessedLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          }
+        }
+      },
       "UpdateProfileRequest" : {
         "type" : "object",
         "properties" : {
@@ -1330,6 +1826,30 @@
             "example" : "Europe/Berlin",
             "maxLength" : 64,
             "minLength" : 0
+          }
+        }
+      },
+      "UserLanguageResponse" : {
+        "type" : "object",
+        "properties" : {
+          "active" : {
+            "type" : "boolean"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "explanationLanguageCode" : {
+            "type" : "string",
+            "example" : "en"
+          },
+          "languageCode" : {
+            "type" : "string",
+            "example" : "de"
+          },
+          "selfAssessedLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
           }
         }
       },

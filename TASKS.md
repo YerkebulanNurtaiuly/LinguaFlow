@@ -108,7 +108,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **USR-01 — Profile endpoints** (S) — _deps: AUTH-04_
   `GET/PATCH /api/users/me` (display name, interface language, timezone), `PUT /api/users/me/password`, `DELETE /api/users/me` (cascade delete).
 
-- [ ] **USR-02 — Language preferences** (M) — _deps: USR-01_
+- [x] **USR-02 — Language preferences** (M) — _deps: USR-01_
   `GET /api/languages`; `GET/POST/DELETE /api/users/me/languages` — target language (German), native/explanation language, self-assessed CEFR level, active language. All learning data is scoped by `(user, target language)`.
   _Done when:_ a user can set German as target with English explanations.
 

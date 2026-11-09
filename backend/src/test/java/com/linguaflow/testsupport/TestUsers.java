@@ -32,8 +32,14 @@ public class TestUsers {
 	}
 
 	public TestUser learner(String email) {
+		TestUser user = user(email);
+		addGerman(jdbc, user.id());
+		return user;
+	}
+
+	/** A registered user with a token but no learning language yet (e.g. before onboarding). */
+	public TestUser user(String email) {
 		User user = registration.register(new RegistrationRequest(email, "correct-horse-battery", "Test Learner"));
-		addGerman(jdbc, user.getId());
 		return new TestUser(user.getId(), accessTokens.issue(user).value());
 	}
 

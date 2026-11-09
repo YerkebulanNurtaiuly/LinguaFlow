@@ -29,3 +29,10 @@ export type UserProfile = Schemas['UserProfileResponse']
 export type UpdateProfileRequest = Schemas['UpdateProfileRequest']
 export type ChangePasswordRequest = Schemas['ChangePasswordRequest']
 export type DeleteAccountRequest = Schemas['DeleteAccountRequest']
+
+// Languages
+export type Language = Schemas['LanguageResponse']
+export type UserLanguage = Schemas['UserLanguageResponse']
+export type AddLanguageRequest = Schemas['AddLanguageRequest']
+export type UpdateLanguageRequest = Schemas['UpdateLanguageRequest']
+export type CefrLevel = NonNullable<UserLanguage['selfAssessedLevel']>

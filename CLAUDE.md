@@ -118,6 +118,12 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - Deletion removes the user row, the DB cascades remove all their data, and the cookie is cleared.
   - **Deleted account:** a still-valid access token for a deleted account gets 401 from `UserProfileService.currentUser`.
   - **Wrong password:** a wrong current password is a **400 field error** (`InvalidFieldException`), never a 401, because the frontend treats 401 as "refresh the token".
+- **Learning languages (USR-02):** `user.LanguageController` serves `GET /api/languages` and `GET`, `POST`, `PATCH` and `DELETE /api/users/me/languages[/{code}]`. A `user.UserLanguage` is a learner profile; its key `(userId, languageCode)` is what every learning table's composite FK points to.
+  - **Rules:** the target must be `supported_as_target` (only `de` today), and the explanation language must be `supported_as_explanation` and different from the target.
+  - **Active language:** the first language becomes active automatically. Only `ActiveLanguageService` switches it, by deactivating all first and then activating the new one, because of the one-active unique index.
+  - **Delete:** it cascades away **all** learning data for that language, so the frontend must confirm it. If the deleted language was active, the most recently added remaining one becomes active.
+  - **Scoping learning endpoints:** learning modules scope new and listed material with `ActiveLanguageService.requireActive(userId)`. Before onboarding, that returns 409 `NO_ACTIVE_LANGUAGE`.
+  - **Tests:** `TestUsers.user(email)` creates a user with no language (for onboarding flows); `learner(email)` creates one with active German.
 - **`InvalidFieldException(field, message)`** renders a business-rule failure exactly like Bean Validation: 400 `VALIDATION_FAILED` with `errors[]`. Use it for checks that need the database, such as "is incorrect" or "already used".
 - **Error codes:** add a specific `ErrorCode` (like `EMAIL_TAKEN`) when the frontend needs to react to one particular error. Adding one changes the OpenAPI spec, so regenerate the snapshot and the frontend types.
 - **`@WebMvcTest`:** always set `controllers = ...`. Otherwise the slice picks up every app controller and fails on their missing services.
