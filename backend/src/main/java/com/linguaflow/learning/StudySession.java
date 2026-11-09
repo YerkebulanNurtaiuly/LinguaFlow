@@ -5,6 +5,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.linguaflow.common.persistence.AuditableEntity;
+import com.linguaflow.common.persistence.OwnedEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -25,7 +26,7 @@ import org.hibernate.annotations.UuidGenerator;
 @Table(name = "study_sessions")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class StudySession extends AuditableEntity {
+public class StudySession extends AuditableEntity implements OwnedEntity {
 
 	@Id
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)

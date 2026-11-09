@@ -78,6 +78,15 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
 - **Registration (AUTH-02):** `POST /api/auth/register`, handled by `auth.AuthController` and `RegistrationService`. It returns 201 without logging the user in, and 409 with code `EMAIL_TAKEN` when the email is already registered (ignoring case), including when two registrations race.
   - The password policy is `auth.password.@ValidPassword`: at least 10 characters, at most **72 UTF-8 bytes** (BCrypt's limit), not whitespace-only, and not on a common-passwords list.
   - Request records that carry a password override `toString()` so the password can't reach logs.
+- **Ownership (AUTH-05):** every user-owned entity implements `common.persistence.OwnedEntity`, and its repository extends `OwnedRepository<T>`, **not** `JpaRepository`.
+  - `OwnedRepository` only offers owner-scoped methods: `findByIdAndUserId`, `existsByIdAndUserId`, `findAllByUserId(Pageable)`, `countByUserId`, `deleteByIdAndUserId`, plus `save`/`saveAndFlush`.
+  - In services, use `repo.requireOwned(id, userId)`. It throws the same 404 ("Resource not found") whether the resource is missing or belongs to someone else.
+  - New queries always take `userId`. A system-wide lookup, for example for an AI worker, must be a separate method with an explicit name like `findForProcessingById`.
+  - `OwnershipGuardTests` fails the build if an owned entity's repository exposes unscoped CRUD.
+  - **Test helpers in `com.linguaflow.testsupport`:**
+    - For each owned repository, write `@OwnedRepositoryTest class XRepositoryTests extends OwnedRepositoryContract<X>`. It supplies `repository()` and `newEntity(userId, n)` and inherits the five isolation tests.
+    - Every controller endpoint that takes a resource ID must be covered by `OwnershipAssertions.assertOnlyOwnerCanAccess(mvc, method, uri, id, ownerToken, otherToken)`.
+    - `TestUsers` creates learners with a German profile and an access token.
 - **Tokens (AUTH-03):** `auth.AuthService` handles login and refresh; `AuthController` handles the HTTP side.
   - **Access token:** an HS256 JWT signed with `JWT_SECRET` (`JwtConfig` provides the `JwtEncoder` and `JwtDecoder`). Claims are `sub` (user UUID), `role`, `iss=linguaflow`, and an expiry of 15 minutes. It's returned in the body as `TokenResponse`.
   - **Refresh token:** 32 random bytes, sent only as the cookie `lf_refresh` (`HttpOnly; Secure; SameSite=Strict; Path=/api/auth`, 30 days). Only its SHA-256 hash is stored, in `refresh_tokens`.

@@ -94,7 +94,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Stateless filter chain, JWT resource server validation, public routes (`/api/auth/**`, health, docs in dev), CSRF strategy matching cookie use, `@AuthenticationPrincipal` helper to get current user ID.
   _Done when:_ protected endpoints return 401 without a token, 403 for wrong role.
 
-- [ ] **AUTH-05 — Ownership enforcement** (S) — _deps: AUTH-04_
+- [x] **AUTH-05 — Ownership enforcement** (S) — _deps: AUTH-04_
   All user-owned queries scoped by `user_id`; accessing another user's resource returns 404. Add a reusable test helper verifying isolation.
 
 - [ ] **AUTH-06 — Rate limiting on auth endpoints** (S) — _deps: AUTH-03_

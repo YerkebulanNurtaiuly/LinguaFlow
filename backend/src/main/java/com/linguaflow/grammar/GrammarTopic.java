@@ -9,6 +9,7 @@ import java.util.UUID;
 import com.linguaflow.common.domain.CefrLevel;
 import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.common.persistence.AuditableEntity;
+import com.linguaflow.common.persistence.OwnedEntity;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -35,7 +36,7 @@ import org.hibernate.type.SqlTypes;
 @Table(name = "grammar_topics")
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class GrammarTopic extends AuditableEntity {
+public class GrammarTopic extends AuditableEntity implements OwnedEntity {
 
 	@Id
 	@UuidGenerator(style = UuidGenerator.Style.VERSION_7)
