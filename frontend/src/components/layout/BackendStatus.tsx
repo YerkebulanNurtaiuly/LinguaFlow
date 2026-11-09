@@ -13,7 +13,7 @@ export function BackendStatus() {
   let dot: string
   if (health.isPending) {
     label = 'checking…'
-    dot = 'bg-slate-300'
+    dot = 'bg-border-strong'
   } else if (health.isError) {
     label = 'unreachable'
     dot = 'bg-red-500'
@@ -23,7 +23,7 @@ export function BackendStatus() {
   }
 
   return (
-    <p className="flex items-center gap-2 text-xs text-slate-500">
+    <p className="flex items-center gap-2 text-xs text-fg-subtle">
       <span className={`size-2 rounded-full ${dot}`} aria-hidden="true" />
       Backend: <span className="font-medium">{label}</span>
     </p>

@@ -28,7 +28,7 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
   return (
     <div className="fixed inset-0 z-40 lg:hidden">
       <div
-        className="absolute inset-0 bg-slate-900/40"
+        className="absolute inset-0 bg-slate-950/50"
         aria-hidden="true"
         onClick={onClose}
         data-testid="mobile-nav-backdrop"
@@ -38,14 +38,14 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         role="dialog"
         aria-modal="true"
         aria-label="Navigation"
-        className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-white p-4 shadow-xl"
+        className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-surface p-4 shadow-xl"
       >
         <div className="mb-4 flex justify-end">
           <button
             ref={closeButton}
             type="button"
             onClick={onClose}
-            className="rounded-md p-2 text-slate-600 hover:bg-slate-100"
+            className="rounded-md p-2 text-fg-muted hover:bg-surface-muted"
           >
             <X className="size-5" aria-hidden="true" />
             <span className="sr-only">Close navigation</span>

@@ -3,6 +3,7 @@ import { AppLayout } from '@/app/layouts/AppLayout'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { NAV_ITEMS } from '@/app/navigation'
 import type { RouteHandle } from '@/app/RouteTitle'
+import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 
@@ -42,11 +43,23 @@ export const routes: RouteObject[] = [
   },
   {
     element: <AppLayout />,
-    children: NAV_ITEMS.map(({ path, label, description }) => ({
-      path,
-      handle: title(label),
-      element: <PlaceholderPage title={label} description={description} />,
-    })),
+    children: [
+      ...NAV_ITEMS.map(({ path, label, description }) => ({
+        path,
+        handle: title(label),
+        element: <PlaceholderPage title={label} description={description} />,
+      })),
+      // Dev-only component showcase; not part of production builds' routes
+      ...(import.meta.env.DEV
+        ? [
+            {
+              path: '/design-system',
+              handle: title('Design system'),
+              element: <DesignSystemPage />,
+            },
+          ]
+        : []),
+    ],
   },
   { path: '*', handle: title('Page not found'), element: <NotFoundPage /> },
 ]

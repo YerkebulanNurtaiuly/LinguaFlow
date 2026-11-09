@@ -185,6 +185,14 @@ Conventions:
   - Every route sets `handle: { title }`; `RouteTitle` turns it into `document.title` ("Vocabulary · LinguaFlow").
   - To build a section, replace its `PlaceholderPage` element in `routes.tsx`. Add new sections to `NAV_ITEMS`.
   - Tests render routes with `renderRoute(path)` from `src/test/renderWithProviders.tsx`, which uses a memory router and a fresh QueryClient. `src/app/routes.test.tsx` covers the shell.
+- **Design system (FE-02):** building blocks live in `src/components/ui` and are imported from `@/components/ui`. They are Button, Field with Input, Select and Textarea, Badge/CefrBadge/StatusBadge, Card, Table, Tabs, Modal, ConfirmDialog, Toast (`useToast`), EmptyState, Skeleton/SkeletonText, Spinner and ThemeToggle. Build pages from these rather than raw elements.
+  - **Colours:** use only the semantic tokens from `src/index.css` (`bg-canvas`, `bg-surface`, `bg-surface-muted`, `text-fg`, `text-fg-muted`, `text-fg-subtle`, `border-border`, `bg-primary`, `bg-danger`, `bg-{success,warning,info,danger}-soft` and so on). **Never use raw palette classes** like `bg-slate-50`. Light and dark mode both come from the tokens.
+  - **Theme:** `ThemeProvider` stores `system`, `light` or `dark` in `localStorage` under `lf-theme` and sets `<html data-theme>`. A script in `index.html` applies the stored theme before first paint.
+  - **Forms:** wrap every control in `<Field label hint error>`, which wires `htmlFor`, `aria-describedby` and `aria-invalid`.
+  - **Dialogs:** `Modal` traps focus, closes on Escape and returns focus to its opener; `initialFocus` picks the element focused on open. `ConfirmDialog` focuses Cancel first and takes an async `onConfirm`.
+  - **Toasts:** errors go to an assertive live region, others to a polite one.
+  - **Contexts:** they live in `*Context.ts` files, separate from the provider components, because the react-refresh lint rule requires it.
+  - **Showcase:** `/design-system` is a **dev-only** page showing every component. It isn't in the production bundle.
 - **Icons:** `lucide-react`. Import named icons only, so the bundle keeps only the icons used.
 - **Accessibility:** navigation landmarks have `aria-label="Main"`, `NavLink` sets `aria-current="page"`, the drawer is `role="dialog"`, closes on Escape and focuses its close button, and icon-only buttons carry `sr-only` labels.
 - **Formatting:** Prettier with no semicolons and single quotes.

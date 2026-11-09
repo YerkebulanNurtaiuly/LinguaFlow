@@ -1,1 +1,158 @@
 @import 'tailwindcss';
+
+/*
+ * Design tokens (FE-02). Components use only these semantic colors (bg-surface,
+ * text-fg-muted, border-border, bg-primary, ...), so light/dark switch everywhere at once.
+ * Theme: follows the OS unless <html data-theme="light|dark"> is set (ThemeProvider).
+ */
+@theme inline {
+  --color-canvas: var(--lf-canvas);
+  --color-surface: var(--lf-surface);
+  --color-surface-muted: var(--lf-surface-muted);
+  --color-border: var(--lf-border);
+  --color-border-strong: var(--lf-border-strong);
+  --color-fg: var(--lf-fg);
+  --color-fg-muted: var(--lf-fg-muted);
+  --color-fg-subtle: var(--lf-fg-subtle);
+  --color-primary: var(--lf-primary);
+  --color-primary-hover: var(--lf-primary-hover);
+  --color-primary-fg: var(--lf-primary-fg);
+  --color-primary-soft: var(--lf-primary-soft);
+  --color-primary-soft-fg: var(--lf-primary-soft-fg);
+  --color-danger: var(--lf-danger);
+  --color-danger-hover: var(--lf-danger-hover);
+  --color-danger-soft: var(--lf-danger-soft);
+  --color-danger-soft-fg: var(--lf-danger-soft-fg);
+  --color-success-soft: var(--lf-success-soft);
+  --color-success-soft-fg: var(--lf-success-soft-fg);
+  --color-warning-soft: var(--lf-warning-soft);
+  --color-warning-soft-fg: var(--lf-warning-soft-fg);
+  --color-info-soft: var(--lf-info-soft);
+  --color-info-soft-fg: var(--lf-info-soft-fg);
+  --color-ring: var(--lf-ring);
+}
+
+:root {
+  color-scheme: light;
+  --lf-canvas: var(--color-slate-50);
+  --lf-surface: var(--color-white);
+  --lf-surface-muted: var(--color-slate-100);
+  --lf-border: var(--color-slate-200);
+  --lf-border-strong: var(--color-slate-300);
+  --lf-fg: var(--color-slate-900);
+  --lf-fg-muted: var(--color-slate-600);
+  --lf-fg-subtle: var(--color-slate-500);
+  --lf-primary: var(--color-indigo-600);
+  --lf-primary-hover: var(--color-indigo-700);
+  --lf-primary-fg: var(--color-white);
+  --lf-primary-soft: var(--color-indigo-50);
+  --lf-primary-soft-fg: var(--color-indigo-700);
+  --lf-danger: var(--color-red-600);
+  --lf-danger-hover: var(--color-red-700);
+  --lf-danger-soft: var(--color-red-50);
+  --lf-danger-soft-fg: var(--color-red-700);
+  --lf-success-soft: var(--color-emerald-50);
+  --lf-success-soft-fg: var(--color-emerald-700);
+  --lf-warning-soft: var(--color-amber-50);
+  --lf-warning-soft-fg: var(--color-amber-800);
+  --lf-info-soft: var(--color-sky-50);
+  --lf-info-soft-fg: var(--color-sky-700);
+  --lf-ring: var(--color-indigo-500);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+    --lf-canvas: var(--color-slate-950);
+    --lf-surface: var(--color-slate-900);
+    --lf-surface-muted: var(--color-slate-800);
+    --lf-border: var(--color-slate-800);
+    --lf-border-strong: var(--color-slate-700);
+    --lf-fg: var(--color-slate-100);
+    --lf-fg-muted: var(--color-slate-400);
+    --lf-fg-subtle: var(--color-slate-500);
+    --lf-primary: var(--color-indigo-500);
+    --lf-primary-hover: var(--color-indigo-400);
+    --lf-primary-fg: var(--color-white);
+    --lf-primary-soft: color-mix(
+      in oklab,
+      var(--color-indigo-500) 18%,
+      transparent
+    );
+    --lf-primary-soft-fg: var(--color-indigo-300);
+    --lf-danger: var(--color-red-500);
+    --lf-danger-hover: var(--color-red-400);
+    --lf-danger-soft: color-mix(
+      in oklab,
+      var(--color-red-500) 18%,
+      transparent
+    );
+    --lf-danger-soft-fg: var(--color-red-300);
+    --lf-success-soft: color-mix(
+      in oklab,
+      var(--color-emerald-500) 18%,
+      transparent
+    );
+    --lf-success-soft-fg: var(--color-emerald-300);
+    --lf-warning-soft: color-mix(
+      in oklab,
+      var(--color-amber-500) 18%,
+      transparent
+    );
+    --lf-warning-soft-fg: var(--color-amber-300);
+    --lf-info-soft: color-mix(in oklab, var(--color-sky-500) 18%, transparent);
+    --lf-info-soft-fg: var(--color-sky-300);
+    --lf-ring: var(--color-indigo-400);
+  }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --lf-canvas: var(--color-slate-950);
+  --lf-surface: var(--color-slate-900);
+  --lf-surface-muted: var(--color-slate-800);
+  --lf-border: var(--color-slate-800);
+  --lf-border-strong: var(--color-slate-700);
+  --lf-fg: var(--color-slate-100);
+  --lf-fg-muted: var(--color-slate-400);
+  --lf-fg-subtle: var(--color-slate-500);
+  --lf-primary: var(--color-indigo-500);
+  --lf-primary-hover: var(--color-indigo-400);
+  --lf-primary-fg: var(--color-white);
+  --lf-primary-soft: color-mix(
+    in oklab,
+    var(--color-indigo-500) 18%,
+    transparent
+  );
+  --lf-primary-soft-fg: var(--color-indigo-300);
+  --lf-danger: var(--color-red-500);
+  --lf-danger-hover: var(--color-red-400);
+  --lf-danger-soft: color-mix(in oklab, var(--color-red-500) 18%, transparent);
+  --lf-danger-soft-fg: var(--color-red-300);
+  --lf-success-soft: color-mix(
+    in oklab,
+    var(--color-emerald-500) 18%,
+    transparent
+  );
+  --lf-success-soft-fg: var(--color-emerald-300);
+  --lf-warning-soft: color-mix(
+    in oklab,
+    var(--color-amber-500) 18%,
+    transparent
+  );
+  --lf-warning-soft-fg: var(--color-amber-300);
+  --lf-info-soft: color-mix(in oklab, var(--color-sky-500) 18%, transparent);
+  --lf-info-soft-fg: var(--color-sky-300);
+  --lf-ring: var(--color-indigo-400);
+}
+
+body {
+  background-color: var(--lf-canvas);
+  color: var(--lf-fg);
+}
+
+/* One visible focus style for every interactive element */
+:focus-visible {
+  outline: 2px solid var(--lf-ring);
+  outline-offset: 2px;
+}

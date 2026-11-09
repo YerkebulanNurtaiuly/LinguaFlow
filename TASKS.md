@@ -120,7 +120,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-01 — App shell & routing** (M) — _deps: INF-03_
   Layout with sidebar/topbar, responsive mobile nav, routes: `/login`, `/register`, `/dashboard`, `/vocabulary`, `/grammar`, `/sessions`, `/flashcards`, `/practice`, `/progress`, `/settings`. 404 page.
 
-- [ ] **FE-02 — Design system components** (M) — _deps: FE-01_
+- [x] **FE-02 — Design system components** (M) — _deps: FE-01_
   Tailwind theme tokens (light/dark), Button, Input, Select, Textarea, Badge (CEFR/status), Card, Modal, Toast, Table, Tabs, EmptyState, Skeleton, ConfirmDialog. Accessible (keyboard, ARIA).
 
 - [ ] **FE-03 — API layer & auth state** (M) — _deps: FE-01, INF-09, AUTH-03_

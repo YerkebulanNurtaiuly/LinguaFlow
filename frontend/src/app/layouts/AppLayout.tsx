@@ -6,6 +6,7 @@ import { BackendStatus } from '@/components/layout/BackendStatus'
 import { Logo } from '@/components/layout/Logo'
 import { MOBILE_NAV_ID, MobileNav } from '@/components/layout/MobileNav'
 import { NavLinks } from '@/components/layout/NavLinks'
+import { ThemeToggle } from '@/components/ui'
 
 /**
  * Shell for the logged-in part of the app: sidebar on large screens, top bar with a
@@ -16,33 +17,35 @@ export function AppLayout() {
   const closeMobileNav = useCallback(() => setMobileNavOpen(false), [])
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
+    <div className="min-h-screen bg-canvas text-fg">
       <RouteTitle />
 
-      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-slate-200 bg-white px-4 py-5 lg:flex">
+      <aside className="fixed inset-y-0 left-0 hidden w-64 flex-col border-r border-border bg-surface px-4 py-5 lg:flex">
         <div className="mb-6 px-3">
           <Logo />
         </div>
         <nav aria-label="Main" className="flex-1">
           <NavLinks />
         </nav>
-        <div className="px-3">
+        <div className="flex items-center justify-between gap-2 px-3">
           <BackendStatus />
+          <ThemeToggle />
         </div>
       </aside>
 
-      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-slate-200 bg-white px-4 lg:hidden">
+      <header className="sticky top-0 z-30 flex h-14 items-center gap-3 border-b border-border bg-surface px-4 lg:hidden">
         <button
           type="button"
           onClick={() => setMobileNavOpen(true)}
           aria-expanded={mobileNavOpen}
           aria-controls={MOBILE_NAV_ID}
-          className="rounded-md p-2 text-slate-600 hover:bg-slate-100"
+          className="rounded-md p-2 text-fg-muted hover:bg-surface-muted"
         >
           <Menu className="size-5" aria-hidden="true" />
           <span className="sr-only">Open navigation</span>
         </button>
         <Logo />
+        <ThemeToggle className="ml-auto" />
       </header>
       <MobileNav open={mobileNavOpen} onClose={closeMobileNav} />
 
