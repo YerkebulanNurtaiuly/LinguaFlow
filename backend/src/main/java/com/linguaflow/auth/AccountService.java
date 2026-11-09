@@ -5,6 +5,7 @@ import java.util.UUID;
 
 import com.linguaflow.common.error.ApiException;
 import com.linguaflow.common.error.ErrorCode;
+import com.linguaflow.common.error.InvalidFieldException;
 import com.linguaflow.common.error.NotFoundException;
 import com.linguaflow.user.User;
 import com.linguaflow.user.UserRepository;
@@ -30,15 +31,18 @@ public class AccountService {
 
 	private final RefreshTokenService refreshTokens;
 
+	private final AuthService authService;
+
 	private final Clock clock;
 
 	AccountService(UserRepository users, ActionTokenService actionTokens, AccountEmails emails,
-			PasswordEncoder passwordEncoder, RefreshTokenService refreshTokens, Clock clock) {
+			PasswordEncoder passwordEncoder, RefreshTokenService refreshTokens, AuthService authService, Clock clock) {
 		this.users = users;
 		this.actionTokens = actionTokens;
 		this.emails = emails;
 		this.passwordEncoder = passwordEncoder;
 		this.refreshTokens = refreshTokens;
+		this.authService = authService;
 		this.clock = clock;
 	}
 
@@ -84,6 +88,49 @@ public class AccountService {
 
 	private static ApiException invalidLink() {
 		return new ApiException(ErrorCode.INVALID_TOKEN, "This link is invalid, expired or already used");
+	}
+
+	/**
+	 * Changes the password after checking the current one. Every existing session is
+	 * revoked (other devices are logged out); the caller gets a fresh session so it stays
+	 * logged in.
+	 * @throws InvalidFieldException currentPassword incorrect, or newPassword unchanged
+	 */
+	@Transactional(noRollbackFor = ApiException.class)
+	public AuthService.Tokens changePassword(UUID userId, String currentPassword, String newPassword,
+			String userAgent) {
+		User user = existingUser(userId);
+		requireCurrentPassword(user, currentPassword, "currentPassword");
+		if (passwordEncoder.matches(newPassword, user.getPasswordHash())) {
+			throw new InvalidFieldException("newPassword", "must differ from the current password");
+		}
+		user.changePasswordHash(passwordEncoder.encode(newPassword));
+		int revoked = refreshTokens.revokeAllForUser(userId);
+		log.info("Password changed for user {}; revoked {} session token(s)", userId, revoked);
+		return authService.startSession(user, userAgent);
+	}
+
+	/**
+	 * Permanently deletes the account and, through the database cascades, all its data
+	 * (SEC-02). Requires the password so a stolen access token alone cannot do it.
+	 */
+	@Transactional(noRollbackFor = ApiException.class)
+	public void deleteAccount(UUID userId, String password) {
+		User user = existingUser(userId);
+		requireCurrentPassword(user, password, "password");
+		users.delete(user);
+		log.info("Deleted user {} and all their data", userId);
+	}
+
+	private void requireCurrentPassword(User user, String password, String field) {
+		if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+			throw new InvalidFieldException(field, "is incorrect");
+		}
+	}
+
+	private User existingUser(UUID userId) {
+		return users.findById(userId)
+			.orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED, "This account no longer exists"));
 	}
 
 }

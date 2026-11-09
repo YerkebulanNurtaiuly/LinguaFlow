@@ -23,3 +23,9 @@ export type TokenResponse = Schemas['TokenResponse']
 export type VerifyEmailRequest = Schemas['VerifyEmailRequest']
 export type PasswordResetRequest = Schemas['PasswordResetRequest']
 export type ResetPasswordRequest = Schemas['ResetPasswordRequest']
+
+// Profile
+export type UserProfile = Schemas['UserProfileResponse']
+export type UpdateProfileRequest = Schemas['UpdateProfileRequest']
+export type ChangePasswordRequest = Schemas['ChangePasswordRequest']
+export type DeleteAccountRequest = Schemas['DeleteAccountRequest']

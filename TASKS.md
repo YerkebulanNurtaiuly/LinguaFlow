@@ -105,7 +105,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 4: User & Language Management (`USR`)
 
-- [ ] **USR-01 — Profile endpoints** (S) — _deps: AUTH-04_
+- [x] **USR-01 — Profile endpoints** (S) — _deps: AUTH-04_
   `GET/PATCH /api/users/me` (display name, interface language, timezone), `PUT /api/users/me/password`, `DELETE /api/users/me` (cascade delete).
 
 - [ ] **USR-02 — Language preferences** (M) — _deps: USR-01_

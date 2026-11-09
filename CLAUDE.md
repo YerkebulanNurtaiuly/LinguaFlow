@@ -112,6 +112,13 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Settings:** token lifetimes live under `linguaflow.security.jwt.*` (`access-token-ttl`, `refresh-token-ttl`, `issuer`) and the cookie under `linguaflow.security.refresh-cookie.*`.
   - **Config records:** a `@ConfigurationProperties` record must have exactly one constructor, otherwise binding silently fails. Put defaults in the compact constructor.
   - **Testing time:** use `com.linguaflow.testsupport.MutableClock`, registered as an `@Primary` `Clock` bean in a `@TestConfiguration`, to test expiry. See `AuthFlowTests`.
+- **Profile (USR-01):** `user.UserProfileController` serves `GET` and `PATCH /api/users/me`. PATCH is partial: absent fields stay unchanged. The time zone must be an IANA region ID or `UTC`, and the interface language must exist in `languages` (`user.Language`, a read-only entity).
+  - `auth.CredentialsController` handles `PUT /api/users/me/password` and `DELETE /api/users/me`. Both need the current password, so a stolen access token alone can't use them.
+  - A password change revokes every session, then returns new tokens and a new cookie, so the current client stays logged in.
+  - Deletion removes the user row, the DB cascades remove all their data, and the cookie is cleared.
+  - **Deleted account:** a still-valid access token for a deleted account gets 401 from `UserProfileService.currentUser`.
+  - **Wrong password:** a wrong current password is a **400 field error** (`InvalidFieldException`), never a 401, because the frontend treats 401 as "refresh the token".
+- **`InvalidFieldException(field, message)`** renders a business-rule failure exactly like Bean Validation: 400 `VALIDATION_FAILED` with `errors[]`. Use it for checks that need the database, such as "is incorrect" or "already used".
 - **Error codes:** add a specific `ErrorCode` (like `EMAIL_TAKEN`) when the frontend needs to react to one particular error. Adding one changes the OpenAPI spec, so regenerate the snapshot and the frontend types.
 - **`@WebMvcTest`:** always set `controllers = ...`. Otherwise the slice picks up every app controller and fails on their missing services.
 - **Dev demo data (DB-05):** `backend/src/main/resources/db/dev/R__dev_seed.sql` is a repeatable Flyway migration. It loads only in the dev profile, which adds `classpath:db/dev` to `spring.flyway.locations`; test and prod never see it.

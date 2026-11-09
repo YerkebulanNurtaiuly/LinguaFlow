@@ -53,6 +53,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return handleExceptionInternal(ex, body, headers, ex.code().status(), request);
 	}
 
+	@ExceptionHandler(InvalidFieldException.class)
+	ResponseEntity<Object> handleInvalidField(InvalidFieldException ex, WebRequest request) {
+		return validationFailed(ex, List.of(new FieldError(ex.field(), ex.getMessage())), request);
+	}
+
 	@ExceptionHandler(ConstraintViolationException.class)
 	ResponseEntity<Object> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
 		List<FieldError> errors = ex.getConstraintViolations()

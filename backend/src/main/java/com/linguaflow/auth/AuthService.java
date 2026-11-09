@@ -53,6 +53,11 @@ public class AuthService {
 			throw new ApiException(ErrorCode.ACCOUNT_DISABLED, "This account has been disabled");
 		}
 		user.recordLogin(clock.instant());
+		return startSession(user, userAgent);
+	}
+
+	/** A new login session (refresh-token family) plus access token for an authenticated user. */
+	Tokens startSession(User user, String userAgent) {
 		return new Tokens(accessTokens.issue(user), refreshTokens.issue(user.getId(), userAgent));
 	}
 
