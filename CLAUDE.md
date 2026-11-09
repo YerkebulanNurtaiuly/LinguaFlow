@@ -37,7 +37,14 @@ Run Maven from `backend/` with the wrapper. In WSL, call `./mvnw`; on Windows, u
 
 How the app and its tests are set up:
 - Full-context tests `@Import(TestcontainersConfiguration.class)`. That class's `@ServiceConnection` wires the datasource to the container.
-- `/actuator/health` and `POST /api/auth/{register,login,refresh,logout}` are the only public endpoints. Every other request returns 401 because AUTH-04 hasn't yet plugged JWT validation into `SecurityConfig`. CSRF protection is still on everywhere except the auth endpoints, so POST tests for other endpoints need `.with(csrf())`.
+- **Security (AUTH-04):** `common.config.SecurityConfig` is a stateless JWT resource server.
+  - **Public routes:** health, `POST /api/auth/{register,login,refresh,logout}`, and the API docs in dev. Everything else needs `Authorization: Bearer <access token>`.
+  - **Roles:** `/api/admin/**` requires `ROLE_ADMIN`, and `@EnableMethodSecurity` is on, so `@PreAuthorize("hasRole('ADMIN')")` works.
+  - **Errors:** a missing or invalid token gets 401 with `WWW-Authenticate: Bearer` (`error="invalid_token"` for a rejected token); a wrong role gets 403. Both use the standard ProblemDetail body.
+  - **CSRF is disabled on purpose.** The API authenticates with a header, and the only cookie (the refresh token) is `SameSite=Strict` and scoped to `/api/auth`. Don't add cookie-based authentication elsewhere without revisiting this.
+  - **Current user:** controllers get the caller with `@CurrentUserId UUID userId` (`common.security`); scope every user-owned query by it.
+  - **Tests:** full-context tests send a real token from `AccessTokenService.issue(user)` (see `SecurityTests`). `@WebMvcTest` slices that import `SecurityConfig` also need `JwtConfig` and `ClockConfig`, and can use `@WithMockUser`.
+  - **Known gap:** an access token stays valid until it expires (15 minutes max), even if the account is disabled meanwhile. Refresh is blocked immediately.
 - `ddl-auto=validate` is already on. Any JPA entity needs a matching Flyway migration, or the context fails to start.
 - **Config files:** `application.yml` holds the shared settings, and `application-{dev,test,prod}.yml` override it.
   - `dev` is the default profile. It has local defaults and also reads `backend/.env` through `spring.config.import`. See `backend/.env.example`.

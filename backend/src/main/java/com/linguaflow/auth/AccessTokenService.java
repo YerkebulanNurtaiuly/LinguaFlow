@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class AccessTokenService {
 
-	public static final String ROLE_CLAIM = "role";
+	public static final String ROLE_CLAIM = com.linguaflow.common.security.JwtRoleConverter.ROLE_CLAIM;
 
 	private final JwtEncoder encoder;
 

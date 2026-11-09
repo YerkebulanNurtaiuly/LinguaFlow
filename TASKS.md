@@ -90,7 +90,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`. Short-lived access token (15 min), rotating refresh token stored hashed in DB and sent as HttpOnly, Secure, SameSite cookie.
   _Done when:_ refresh rotation works, reused refresh token is rejected and revokes the family.
 
-- [ ] **AUTH-04 — Spring Security configuration** (M) — _deps: AUTH-03_
+- [x] **AUTH-04 — Spring Security configuration** (M) — _deps: AUTH-03_
   Stateless filter chain, JWT resource server validation, public routes (`/api/auth/**`, health, docs in dev), CSRF strategy matching cookie use, `@AuthenticationPrincipal` helper to get current user ID.
   _Done when:_ protected endpoints return 401 without a token, 403 for wrong role.
 

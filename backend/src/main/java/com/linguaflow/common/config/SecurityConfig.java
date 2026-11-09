@@ -1,29 +1,45 @@
 package com.linguaflow.common.config;
 
+import com.linguaflow.common.security.JwtRoleConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.RequestMatcher;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * Minimal security setup until AUTH-04 adds JWT: the health endpoint (and the API docs
- * when enabled) are public and everything else requires authentication. Security errors raised in the filter chain
- * are handed to the MVC exception resolver so they get the same ProblemDetail body as
- * every other error (see GlobalExceptionHandler).
+ * Stateless JWT security (AUTH-04).
+ * <ul>
+ * <li>Every request except the public routes needs {@code Authorization: Bearer <access
+ * token>}; the token is verified by the {@code JwtDecoder} from auth.JwtConfig
+ * (signature, issuer, expiry). Its {@code role} claim becomes {@code ROLE_USER} /
+ * {@code ROLE_ADMIN}.</li>
+ * <li>Public: health, POST /api/auth/{register,login,refresh,logout}, and the API docs
+ * where they are enabled (dev).</li>
+ * <li>/api/admin/** requires ADMIN; method security ({@code @PreAuthorize}) is enabled for
+ * finer rules.</li>
+ * <li>CSRF is disabled: the API authenticates with a header that browsers never attach on
+ * their own, and the only cookie (the refresh token) is SameSite=Strict and scoped to
+ * /api/auth, so it is not sent on cross-site requests.</li>
+ * <li>401/403 from the filter chain go through the MVC exception resolver, so they get the
+ * same ProblemDetail body as every other error (GlobalExceptionHandler).</li>
+ * </ul>
  */
 @Configuration
+@EnableMethodSecurity
 public class SecurityConfig {
 
-	private static final String[] AUTH_ENDPOINTS = { "/api/auth/register", "/api/auth/login", "/api/auth/refresh",
-			"/api/auth/logout" };
+	private static final String[] PUBLIC_AUTH_ENDPOINTS = { "/api/auth/register", "/api/auth/login",
+			"/api/auth/refresh", "/api/auth/logout" };
 
 	private static final String[] API_DOCS_PATHS = { "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html",
 			"/swagger-ui/**" };
@@ -32,35 +48,33 @@ public class SecurityConfig {
 	SecurityFilterChain securityFilterChain(HttpSecurity http,
 			@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
 			@Value("${springdoc.api-docs.enabled:false}") boolean apiDocsEnabled) throws Exception {
-		http
-			.cors(Customizer.withDefaults())
-			// Auth endpoints need no CSRF token: register/login carry no ambient credentials, and
-			// refresh/logout rely on a SameSite=Strict cookie that browsers never attach to
-			// cross-site requests. The strategy for the rest of the API is finalized in AUTH-04.
-			.csrf(csrf -> csrf.ignoringRequestMatchers(authEndpointMatchers()))
+		AuthenticationEntryPoint unauthorized = (request, response, ex) -> exceptionResolver.resolveException(request,
+				response, null, ex);
+		AccessDeniedHandler forbidden = (request, response, ex) -> exceptionResolver.resolveException(request,
+				response, null, ex);
+
+		http.cors(Customizer.withDefaults())
+			.csrf(AbstractHttpConfigurer::disable)
+			.httpBasic(AbstractHttpConfigurer::disable)
+			.formLogin(AbstractHttpConfigurer::disable)
+			.logout(AbstractHttpConfigurer::disable)
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 			.authorizeHttpRequests(auth -> {
 				auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
-				auth.requestMatchers(HttpMethod.POST, AUTH_ENDPOINTS).permitAll();
+				auth.requestMatchers(HttpMethod.POST, PUBLIC_AUTH_ENDPOINTS).permitAll();
 				// Docs are public only where they are enabled (dev); elsewhere the paths stay locked
 				if (apiDocsEnabled) {
 					auth.requestMatchers(API_DOCS_PATHS).permitAll();
 				}
+				auth.requestMatchers("/api/admin/**").hasRole("ADMIN");
 				auth.anyRequest().authenticated();
 			})
-			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-			.exceptionHandling(errors -> errors
-				.authenticationEntryPoint(
-						(request, response, ex) -> exceptionResolver.resolveException(request, response, null, ex))
-				.accessDeniedHandler(
-						(request, response, ex) -> exceptionResolver.resolveException(request, response, null, ex)));
+			.oauth2ResourceServer(oauth -> oauth
+				.jwt(jwt -> jwt.jwtAuthenticationConverter(new JwtRoleConverter()))
+				.authenticationEntryPoint(unauthorized)
+				.accessDeniedHandler(forbidden))
+			.exceptionHandling(errors -> errors.authenticationEntryPoint(unauthorized).accessDeniedHandler(forbidden));
 		return http.build();
-	}
-
-	private static RequestMatcher[] authEndpointMatchers() {
-		PathPatternRequestMatcher.Builder builder = PathPatternRequestMatcher.withDefaults();
-		return java.util.Arrays.stream(AUTH_ENDPOINTS)
-			.map(path -> builder.matcher(HttpMethod.POST, path))
-			.toArray(RequestMatcher[]::new);
 	}
 
 }

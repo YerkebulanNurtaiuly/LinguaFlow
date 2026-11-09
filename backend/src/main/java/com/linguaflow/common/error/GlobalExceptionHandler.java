@@ -19,6 +19,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
+import org.springframework.security.oauth2.core.OAuth2AuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -59,8 +60,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
 	@ExceptionHandler(AuthenticationException.class)
 	ResponseEntity<Object> handleAuthentication(AuthenticationException ex, WebRequest request) {
-		ProblemDetail body = problem(ErrorCode.UNAUTHORIZED, "Full authentication is required to access this resource");
-		return handleExceptionInternal(ex, body, new HttpHeaders(), ErrorCode.UNAUTHORIZED.status(), request);
+		// RFC 6750: tell bearer clients why; a rejected token gets error="invalid_token"
+		boolean badToken = ex instanceof OAuth2AuthenticationException;
+		HttpHeaders headers = new HttpHeaders();
+		headers.set(HttpHeaders.WWW_AUTHENTICATE, badToken ? "Bearer error=\"invalid_token\"" : "Bearer");
+		ProblemDetail body = problem(ErrorCode.UNAUTHORIZED,
+				badToken ? "Access token is invalid or expired" : "Full authentication is required to access this resource");
+		return handleExceptionInternal(ex, body, headers, ErrorCode.UNAUTHORIZED.status(), request);
 	}
 
 	@ExceptionHandler(AccessDeniedException.class)

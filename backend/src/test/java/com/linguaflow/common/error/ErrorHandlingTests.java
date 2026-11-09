@@ -2,6 +2,8 @@ package com.linguaflow.common.error;
 
 import java.util.List;
 
+import com.linguaflow.auth.JwtConfig;
+import com.linguaflow.common.config.ClockConfig;
 import com.linguaflow.common.config.CorsConfig;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import com.linguaflow.common.config.SecurityConfig;
@@ -36,7 +38,6 @@ import org.springframework.web.bind.annotation.RestController;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -53,7 +54,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = ErrorHandlingTests.TestController.class,
 		properties = "linguaflow.cors.allowed-origins=http://localhost:5173")
 @Import({ ErrorHandlingTests.TestController.class, ErrorHandlingTests.PropertiesConfig.class, SecurityConfig.class,
-		CorsConfig.class })
+		CorsConfig.class, JwtConfig.class, ClockConfig.class })
 @ActiveProfiles("test")
 class ErrorHandlingTests {
 
@@ -68,13 +69,13 @@ class ErrorHandlingTests {
 
 		@Test
 		void validRequestSucceeds() throws Exception {
-			mvc.perform(post("/api/test/items").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+			mvc.perform(post("/api/test/items").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\"Hund\",\"level\":2}")).andExpect(status().isOk());
 		}
 
 		@Test
 		void invalidBodyReturnsFieldErrors() throws Exception {
-			expectProblem(mvc.perform(post("/api/test/items").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+			expectProblem(mvc.perform(post("/api/test/items").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":\" \",\"level\":42}")), 400, "VALIDATION_FAILED", "/api/test/items")
 				.andExpect(jsonPath("$.errors.length()").value(2))
 				.andExpect(jsonPath("$.errors[0].field").value("level"))
@@ -91,7 +92,7 @@ class ErrorHandlingTests {
 
 		@Test
 		void malformedJsonIsRejectedWithoutLeakingParserDetails() throws Exception {
-			expectProblem(mvc.perform(post("/api/test/items").with(csrf()).contentType(MediaType.APPLICATION_JSON)
+			expectProblem(mvc.perform(post("/api/test/items").contentType(MediaType.APPLICATION_JSON)
 				.content("{\"name\":")), 400, "MALFORMED_REQUEST", "/api/test/items")
 				.andExpect(jsonPath("$.detail").value("Request body is missing or not valid JSON"));
 		}
@@ -109,7 +110,7 @@ class ErrorHandlingTests {
 
 		@Test
 		void conflictExceptionMapsTo409() throws Exception {
-			expectProblem(mvc.perform(post("/api/test/conflict").with(csrf())), 409, "CONFLICT", "/api/test/conflict")
+			expectProblem(mvc.perform(post("/api/test/conflict")), 409, "CONFLICT", "/api/test/conflict")
 				.andExpect(jsonPath("$.detail").value("Word already exists"));
 		}
 
@@ -120,12 +121,12 @@ class ErrorHandlingTests {
 
 		@Test
 		void wrongMethodIs405() throws Exception {
-			expectProblem(mvc.perform(post("/api/test/boom").with(csrf())), 405, "METHOD_NOT_ALLOWED", "/api/test/boom");
+			expectProblem(mvc.perform(post("/api/test/boom")), 405, "METHOD_NOT_ALLOWED", "/api/test/boom");
 		}
 
 		@Test
 		void unsupportedContentTypeIs415() throws Exception {
-			expectProblem(mvc.perform(post("/api/test/items").with(csrf()).contentType(MediaType.TEXT_PLAIN).content("x")), 415,
+			expectProblem(mvc.perform(post("/api/test/items").contentType(MediaType.TEXT_PLAIN).content("x")), 415,
 					"UNSUPPORTED_MEDIA_TYPE", "/api/test/items");
 		}
 
@@ -145,13 +146,6 @@ class ErrorHandlingTests {
 				.andExpect(jsonPath("$.sort[0].direction").value("DESC"));
 		}
 
-	}
-
-	@Test
-	@WithMockUser
-	void postWithoutCsrfTokenIs403Problem() throws Exception {
-		// CSRF stays on until AUTH-04 decides the strategy for the refresh-token cookie
-		expectProblem(mvc.perform(post("/api/test/conflict")), 403, "FORBIDDEN", "/api/test/conflict");
 	}
 
 	@Test
