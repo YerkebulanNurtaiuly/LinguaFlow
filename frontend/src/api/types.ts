@@ -38,4 +38,6 @@ export type UpdateLanguageRequest = Schemas['UpdateLanguageRequest']
 export type CefrLevel = NonNullable<UserLanguage['selfAssessedLevel']>
 export type LearningSettings = Schemas['LearningSettings']
 export type LearningSettingsUpdate = Schemas['SettingsUpdate']
-export type ExerciseType = LearningSettings['preferredExerciseTypes'][number]
+export type ExerciseType = NonNullable<
+  LearningSettings['preferredExerciseTypes']
+>[number]
