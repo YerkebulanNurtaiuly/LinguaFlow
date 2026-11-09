@@ -37,7 +37,7 @@ Run Maven from `backend/` with the wrapper. In WSL, call `./mvnw`; on Windows, u
 
 How the app and its tests are set up:
 - Full-context tests `@Import(TestcontainersConfiguration.class)`. That class's `@ServiceConnection` wires the datasource to the container.
-- `/actuator/health` and `POST /api/auth/register` are the only public endpoints. Every other request returns 401 until the JWT security from AUTH-04 replaces `SecurityConfig`. CSRF protection is still on everywhere except registration, so POST tests for other endpoints need `.with(csrf())`.
+- `/actuator/health` and `POST /api/auth/{register,login,refresh,logout}` are the only public endpoints. Every other request returns 401 because AUTH-04 hasn't yet plugged JWT validation into `SecurityConfig`. CSRF protection is still on everywhere except the auth endpoints, so POST tests for other endpoints need `.with(csrf())`.
 - `ddl-auto=validate` is already on. Any JPA entity needs a matching Flyway migration, or the context fails to start.
 - **Config files:** `application.yml` holds the shared settings, and `application-{dev,test,prod}.yml` override it.
   - `dev` is the default profile. It has local defaults and also reads `backend/.env` through `spring.config.import`. See `backend/.env.example`.
@@ -71,6 +71,13 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
 - **Registration (AUTH-02):** `POST /api/auth/register`, handled by `auth.AuthController` and `RegistrationService`. It returns 201 without logging the user in, and 409 with code `EMAIL_TAKEN` when the email is already registered (ignoring case), including when two registrations race.
   - The password policy is `auth.password.@ValidPassword`: at least 10 characters, at most **72 UTF-8 bytes** (BCrypt's limit), not whitespace-only, and not on a common-passwords list.
   - Request records that carry a password override `toString()` so the password can't reach logs.
+- **Tokens (AUTH-03):** `auth.AuthService` handles login and refresh; `AuthController` handles the HTTP side.
+  - **Access token:** an HS256 JWT signed with `JWT_SECRET` (`JwtConfig` provides the `JwtEncoder` and `JwtDecoder`). Claims are `sub` (user UUID), `role`, `iss=linguaflow`, and an expiry of 15 minutes. It's returned in the body as `TokenResponse`.
+  - **Refresh token:** 32 random bytes, sent only as the cookie `lf_refresh` (`HttpOnly; Secure; SameSite=Strict; Path=/api/auth`, 30 days). Only its SHA-256 hash is stored, in `refresh_tokens`.
+  - **Rotation:** every refresh rotates the token within its family. Presenting a spent token revokes the whole family. The revocation is done in `@Transactional(noRollbackFor = ApiException.class)` so it commits even though the request fails. Keep that pattern for any "record, then throw" logic.
+  - **Settings:** token lifetimes live under `linguaflow.security.jwt.*` (`access-token-ttl`, `refresh-token-ttl`, `issuer`) and the cookie under `linguaflow.security.refresh-cookie.*`.
+  - **Config records:** a `@ConfigurationProperties` record must have exactly one constructor, otherwise binding silently fails. Put defaults in the compact constructor.
+  - **Testing time:** use `com.linguaflow.testsupport.MutableClock`, registered as an `@Primary` `Clock` bean in a `@TestConfiguration`, to test expiry. See `AuthFlowTests`.
 - **Error codes:** add a specific `ErrorCode` (like `EMAIL_TAKEN`) when the frontend needs to react to one particular error. Adding one changes the OpenAPI spec, so regenerate the snapshot and the frontend types.
 - **`@WebMvcTest`:** always set `controllers = ...`. Otherwise the slice picks up every app controller and fails on their missing services.
 - **Dev demo data (DB-05):** `backend/src/main/resources/db/dev/R__dev_seed.sql` is a repeatable Flyway migration. It loads only in the dev profile, which adds `classpath:db/dev` to `spring.flyway.locations`; test and prod never see it.

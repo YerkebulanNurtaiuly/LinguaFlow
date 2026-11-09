@@ -86,7 +86,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `POST /api/auth/register` with validation (email format, password policy, duplicates → 409).
   _Done when:_ user is created with hashed password; tests cover edge cases.
 
-- [ ] **AUTH-03 — Login with JWT access + refresh tokens** (M) — _deps: AUTH-02_
+- [x] **AUTH-03 — Login with JWT access + refresh tokens** (M) — _deps: AUTH-02_
   `POST /api/auth/login`, `POST /api/auth/refresh`, `POST /api/auth/logout`. Short-lived access token (15 min), rotating refresh token stored hashed in DB and sent as HttpOnly, Secure, SameSite cookie.
   _Done when:_ refresh rotation works, reused refresh token is rejected and revokes the family.
 

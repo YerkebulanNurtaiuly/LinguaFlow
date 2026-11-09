@@ -1,14 +1,12 @@
 package com.linguaflow.common.persistence;
 
-import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.ZoneId;
-import java.time.ZoneOffset;
 
 import com.linguaflow.LinguaFlowApplication;
 import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.common.config.JpaAuditingConfig;
+import com.linguaflow.testsupport.MutableClock;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -60,32 +58,7 @@ class AuditableEntityTests {
 
 		@Bean
 		MutableClock clock() {
-			return new MutableClock();
-		}
-
-	}
-
-	static class MutableClock extends Clock {
-
-		private Instant now = Instant.EPOCH;
-
-		void set(Instant now) {
-			this.now = now;
-		}
-
-		@Override
-		public ZoneId getZone() {
-			return ZoneOffset.UTC;
-		}
-
-		@Override
-		public Clock withZone(ZoneId zone) {
-			return this;
-		}
-
-		@Override
-		public Instant instant() {
-			return now;
+			return new MutableClock(Instant.EPOCH);
 		}
 
 	}

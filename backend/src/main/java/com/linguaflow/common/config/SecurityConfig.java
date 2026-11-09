@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -21,6 +22,9 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 @Configuration
 public class SecurityConfig {
 
+	private static final String[] AUTH_ENDPOINTS = { "/api/auth/register", "/api/auth/login", "/api/auth/refresh",
+			"/api/auth/logout" };
+
 	private static final String[] API_DOCS_PATHS = { "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html",
 			"/swagger-ui/**" };
 
@@ -30,13 +34,13 @@ public class SecurityConfig {
 			@Value("${springdoc.api-docs.enabled:false}") boolean apiDocsEnabled) throws Exception {
 		http
 			.cors(Customizer.withDefaults())
-			// Registration creates nothing a forged cross-site request could abuse; the CSRF
-			// strategy for cookie-based endpoints (refresh token) is decided in AUTH-04
-			.csrf(csrf -> csrf.ignoringRequestMatchers(PathPatternRequestMatcher.withDefaults()
-				.matcher(HttpMethod.POST, "/api/auth/register")))
+			// Auth endpoints need no CSRF token: register/login carry no ambient credentials, and
+			// refresh/logout rely on a SameSite=Strict cookie that browsers never attach to
+			// cross-site requests. The strategy for the rest of the API is finalized in AUTH-04.
+			.csrf(csrf -> csrf.ignoringRequestMatchers(authEndpointMatchers()))
 			.authorizeHttpRequests(auth -> {
 				auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
-				auth.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll();
+				auth.requestMatchers(HttpMethod.POST, AUTH_ENDPOINTS).permitAll();
 				// Docs are public only where they are enabled (dev); elsewhere the paths stay locked
 				if (apiDocsEnabled) {
 					auth.requestMatchers(API_DOCS_PATHS).permitAll();
@@ -50,6 +54,13 @@ public class SecurityConfig {
 				.accessDeniedHandler(
 						(request, response, ex) -> exceptionResolver.resolveException(request, response, null, ex)));
 		return http.build();
+	}
+
+	private static RequestMatcher[] authEndpointMatchers() {
+		PathPatternRequestMatcher.Builder builder = PathPatternRequestMatcher.withDefaults();
+		return java.util.Arrays.stream(AUTH_ENDPOINTS)
+			.map(path -> builder.matcher(HttpMethod.POST, path))
+			.toArray(RequestMatcher[]::new);
 	}
 
 }

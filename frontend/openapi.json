@@ -16,7 +16,7 @@
     "bearerAuth" : [ ]
   } ],
   "tags" : [ {
-    "description" : "Registration and login",
+    "description" : "Registration, login and session tokens",
     "name" : "Auth"
   }, {
     "description" : "Monitor and interact",
@@ -101,6 +101,255 @@
         },
         "summary" : "Actuator web endpoint 'health'",
         "tags" : [ "Actuator" ]
+      }
+    },
+    "/api/auth/login" : {
+      "post" : {
+        "description" : "Returns a short-lived access token and sets the HttpOnly refresh-token cookie (path /api/auth).",
+        "operationId" : "login",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "User-Agent",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "Logged in"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "Wrong email or password (code INVALID_CREDENTIALS)"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "Account disabled (code ACCOUNT_DISABLED)"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Log in",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/auth/logout" : {
+      "post" : {
+        "description" : "Revokes the refresh-token session and clears the cookie. Idempotent.",
+        "operationId" : "logout",
+        "parameters" : [ {
+          "description" : "Refresh token (set by login)",
+          "in" : "cookie",
+          "name" : "lf_refresh",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Logged out"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Log out",
+        "tags" : [ "Auth" ]
+      }
+    },
+    "/api/auth/refresh" : {
+      "post" : {
+        "description" : "Uses and rotates the refresh-token cookie. Reusing an old refresh token revokes the whole login session.",
+        "operationId" : "refresh",
+        "parameters" : [ {
+          "description" : "Refresh token (set by login)",
+          "in" : "cookie",
+          "name" : "lf_refresh",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "header",
+          "name" : "User-Agent",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "New access token; cookie rotated"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description" : "Missing, expired, revoked or reused refresh token (code INVALID_REFRESH_TOKEN)"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "security" : [ ],
+        "summary" : "Get a new access token",
+        "tags" : [ "Auth" ]
       }
     },
     "/api/auth/register" : {
@@ -203,7 +452,7 @@
           "code" : {
             "type" : "string",
             "description" : "Stable machine-readable error code",
-            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "UNAUTHORIZED", "FORBIDDEN", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
+            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
           },
           "correlationId" : {
             "type" : "string",
@@ -269,6 +518,24 @@
           }
         }
       },
+      "LoginRequest" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string",
+            "example" : "demo@linguaflow.local",
+            "maxLength" : 320,
+            "minLength" : 0
+          },
+          "password" : {
+            "type" : "string",
+            "example" : "demo-password-123",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "email", "password" ]
+      },
       "RegistrationRequest" : {
         "type" : "object",
         "properties" : {
@@ -310,6 +577,28 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        }
+      },
+      "TokenResponse" : {
+        "type" : "object",
+        "properties" : {
+          "accessToken" : {
+            "type" : "string"
+          },
+          "expiresAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "expiresIn" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Lifetime in seconds",
+            "example" : 900
+          },
+          "tokenType" : {
+            "type" : "string",
+            "example" : "Bearer"
           }
         }
       }

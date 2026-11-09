@@ -1,5 +1,6 @@
 package com.linguaflow.common.config;
 
+import java.time.Duration;
 import java.util.List;
 
 import jakarta.validation.Valid;
@@ -24,13 +25,46 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @No
 		}
 	}
 
-	public record Security(@Valid @NotNull Jwt jwt) {
+	public record Security(@Valid @NotNull Jwt jwt, RefreshCookie refreshCookie) {
+
+		public Security {
+			if (refreshCookie == null) {
+				refreshCookie = new RefreshCookie(null, null, null);
+			}
+		}
+
 	}
 
+	/**
+	 * Token settings. The secret signs access tokens with HS256 (32+ characters = 256+
+	 * bits). Defaults: access tokens live 15 minutes, refresh tokens 30 days.
+	 */
 	public record Jwt(
 			@NotBlank
 			@Pattern(regexp = "^(?!\\$\\{).*", message = "is not set: provide the JWT_SECRET environment variable")
-			@Size(min = 32, message = "must be at least 32 characters") String secret) {
+			@Size(min = 32, message = "must be at least 32 characters") String secret,
+			String issuer, Duration accessTokenTtl, Duration refreshTokenTtl) {
+
+		public Jwt {
+			issuer = (issuer == null || issuer.isBlank()) ? "linguaflow" : issuer;
+			accessTokenTtl = (accessTokenTtl == null) ? Duration.ofMinutes(15) : accessTokenTtl;
+			refreshTokenTtl = (refreshTokenTtl == null) ? Duration.ofDays(30) : refreshTokenTtl;
+		}
+
+	}
+
+	/**
+	 * The refresh-token cookie. {@code secure} should only be false for plain-HTTP setups
+	 * other than localhost (browsers accept Secure cookies on http://localhost).
+	 */
+	public record RefreshCookie(String name, Boolean secure, String sameSite) {
+
+		public RefreshCookie {
+			name = (name == null || name.isBlank()) ? "lf_refresh" : name;
+			secure = (secure == null) ? Boolean.TRUE : secure;
+			sameSite = (sameSite == null || sameSite.isBlank()) ? "Strict" : sameSite;
+		}
+
 	}
 
 	/** {@code apiKey} may be blank: the app then uses the fake LLM client. */

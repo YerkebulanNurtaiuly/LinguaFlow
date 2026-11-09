@@ -18,3 +18,5 @@ export type ApiFieldError = Schemas['FieldError']
 // Auth
 export type RegistrationRequest = Schemas['RegistrationRequest']
 export type RegistrationResponse = Schemas['RegistrationResponse']
+export type LoginRequest = Schemas['LoginRequest']
+export type TokenResponse = Schemas['TokenResponse']
