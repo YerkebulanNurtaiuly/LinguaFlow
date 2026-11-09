@@ -79,7 +79,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 3: Authentication (`AUTH`)
 
-- [ ] **AUTH-01 — User entity & repository** (S) — _deps: DB-02_
+- [x] **AUTH-01 — User entity & repository** (S) — _deps: DB-02_
   Email (unique, case-insensitive), password hash (BCrypt/Argon2), display name, role (`USER`, `ADMIN`), enabled flag, timestamps.
 
 - [ ] **AUTH-02 — Registration endpoint** (M) — _deps: AUTH-01, INF-07_

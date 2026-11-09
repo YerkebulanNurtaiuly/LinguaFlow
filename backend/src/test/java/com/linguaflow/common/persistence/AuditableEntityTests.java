@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 
+import com.linguaflow.LinguaFlowApplication;
 import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.common.config.JpaAuditingConfig;
 import org.junit.jupiter.api.Test;
@@ -53,7 +54,8 @@ class AuditableEntityTests {
 	}
 
 	@TestConfiguration(proxyBeanMethods = false)
-	@EntityScan(basePackageClasses = AuditedTestEntity.class)
+	// App entities too: repositories in com.linguaflow need their entities to be managed
+	@EntityScan(basePackageClasses = { AuditedTestEntity.class, LinguaFlowApplication.class })
 	static class Config {
 
 		@Bean
