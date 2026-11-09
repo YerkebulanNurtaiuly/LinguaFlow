@@ -4,9 +4,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend with a planned React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 and INF-02 are done:
+LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 are done:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
-- `frontend/`, `docs/database/` and `docs/technical-specification/` are still placeholders.
+- `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
+- `docs/database/` and `docs/technical-specification/` are still placeholders.
 - There are no Flyway migrations, entities, Docker Compose or CI yet.
 
 - `README.md` describes the product vision, features, and the target architecture.
@@ -41,6 +42,33 @@ How the app and its tests are set up:
 - Config is still `application.properties`. Moving to `application.yml` with profiles is task INF-05.
 
 Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugin` for both compile and testCompile.
+
+## Frontend
+
+Run npm from `frontend/`. It needs Node >= 24 (`.nvmrc` says 26). WSL has no system Node, so set one up or use Windows.
+
+```bash
+npm install
+npm run dev                  # Vite dev server on :5173; proxies /api and /actuator to the backend (BACKEND_URL, default http://localhost:8080)
+npm run build                # tsc -b + vite build
+npm run lint                 # ESLint (flat config, Prettier-compatible)
+npm run format               # Prettier write (format:check to verify)
+npm test                     # Vitest, run once (test:watch for watch mode)
+npx vitest run src/app/routes.test.tsx        # single test file
+npx vitest run -t "not-found page"            # tests matching a name
+```
+
+The stack:
+- **Core:** React 19, React Router 8 (imported from `react-router`, data router via `createBrowserRouter`), TanStack Query 5, Axios, Zod 4, React Hook Form.
+- **Styling:** Tailwind CSS 4, set up through `@tailwindcss/vite` and a single `@import 'tailwindcss'` in `src/index.css`. There's no `tailwind.config.js`.
+- **Testing:** Vitest and Testing Library in jsdom.
+
+Conventions:
+- **Imports:** `@/` points to `src/`.
+- **TypeScript:** pinned to `~6.0` because `typescript-eslint` doesn't support 6.1+ or TS 7 yet. Strict mode and `noUncheckedIndexedAccess` are on.
+- **HTTP:** API calls go through `src/lib/api.ts`, an Axios instance with base URL `VITE_API_BASE_URL`, default `/api`. Validate responses with Zod schemas.
+- **Routes:** defined once in `src/app/routes.tsx`. Tests render them with `renderRoute(path)` from `src/test/renderWithProviders.tsx`, which uses a memory router and a fresh QueryClient.
+- **Formatting:** Prettier with no semicolons and single quotes.
 
 ## Target architecture (from README / TASKS.md)
 

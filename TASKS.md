@@ -24,7 +24,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Package layout as a modular monolith: `com.linguaflow.{auth,user,vocabulary,grammar,ai,flashcard,exercise,learning,progress,common}`.
   _Done when:_ `mvn verify` passes and `/actuator/health` returns `UP`.
 
-- [ ] **INF-03 — Bootstrap React frontend** (S) — _deps: INF-01_
+- [x] **INF-03 — Bootstrap React frontend** (S) — _deps: INF-01_
   Vite + React + TypeScript (strict), Tailwind CSS, ESLint + Prettier, React Router, TanStack Query, Axios (or fetch wrapper), Zod + React Hook Form, Vitest + React Testing Library.
   _Done when:_ `npm run dev`, `npm run build`, `npm run lint`, `npm test` all succeed.
 
