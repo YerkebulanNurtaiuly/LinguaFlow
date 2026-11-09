@@ -15,12 +15,12 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 1: Repository & Tooling (`INF`)
 
-- [ ] **INF-01 — Initialize monorepo** (S)
+- [x] **INF-01 — Initialize monorepo** (S)
   Create `backend/`, `frontend/`, `docs/database/`, `docs/technical-specification/`, root `README.md`, `.gitignore`, `.editorconfig`, `LICENSE`.
   _Done when:_ structure matches the README and is committed.
 
-- [ ] **INF-02 — Bootstrap Spring Boot backend** (S) — _deps: INF-01_
-  Spring Boot 3.x, Java 21, Maven. Dependencies: web, validation, data-jpa, security, flyway, postgresql, springdoc-openapi, lombok (optional), actuator, test, testcontainers.
+- [x] **INF-02 — Bootstrap Spring Boot backend** (S) — _deps: INF-01_
+  Spring Boot 4.x, Java 21, Maven. Dependencies: web, validation, data-jpa, security, flyway, postgresql, springdoc-openapi, lombok (optional), actuator, test, testcontainers.
   Package layout as a modular monolith: `com.linguaflow.{auth,user,vocabulary,grammar,ai,flashcard,exercise,learning,progress,common}`.
   _Done when:_ `mvn verify` passes and `/actuator/health` returns `UP`.
 
