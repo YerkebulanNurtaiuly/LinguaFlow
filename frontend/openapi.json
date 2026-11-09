@@ -176,6 +176,16 @@
             },
             "description" : "Resource not found"
           },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Too many login attempts from this IP (code TOO_MANY_REQUESTS; see Retry-After)"
+          },
           "500" : {
             "content" : {
               "application/problem+json" : {
@@ -426,6 +436,16 @@
               }
             },
             "description" : "Email already registered (code EMAIL_TAKEN)"
+          },
+          "429" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Too many registrations from this IP (code TOO_MANY_REQUESTS; see Retry-After)"
           },
           "500" : {
             "content" : {

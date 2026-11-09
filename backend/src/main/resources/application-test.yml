@@ -6,3 +6,6 @@ linguaflow:
       secret: test-only-jwt-secret-not-used-outside-tests-0123456789
   ai:
     api-key: ""
+  # Auth tests log in many times in a row; RateLimitTests switch it back on
+  rate-limit:
+    enabled: false

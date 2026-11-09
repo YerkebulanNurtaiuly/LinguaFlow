@@ -61,6 +61,12 @@ springdoc:
     - group: ai
       packages-to-scan: com.linguaflow.ai
 
+server:
+  # Behind nginx: take the client IP from X-Forwarded-For, but only when the request comes
+  # from a private-network proxy (Tomcat's default internal-proxies), so clients cannot
+  # spoof their IP to dodge rate limits.
+  forward-headers-strategy: native
+
 management:
   endpoints:
     web:

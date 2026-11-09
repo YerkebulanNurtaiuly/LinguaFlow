@@ -4,10 +4,13 @@ import java.net.URI;
 import java.time.Clock;
 
 import com.linguaflow.common.error.ApiException;
+import com.linguaflow.common.error.ApiProblem;
 import com.linguaflow.common.error.ErrorCode;
 import com.linguaflow.user.User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.security.SecurityRequirements;
@@ -51,6 +54,9 @@ class AuthController {
 	@Operation(summary = "Create an account", description = "Does not log the user in; call /api/auth/login next.")
 	@ApiResponse(responseCode = "201", description = "Account created")
 	@ApiResponse(responseCode = "409", description = "Email already registered (code EMAIL_TAKEN)")
+	@ApiResponse(responseCode = "429", description = "Too many registrations from this IP (code TOO_MANY_REQUESTS; "
+			+ "see Retry-After)", content = @Content(mediaType = "application/problem+json",
+					schema = @Schema(implementation = ApiProblem.class)))
 	ResponseEntity<RegistrationResponse> register(@Valid @RequestBody RegistrationRequest request) {
 		User user = registrationService.register(request);
 		return ResponseEntity.created(URI.create("/api/users/me")).body(RegistrationResponse.from(user));
@@ -62,6 +68,9 @@ class AuthController {
 	@ApiResponse(responseCode = "200", description = "Logged in")
 	@ApiResponse(responseCode = "401", description = "Wrong email or password (code INVALID_CREDENTIALS)")
 	@ApiResponse(responseCode = "403", description = "Account disabled (code ACCOUNT_DISABLED)")
+	@ApiResponse(responseCode = "429", description = "Too many login attempts from this IP (code TOO_MANY_REQUESTS; "
+			+ "see Retry-After)", content = @Content(mediaType = "application/problem+json",
+					schema = @Schema(implementation = ApiProblem.class)))
 	ResponseEntity<TokenResponse> login(@Valid @RequestBody LoginRequest request,
 			@RequestHeader(value = HttpHeaders.USER_AGENT, required = false) String userAgent) {
 		return withTokens(authService.login(request, userAgent));

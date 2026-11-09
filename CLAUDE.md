@@ -78,6 +78,12 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
 - **Registration (AUTH-02):** `POST /api/auth/register`, handled by `auth.AuthController` and `RegistrationService`. It returns 201 without logging the user in, and 409 with code `EMAIL_TAKEN` when the email is already registered (ignoring case), including when two registrations race.
   - The password policy is `auth.password.@ValidPassword`: at least 10 characters, at most **72 UTF-8 bytes** (BCrypt's limit), not whitespace-only, and not on a common-passwords list.
   - Request records that carry a password override `toString()` so the password can't reach logs.
+- **Rate limiting (AUTH-06):** `common.ratelimit.AuthRateLimitFilter` limits `POST /api/auth/login` (10 per minute) and `/api/auth/register` (5 per hour) per client IP.
+  - It uses Bucket4j token buckets in a bounded Caffeine cache, and runs before Spring Security, so floods are rejected before any password hashing.
+  - Over the limit, the response is 429 `TOO_MANY_REQUESTS` with `Retry-After`.
+  - **Settings:** `linguaflow.rate-limit.{enabled,login,register}`, each limit being `{requests, period}`. It's **off in the test profile**; `RateLimitTests` switches it on with small limits, using a different IP per test.
+  - **Client IP:** it's `request.getRemoteAddr()`. Because of `server.forward-headers-strategy: native`, Tomcat takes `X-Forwarded-For` only from private-network proxies such as nginx.
+  - **Single instance only:** buckets live in each instance's memory. Move to a shared Bucket4j backend (Redis or JDBC) before running several instances.
 - **Ownership (AUTH-05):** every user-owned entity implements `common.persistence.OwnedEntity`, and its repository extends `OwnedRepository<T>`, **not** `JpaRepository`.
   - `OwnedRepository` only offers owner-scoped methods: `findByIdAndUserId`, `existsByIdAndUserId`, `findAllByUserId(Pageable)`, `countByUserId`, `deleteByIdAndUserId`, plus `save`/`saveAndFlush`.
   - In services, use `repo.requireOwned(id, userId)`. It throws the same 404 ("Resource not found") whether the resource is missing or belongs to someone else.

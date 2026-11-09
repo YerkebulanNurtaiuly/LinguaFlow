@@ -17,11 +17,15 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties("linguaflow")
-public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @NotNull Ai ai, Cors cors) {
+public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @NotNull Ai ai, Cors cors,
+		@Valid RateLimit rateLimit) {
 
 	public LinguaFlowProperties {
 		if (cors == null) {
 			cors = new Cors(List.of());
+		}
+		if (rateLimit == null) {
+			rateLimit = new RateLimit(null, null, null);
 		}
 	}
 
@@ -83,6 +87,24 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @No
 			allowedOrigins = (allowedOrigins == null) ? List.of() : List.copyOf(allowedOrigins);
 		}
 
+	}
+
+	/**
+	 * Per-client-IP limits for the public auth endpoints (AUTH-06). Defaults: 10 logins per
+	 * minute, 5 registrations per hour. Disabled in the test profile.
+	 */
+	public record RateLimit(Boolean enabled, @Valid Limit login, @Valid Limit register) {
+
+		public RateLimit {
+			enabled = (enabled == null) ? Boolean.TRUE : enabled;
+			login = (login == null) ? new Limit(10, Duration.ofMinutes(1)) : login;
+			register = (register == null) ? new Limit(5, Duration.ofHours(1)) : register;
+		}
+
+	}
+
+	/** {@code requests} allowed per {@code period}, refilled gradually. */
+	public record Limit(@jakarta.validation.constraints.Positive int requests, @NotNull Duration period) {
 	}
 
 }
