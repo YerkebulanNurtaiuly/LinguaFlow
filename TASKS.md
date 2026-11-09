@@ -59,6 +59,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Produce `docs/database/schema.md` (+ diagram) covering all entities below, keys, indexes, constraints, and cascade rules.
   Core tables: `users`, `refresh_tokens`, `languages`, `user_languages`, `study_sessions`, `vocabulary_items`, `vocabulary_examples`, `grammar_topics`, `session_vocabulary`, `session_grammar`, `flashcards`, `flashcard_reviews`, `srs_state`, `exercise_sets`, `exercises`, `exercise_attempts`, `mistakes`, `ai_requests` (audit/cost log), `practice_sessions`.
   _Done when:_ schema reviewed and approved.
+  _Status:_ draft in `docs/database/schema.md`, awaiting review (open questions in section 6).
 
 - [ ] **DB-02 — Flyway setup + baseline migration** (S) — _deps: INF-02, DB-01_
   `V1__init.sql` for `users`, `languages`, `user_languages`; seed German (`de`) and English (`en`) in `languages`.

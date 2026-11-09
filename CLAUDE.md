@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-09 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
-- `docs/database/` and `docs/technical-specification/` are still placeholders.
+- `docs/database/schema.md` is the schema design from DB-01, still a draft awaiting review. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
 - There are no Flyway migrations, entities, Docker Compose or CI yet.
 
 - `README.md` describes the product vision, features, and the target architecture.
