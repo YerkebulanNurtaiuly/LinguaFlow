@@ -1,19 +1,14 @@
 package com.linguaflow.auth;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
 import java.util.UUID;
 
 import com.linguaflow.common.config.LinguaFlowProperties;
 import com.linguaflow.common.error.ApiException;
 import com.linguaflow.common.error.ErrorCode;
+import com.linguaflow.common.security.SecureTokens;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -28,11 +23,7 @@ public class RefreshTokenService {
 
 	private static final Logger log = LoggerFactory.getLogger(RefreshTokenService.class);
 
-	private static final int TOKEN_BYTES = 32;
-
 	private static final int MAX_USER_AGENT_LENGTH = 300;
-
-	private final SecureRandom random = new SecureRandom();
 
 	private final RefreshTokenRepository tokens;
 
@@ -80,6 +71,12 @@ public class RefreshTokenService {
 		return new Rotation(current.getUserId(), next.raw());
 	}
 
+	/** Ends every session of the user (e.g. after a password reset). */
+	@Transactional
+	public int revokeAllForUser(UUID userId) {
+		return tokens.revokeAllForUser(userId, clock.instant());
+	}
+
 	/** Logout: revokes the token's whole family. Unknown tokens are ignored (idempotent). */
 	@Transactional
 	public void revokeFamilyOf(String rawToken) {
@@ -88,9 +85,7 @@ public class RefreshTokenService {
 	}
 
 	private Created create(UUID userId, UUID familyId, String userAgent) {
-		byte[] bytes = new byte[TOKEN_BYTES];
-		random.nextBytes(bytes);
-		String raw = Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
+		String raw = SecureTokens.generate();
 		Instant now = clock.instant();
 		RefreshToken token = tokens.save(new RefreshToken(userId, hash(raw), familyId, now, now.plus(ttl),
 				truncate(userAgent)));
@@ -98,13 +93,7 @@ public class RefreshTokenService {
 	}
 
 	static String hash(String rawToken) {
-		try {
-			byte[] digest = MessageDigest.getInstance("SHA-256").digest(rawToken.getBytes(StandardCharsets.UTF_8));
-			return HexFormat.of().formatHex(digest);
-		}
-		catch (NoSuchAlgorithmException ex) {
-			throw new IllegalStateException("SHA-256 not available", ex);
-		}
+		return SecureTokens.hash(rawToken);
 	}
 
 	private static String truncate(String userAgent) {

@@ -21,9 +21,12 @@ public class RegistrationService {
 
 	private final PasswordEncoder passwordEncoder;
 
-	RegistrationService(UserRepository users, PasswordEncoder passwordEncoder) {
+	private final AccountService accounts;
+
+	RegistrationService(UserRepository users, PasswordEncoder passwordEncoder, AccountService accounts) {
 		this.users = users;
 		this.passwordEncoder = passwordEncoder;
+		this.accounts = accounts;
 	}
 
 	/**
@@ -47,6 +50,7 @@ public class RegistrationService {
 			throw ex;
 		}
 		log.info("Registered user {}", user.getId());
+		accounts.sendVerificationEmail(user.getId());
 		return user;
 	}
 

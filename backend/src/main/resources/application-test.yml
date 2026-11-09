@@ -9,3 +9,5 @@ linguaflow:
   # Auth tests log in many times in a row; RateLimitTests switch it back on
   rate-limit:
     enabled: false
+  mail:
+    mode: log

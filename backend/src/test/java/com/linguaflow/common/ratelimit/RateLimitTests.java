@@ -24,7 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @SpringBootTest(properties = { "linguaflow.rate-limit.enabled=true", "linguaflow.rate-limit.login.requests=3",
 		"linguaflow.rate-limit.login.period=1m", "linguaflow.rate-limit.register.requests=2",
-		"linguaflow.rate-limit.register.period=1h" })
+		"linguaflow.rate-limit.register.period=1h", "linguaflow.rate-limit.password-reset.requests=2",
+		"linguaflow.rate-limit.password-reset.period=1h" })
 @AutoConfigureMockMvc
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
@@ -61,6 +62,20 @@ class RateLimitTests {
 
 		// The login budget of the same IP is untouched
 		login("203.0.113.4").andExpect(status().isUnauthorized());
+	}
+
+	@Test
+	void passwordResetRequestsAreLimited() throws Exception {
+		for (int i = 0; i < 2; i++) {
+			resetRequest("203.0.113.6").andExpect(status().isAccepted());
+		}
+		resetRequest("203.0.113.6").andExpect(status().isTooManyRequests());
+	}
+
+	private ResultActions resetRequest(String ip) throws Exception {
+		return mvc.perform(post("/api/auth/password-reset/request").with(fromIp(ip))
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("{\"email\":\"nobody@example.de\"}"));
 	}
 
 	@Test

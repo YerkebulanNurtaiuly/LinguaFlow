@@ -20,7 +20,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * Rate-limits POST /api/auth/login and /api/auth/register per client IP (AUTH-06). Runs
+ * Rate-limits POST /api/auth/login, /register and /password-reset/request per client IP
+ * (AUTH-06). Runs
  * right after the correlation-ID filter and before Spring Security, so floods are cut off
  * before any password hashing. Rejections go through the MVC exception resolver and get
  * the standard ProblemDetail body (429, code TOO_MANY_REQUESTS, Retry-After header).
@@ -45,7 +46,8 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
 		LinguaFlowProperties.RateLimit settings = properties.rateLimit();
 		this.enabled = settings.enabled();
 		this.limitersByPath = Map.of("/api/auth/login", new RateLimiter("login", settings.login()),
-				"/api/auth/register", new RateLimiter("register", settings.register()));
+				"/api/auth/register", new RateLimiter("register", settings.register()),
+				"/api/auth/password-reset/request", new RateLimiter("password-reset", settings.passwordReset()));
 		this.exceptionResolver = exceptionResolver;
 	}
 

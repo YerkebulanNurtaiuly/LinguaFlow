@@ -100,7 +100,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AUTH-06 — Rate limiting on auth endpoints** (S) — _deps: AUTH-03_
   Bucket4j (or similar) limit on login/register per IP.
 
-- [ ] **AUTH-07 — Password reset & email verification** (M, optional for MVP) — _deps: AUTH-03_
+- [x] **AUTH-07 — Password reset & email verification** (M, optional for MVP) — _deps: AUTH-03_
   Token-based flows; pluggable mail sender (log-only in dev).
 
 ### Epic 4: User & Language Management (`USR`)

@@ -41,7 +41,7 @@ class MigrationTests {
 	void allMigrationsAreAppliedAndValid() {
 		MigrationInfo[] applied = flyway.info().applied();
 		assertThat(applied).isNotEmpty().allMatch(m -> m.getState() == MigrationState.SUCCESS);
-		assertThat(Arrays.stream(applied).map(m -> m.getVersion().getVersion())).contains("1", "2", "3");
+		assertThat(Arrays.stream(applied).map(m -> m.getVersion().getVersion())).contains("1", "2", "3", "4");
 		assertThat(flyway.info().pending()).isEmpty();
 		assertThat(flyway.validateWithResult().validationSuccessful).isTrue();
 	}

@@ -18,23 +18,66 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("linguaflow")
 public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @NotNull Ai ai, Cors cors,
-		@Valid RateLimit rateLimit) {
+		@Valid RateLimit rateLimit, App app, Mail mail) {
 
 	public LinguaFlowProperties {
+		if (app == null) {
+			app = new App(null);
+		}
+		if (mail == null) {
+			mail = new Mail(null, null);
+		}
 		if (cors == null) {
 			cors = new Cors(List.of());
 		}
 		if (rateLimit == null) {
-			rateLimit = new RateLimit(null, null, null);
+			rateLimit = new RateLimit(null, null, null, null);
 		}
 	}
 
-	public record Security(@Valid @NotNull Jwt jwt, RefreshCookie refreshCookie) {
+	public record Security(@Valid @NotNull Jwt jwt, RefreshCookie refreshCookie, ActionTokens actionTokens) {
 
 		public Security {
 			if (refreshCookie == null) {
 				refreshCookie = new RefreshCookie(null, null, null);
 			}
+			if (actionTokens == null) {
+				actionTokens = new ActionTokens(null, null);
+			}
+		}
+
+	}
+
+	/** Lifetimes of emailed links (AUTH-07). Defaults: verification 48 h, password reset 1 h. */
+	public record ActionTokens(Duration emailVerificationTtl, Duration passwordResetTtl) {
+
+		public ActionTokens {
+			emailVerificationTtl = (emailVerificationTtl == null) ? Duration.ofHours(48) : emailVerificationTtl;
+			passwordResetTtl = (passwordResetTtl == null) ? Duration.ofHours(1) : passwordResetTtl;
+		}
+
+	}
+
+	/** Public URL of the frontend, used to build links in emails. */
+	public record App(String frontendUrl) {
+
+		public App {
+			frontendUrl = (frontendUrl == null || frontendUrl.isBlank()) ? "http://localhost:5173"
+					: frontendUrl.replaceAll("/+$", "");
+		}
+
+	}
+
+	/**
+	 * Outgoing mail. {@code mode}: {@code log} writes emails (including links) to the log,
+	 * for dev/test only; {@code disabled} (the default) sends nothing and logs nothing
+	 * sensitive. A real SMTP mode can be added later.
+	 */
+	public record Mail(String mode, String from) {
+
+		public Mail {
+			mode = (mode == null || mode.isBlank()) ? "disabled" : mode;
+			from = (from == null || from.isBlank()) ? "LinguaFlow <no-reply@linguaflow.local>" : from;
 		}
 
 	}
@@ -91,14 +134,15 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @No
 
 	/**
 	 * Per-client-IP limits for the public auth endpoints (AUTH-06). Defaults: 10 logins per
-	 * minute, 5 registrations per hour. Disabled in the test profile.
+	 * minute, 5 registrations and 5 password-reset requests per hour. Disabled in the test profile.
 	 */
-	public record RateLimit(Boolean enabled, @Valid Limit login, @Valid Limit register) {
+	public record RateLimit(Boolean enabled, @Valid Limit login, @Valid Limit register, @Valid Limit passwordReset) {
 
 		public RateLimit {
 			enabled = (enabled == null) ? Boolean.TRUE : enabled;
 			login = (login == null) ? new Limit(10, Duration.ofMinutes(1)) : login;
 			register = (register == null) ? new Limit(5, Duration.ofHours(1)) : register;
+			passwordReset = (passwordReset == null) ? new Limit(5, Duration.ofHours(1)) : passwordReset;
 		}
 
 	}

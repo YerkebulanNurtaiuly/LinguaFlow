@@ -8,7 +8,7 @@ LinguaFlow is an AI-assisted language-learning platform (German first), built as
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
-- Flyway migrations exist up to `V3__practice_and_progress.sql`. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet; they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use. There's no Docker Compose yet.
+- Flyway migrations exist up to `V4__user_action_tokens.sql` (V4 is AUTH-07). V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet; they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use. There's no Docker Compose yet.
 
 - `README.md` describes the product vision, features, and the target architecture.
 - `TASKS.md` is the full implementation backlog. Task IDs look like `INF-02`, `VOC-05`, and so on, and each has deps and a "Done when" check. It also gives the milestones and the critical path. When the user refers to a task ID, look it up there and treat its "Done when" line as the acceptance criteria.
@@ -38,7 +38,7 @@ Run Maven from `backend/` with the wrapper. In WSL, call `./mvnw`; on Windows, u
 How the app and its tests are set up:
 - Full-context tests `@Import(TestcontainersConfiguration.class)`. That class's `@ServiceConnection` wires the datasource to the container.
 - **Security (AUTH-04):** `common.config.SecurityConfig` is a stateless JWT resource server.
-  - **Public routes:** health, `POST /api/auth/{register,login,refresh,logout}`, and the API docs in dev. Everything else needs `Authorization: Bearer <access token>`.
+  - **Public routes:** health, `POST /api/auth/{register,login,refresh,logout,verify-email,password-reset/request,password-reset}`, and the API docs in dev. Everything else needs `Authorization: Bearer <access token>`.
   - **Roles:** `/api/admin/**` requires `ROLE_ADMIN`, and `@EnableMethodSecurity` is on, so `@PreAuthorize("hasRole('ADMIN')")` works.
   - **Errors:** a missing or invalid token gets 401 with `WWW-Authenticate: Bearer` (`error="invalid_token"` for a rejected token); a wrong role gets 403. Both use the standard ProblemDetail body.
   - **CSRF is disabled on purpose.** The API authenticates with a header, and the only cookie (the refresh token) is `SameSite=Strict` and scoped to `/api/auth`. Don't add cookie-based authentication elsewhere without revisiting this.
@@ -78,6 +78,18 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
 - **Registration (AUTH-02):** `POST /api/auth/register`, handled by `auth.AuthController` and `RegistrationService`. It returns 201 without logging the user in, and 409 with code `EMAIL_TAKEN` when the email is already registered (ignoring case), including when two registrations race.
   - The password policy is `auth.password.@ValidPassword`: at least 10 characters, at most **72 UTF-8 bytes** (BCrypt's limit), not whitespace-only, and not on a common-passwords list.
   - Request records that carry a password override `toString()` so the password can't reach logs.
+- **Email verification and password reset (AUTH-07):** `auth.AccountService` and `AccountController`.
+  - **Tokens:** emailed links carry single-use tokens from `user_action_tokens`, stored as SHA-256 hashes (`common.security.SecureTokens`, also used for refresh tokens). Verification links last 48 hours and reset links 1 hour. Issuing a new link invalidates the user's older unused one.
+  - **Verification:** registration sends the link automatically. Logged-in users can ask for a new one with `POST /api/auth/verify-email/request`. Login doesn't require a verified email.
+  - **Reset request:** `POST /api/auth/password-reset/request` always returns 202, whether or not the email is registered, and is rate-limited.
+  - **Reset:** `POST /api/auth/password-reset` sets the new password and revokes all the user's refresh tokens.
+  - **Bad links:** an invalid, used or expired link gets 400 `INVALID_TOKEN`.
+  - **Mail:** sent through `common.mail.Mailer`, chosen by `linguaflow.mail.mode`.
+    - `log` (dev and test) writes the email with its link to the log.
+    - `disabled` (the default, and prod) sends nothing and never logs links. There's no SMTP mailer yet.
+    - Links point at `linguaflow.app.frontend-url` (env `FRONTEND_URL`) under the frontend pages `/verify-email` and `/reset-password`.
+  - **Tests:** register `testsupport.RecordingMailer` as an `@Primary` bean and use `lastTokenFor(email)`.
+- **Transaction pitfall:** an inner `@Transactional` method that takes part in the caller's transaction and throws will mark the whole transaction rollback-only, according to the inner method's own rollback rules. The caller's commit then fails with `UnexpectedRollbackException`, which surfaces as a 500. For "record, then throw" flows, put `noRollbackFor = ApiException.class` on the inner methods too, as in `ActionTokenService.redeem`.
 - **Rate limiting (AUTH-06):** `common.ratelimit.AuthRateLimitFilter` limits `POST /api/auth/login` (10 per minute) and `/api/auth/register` (5 per hour) per client IP.
   - It uses Bucket4j token buckets in a bounded Caffeine cache, and runs before Spring Security, so floods are rejected before any password hashing.
   - Over the limit, the response is 429 `TOO_MANY_REQUESTS` with `Retry-After`.

@@ -23,7 +23,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
  * token>}; the token is verified by the {@code JwtDecoder} from auth.JwtConfig
  * (signature, issuer, expiry). Its {@code role} claim becomes {@code ROLE_USER} /
  * {@code ROLE_ADMIN}.</li>
- * <li>Public: health, POST /api/auth/{register,login,refresh,logout}, and the API docs
+ * <li>Public: health, POST /api/auth/{register,login,refresh,logout,verify-email,
+ * password-reset/request,password-reset}, and the API docs
  * where they are enabled (dev).</li>
  * <li>/api/admin/** requires ADMIN; method security ({@code @PreAuthorize}) is enabled for
  * finer rules.</li>
@@ -39,7 +40,8 @@ import org.springframework.web.servlet.HandlerExceptionResolver;
 public class SecurityConfig {
 
 	private static final String[] PUBLIC_AUTH_ENDPOINTS = { "/api/auth/register", "/api/auth/login",
-			"/api/auth/refresh", "/api/auth/logout" };
+			"/api/auth/refresh", "/api/auth/logout", "/api/auth/verify-email", "/api/auth/password-reset/request",
+			"/api/auth/password-reset" };
 
 	private static final String[] API_DOCS_PATHS = { "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html",
 			"/swagger-ui/**" };

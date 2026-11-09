@@ -20,7 +20,7 @@ class RegistrationServiceTests {
 
 	private final PasswordEncoder encoder = mock(PasswordEncoder.class);
 
-	private final RegistrationService service = new RegistrationService(users, encoder);
+	private final RegistrationService service = new RegistrationService(users, encoder, mock(AccountService.class));
 
 	private final RegistrationRequest request = new RegistrationRequest("race@example.de", "correct-horse-battery",
 			"Race");

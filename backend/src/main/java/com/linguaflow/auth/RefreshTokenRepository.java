@@ -22,4 +22,8 @@ interface RefreshTokenRepository extends JpaRepository<RefreshToken, UUID> {
 	@Query("update RefreshToken t set t.revokedAt = :now where t.familyId = :family and t.revokedAt is null")
 	int revokeFamily(@Param("family") UUID familyId, @Param("now") Instant now);
 
+	@Modifying(flushAutomatically = true, clearAutomatically = true)
+	@Query("update RefreshToken t set t.revokedAt = :now where t.userId = :userId and t.revokedAt is null")
+	int revokeAllForUser(@Param("userId") UUID userId, @Param("now") Instant now);
+
 }

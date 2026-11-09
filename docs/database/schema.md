@@ -109,6 +109,19 @@ Notation: **PK** primary key, **FK** foreign key (with the delete rule), **UQ** 
 
 **IX** `(user_id)`. A scheduled job deletes rows where `expires_at < now() - 30 days`.
 
+#### `user_action_tokens` (AUTH-07, migration V4)
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid | PK |
+| user_id | uuid not null | FK → users **CASCADE**. **IX** `(user_id, purpose)` |
+| purpose | text not null | CK `EMAIL_VERIFICATION, PASSWORD_RESET` |
+| token_hash | text not null | **UQ**. SHA-256 of the token from the email link; the raw token is never stored |
+| expires_at | timestamptz not null | CK `> created_at`. Defaults: 48 hours for verification, 1 hour for reset |
+| used_at | timestamptz | Set when the link is used. Each token works once |
+| created_at | timestamptz not null | |
+
+Issuing a new token for a purpose deletes the user's unused tokens for that purpose, so only the newest link works.
+
 #### `languages` (DB-02 seed: `de`, `en`)
 | Column | Type | Notes |
 |---|---|---|
@@ -409,7 +422,8 @@ This table is shared between users. It may only hold **language data**, such as 
 | `V1__init.sql` | DB-02 | `languages` (+ seed `de`, `en`), `users`, `refresh_tokens`, `user_languages` |
 | `V2__learning_material.sql` | DB-03 | `pg_trgm` extension, `vocabulary_items`, `vocabulary_examples`, `tags`, `vocabulary_item_tags`, `grammar_topic_catalog`, `grammar_topics`, `grammar_topic_status_history`, `study_sessions`, `session_vocabulary`, `session_grammar` |
 | `V3__practice_and_progress.sql` | DB-04 | In FK order: `ai_jobs`, `ai_requests`, `ai_cache`, `practice_sessions`, `flashcards`, `srs_state`, `flashcard_reviews`, `exercise_sets`, `exercises`, `exercise_grammar_topics`, `exercise_vocabulary`, `exercise_attempts`, `mistakes`, `practice_session_items`, `grammar_topic_progress`, `vocabulary_progress` |
-| `V4__grammar_catalog_seed.sql` | GRM-03 | Seed rows for the German topic catalog |
+| `V4__user_action_tokens.sql` | AUTH-07 | `user_action_tokens` |
+| `V5__grammar_catalog_seed.sql` | GRM-03 | Seed rows for the German topic catalog |
 | `R__dev_seed.sql` | DB-05 | Demo data, dev profile only |
 
 Applied migrations are never edited. Every change is a new `V<n>__…` file.

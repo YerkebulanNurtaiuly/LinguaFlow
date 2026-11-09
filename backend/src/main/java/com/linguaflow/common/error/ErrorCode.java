@@ -12,6 +12,7 @@ public enum ErrorCode {
 	VALIDATION_FAILED(HttpStatus.BAD_REQUEST, "Validation failed"),
 	MALFORMED_REQUEST(HttpStatus.BAD_REQUEST, "Malformed request"),
 	BAD_REQUEST(HttpStatus.BAD_REQUEST, "Bad request"),
+	INVALID_TOKEN(HttpStatus.BAD_REQUEST, "Invalid or expired link"),
 	UNAUTHORIZED(HttpStatus.UNAUTHORIZED, "Authentication required"),
 	INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "Invalid email or password"),
 	INVALID_REFRESH_TOKEN(HttpStatus.UNAUTHORIZED, "Invalid refresh token"),
