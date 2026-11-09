@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01, INF-02, INF-03 and INF-05 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
+LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01, INF-02, INF-03, INF-05 and INF-06 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
 - `docs/database/` and `docs/technical-specification/` are still placeholders.
@@ -74,6 +74,14 @@ Conventions:
 - **HTTP:** API calls go through `src/lib/api.ts`, an Axios instance with base URL `VITE_API_BASE_URL`, default `/api`. Validate responses with Zod schemas.
 - **Routes:** defined once in `src/app/routes.tsx`. Tests render them with `renderRoute(path)` from `src/test/renderWithProviders.tsx`, which uses a memory router and a fresh QueryClient.
 - **Formatting:** Prettier with no semicolons and single quotes.
+
+## CI
+
+`.github/workflows/ci.yml` runs on every pull request and on every push to `main`. It has two jobs:
+- **backend:** `./mvnw -B -ntp verify`, with Testcontainers using the runner's Docker.
+- **frontend:** `npm ci`, `format:check`, `lint`, `typecheck`, `test`, `build`.
+
+Run the same commands locally before pushing; unformatted frontend code fails CI. The job that builds Docker images will be added along with INF-04's Dockerfiles.
 
 ## Target architecture (from README / TASKS.md)
 

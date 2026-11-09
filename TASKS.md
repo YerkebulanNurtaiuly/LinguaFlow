@@ -36,9 +36,10 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `application.yml` with `dev`, `test`, `prod` profiles; all secrets (DB password, JWT secret, AI API key) from environment variables; `.env.example` committed.
   _Done when:_ app starts with only env vars, no secrets in git.
 
-- [ ] **INF-06 — CI pipeline** (M) — _deps: INF-02, INF-03_
+- [x] **INF-06 — CI pipeline** (M) — _deps: INF-02, INF-03_
   GitHub Actions: backend build + tests (Testcontainers), frontend lint + type-check + tests + build, Docker image build. Cache Maven/npm.
   _Done when:_ PRs show green/red checks.
+  _Note:_ Docker image build job deferred until INF-04 adds the Dockerfiles.
 
 - [ ] **INF-07 — Common backend infrastructure** (M) — _deps: INF-02_
   Global exception handler returning RFC 7807 `ProblemDetail`; standard error codes; validation error mapping; pagination/sorting DTO; base auditing entity (`createdAt`, `updatedAt`) via JPA auditing; request logging with correlation ID; CORS config for the frontend origin.
