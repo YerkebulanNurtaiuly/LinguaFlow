@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 are done:
+LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01, INF-02, INF-03 and INF-05 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a bootstrapped Vite app (see Frontend below) with only a home page that shows backend health and a 404 page.
 - `docs/database/` and `docs/technical-specification/` are still placeholders.
@@ -32,14 +32,19 @@ Run Maven from `backend/` with the wrapper. In WSL, call `./mvnw`; on Windows, u
 ./mvnw test -Dtest=LinguaFlowApplicationTests                        # single test class
 ./mvnw test -Dtest=LinguaFlowApplicationTests#healthEndpointIsPublicAndUp   # single test method
 ./mvnw spring-boot:test-run      # run the app against a throwaway Testcontainers PostgreSQL (no local DB needed)
-./mvnw spring-boot:run           # run against a real DB: DB_URL / DB_USERNAME / DB_PASSWORD (defaults: localhost:5432/linguaflow, linguaflow/linguaflow)
+./mvnw spring-boot:run           # dev profile against a real DB (defaults: localhost:5432/linguaflow, linguaflow/linguaflow; override via env or backend/.env)
 ```
 
 How the app and its tests are set up:
 - Full-context tests `@Import(TestcontainersConfiguration.class)`. That class's `@ServiceConnection` wires the datasource to the container.
 - `/actuator/health` is the only public endpoint. Every other request returns 403 until the JWT security from AUTH-04 replaces `SecurityConfig`.
 - `ddl-auto=validate` is already on. Any JPA entity needs a matching Flyway migration, or the context fails to start.
-- Config is still `application.properties`. Moving to `application.yml` with profiles is task INF-05.
+- **Config files:** `application.yml` holds the shared settings, and `application-{dev,test,prod}.yml` override it.
+  - `dev` is the default profile. It has local defaults and also reads `backend/.env` through `spring.config.import`. See `backend/.env.example`.
+  - `test` must be activated with `@ActiveProfiles("test")` on full-context tests.
+  - `prod` has no defaults. It needs `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` and `JWT_SECRET`, and it turns off springdoc.
+- **App settings:** custom settings live under `linguaflow.*` and bind to the validated record `common.config.LinguaFlowProperties`. A missing or short JWT secret fails at startup. Add new settings there, as nested records, rather than using `@Value`.
+- **Secrets:** never put real secrets in the yml files. Reference them as `${ENV_VAR}`, and only give a default in `application-dev.yml` or `application-test.yml`.
 
 Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugin` for both compile and testCompile.
 

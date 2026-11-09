@@ -1,0 +1,21 @@
+# Local development. Values can be overridden by real environment variables or by a
+# .env file in the working directory (see .env.example). The defaults below point at a
+# local PostgreSQL and are NOT secrets.
+spring:
+  config:
+    import: optional:file:.env[.properties]
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/linguaflow}
+    username: ${DB_USERNAME:linguaflow}
+    password: ${DB_PASSWORD:linguaflow}
+
+management:
+  endpoint:
+    health:
+      show-details: always
+
+linguaflow:
+  security:
+    jwt:
+      # Dev-only signing key; prod requires JWT_SECRET from the environment
+      secret: ${JWT_SECRET:dev-only-insecure-jwt-secret-change-me-0123456789}

@@ -32,7 +32,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `docker-compose.yml` with PostgreSQL 16 (named volume), optional pgAdmin. Backend `Dockerfile` (multi-stage), frontend `Dockerfile` (build → nginx).
   _Done when:_ `docker compose up` starts DB + backend + frontend and they talk to each other.
 
-- [ ] **INF-05 — Configuration & profiles** (S) — _deps: INF-02_
+- [x] **INF-05 — Configuration & profiles** (S) — _deps: INF-02_
   `application.yml` with `dev`, `test`, `prod` profiles; all secrets (DB password, JWT secret, AI API key) from environment variables; `.env.example` committed.
   _Done when:_ app starts with only env vars, no secrets in git.
 

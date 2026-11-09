@@ -1,0 +1,38 @@
+# Shared configuration for all profiles. Profile files override these values:
+#   dev  - local development (default when no profile is set)
+#   test - automated tests (datasource comes from Testcontainers)
+#   prod - deployed environments; every secret MUST come from environment variables
+spring:
+  application:
+    name: linguaflow
+  profiles:
+    default: dev
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  jpa:
+    open-in-view: false
+    hibernate:
+      # Schema is owned by Flyway; Hibernate only validates entity mappings against it
+      ddl-auto: validate
+  flyway:
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true
+
+linguaflow:
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+  ai:
+    # Optional: without a key the app falls back to the fake LLM client (AI-01)
+    api-key: ${AI_API_KEY:}

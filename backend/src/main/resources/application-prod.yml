@@ -1,0 +1,13 @@
+# Deployed environments. Required environment variables (startup fails without them):
+#   DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET
+# Optional: AI_API_KEY
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+management:
+  endpoint:
+    health:
+      show-details: never

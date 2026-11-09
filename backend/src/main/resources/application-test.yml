@@ -1,0 +1,8 @@
+# Automated tests. The datasource is provided by Testcontainers (@ServiceConnection),
+# so no DB_* variables are needed.
+linguaflow:
+  security:
+    jwt:
+      secret: test-only-jwt-secret-not-used-outside-tests-0123456789
+  ai:
+    api-key: ""
