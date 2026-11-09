@@ -4,10 +4,12 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -28,8 +30,13 @@ public class SecurityConfig {
 			@Value("${springdoc.api-docs.enabled:false}") boolean apiDocsEnabled) throws Exception {
 		http
 			.cors(Customizer.withDefaults())
+			// Registration creates nothing a forged cross-site request could abuse; the CSRF
+			// strategy for cookie-based endpoints (refresh token) is decided in AUTH-04
+			.csrf(csrf -> csrf.ignoringRequestMatchers(PathPatternRequestMatcher.withDefaults()
+				.matcher(HttpMethod.POST, "/api/auth/register")))
 			.authorizeHttpRequests(auth -> {
 				auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
+				auth.requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll();
 				// Docs are public only where they are enabled (dev); elsewhere the paths stay locked
 				if (apiDocsEnabled) {
 					auth.requestMatchers(API_DOCS_PATHS).permitAll();

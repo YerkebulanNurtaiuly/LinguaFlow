@@ -49,7 +49,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Every error, whatever its source, must come back as application/problem+json with
  * the same fields.
  */
-@WebMvcTest(properties = "linguaflow.cors.allowed-origins=http://localhost:5173")
+// controllers = ...: only the test controller, not the app's controllers (and their services)
+@WebMvcTest(controllers = ErrorHandlingTests.TestController.class,
+		properties = "linguaflow.cors.allowed-origins=http://localhost:5173")
 @Import({ ErrorHandlingTests.TestController.class, ErrorHandlingTests.PropertiesConfig.class, SecurityConfig.class,
 		CorsConfig.class })
 @ActiveProfiles("test")

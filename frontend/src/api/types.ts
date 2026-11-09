@@ -14,3 +14,7 @@ export type Schemas = components['schemas']
 export type ApiProblem = Schemas['ApiProblem']
 export type ApiErrorCode = ApiProblem['code']
 export type ApiFieldError = Schemas['FieldError']
+
+// Auth
+export type RegistrationRequest = Schemas['RegistrationRequest']
+export type RegistrationResponse = Schemas['RegistrationResponse']

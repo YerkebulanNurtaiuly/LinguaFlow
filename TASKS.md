@@ -82,7 +82,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AUTH-01 — User entity & repository** (S) — _deps: DB-02_
   Email (unique, case-insensitive), password hash (BCrypt/Argon2), display name, role (`USER`, `ADMIN`), enabled flag, timestamps.
 
-- [ ] **AUTH-02 — Registration endpoint** (M) — _deps: AUTH-01, INF-07_
+- [x] **AUTH-02 — Registration endpoint** (M) — _deps: AUTH-01, INF-07_
   `POST /api/auth/register` with validation (email format, password policy, duplicates → 409).
   _Done when:_ user is created with hashed password; tests cover edge cases.
 
