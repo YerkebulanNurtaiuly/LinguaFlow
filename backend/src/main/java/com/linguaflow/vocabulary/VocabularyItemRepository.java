@@ -1,5 +1,7 @@
 package com.linguaflow.vocabulary;
 
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -26,5 +28,15 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 			""")
 	Optional<UUID> findDuplicateId(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("normalizedLemma") String normalizedLemma, @Param("partOfSpeech") PartOfSpeech partOfSpeech);
+
+	/** The user's words in this language with any of these normalized lemmas, oldest first (VOC-04). */
+	@Query("""
+			select new com.linguaflow.vocabulary.ExistingLemma(v.id, v.normalizedLemma, v.partOfSpeech)
+			from VocabularyItem v
+			where v.userId = :userId and v.languageCode = :languageCode and v.normalizedLemma in :normalizedLemmas
+			order by v.createdAt, v.id
+			""")
+	List<ExistingLemma> findExistingLemmas(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("normalizedLemmas") Collection<String> normalizedLemmas);
 
 }

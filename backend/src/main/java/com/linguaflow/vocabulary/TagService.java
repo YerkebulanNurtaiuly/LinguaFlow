@@ -117,6 +117,12 @@ public class TagService {
 		return new LinkedHashSet<>(found);
 	}
 
+	/** Same checks as {@link #resolveForWord}, for validating up front (bulk input, VOC-04). */
+	@Transactional(readOnly = true)
+	public void checkUsable(UUID userId, String languageCode, Collection<UUID> ids) {
+		resolveForWord(userId, languageCode, ids);
+	}
+
 	static String cleanName(String raw) {
 		String cleaned = raw == null ? "" : raw.replaceAll("[\\s\\p{Z}]+", " ").strip();
 		if (cleaned.isEmpty()) {

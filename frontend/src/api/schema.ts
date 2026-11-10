@@ -368,6 +368,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vocabulary/bulk": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview bulk input
+         * @description Parses pasted text or CSV and reports each line as NEW, DUPLICATE (of a word you have, or of an earlier line) or INVALID. Nothing is saved; confirm the lines to keep. A line without a part of speech counts as a duplicate of any word with the same lemma.
+         */
+        post: operations["preview"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/bulk/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add the confirmed bulk items
+         * @description Adds each item to the active language on its own, so one failure doesn't stop the rest. Items that are duplicates by now are reported, not added. New words await AI enrichment.
+         */
+        post: operations["confirm"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vocabulary/{id}": {
         parameters: {
             query?: never;
@@ -451,6 +491,111 @@ export interface components {
              * @example about:blank
              */
             type?: string;
+        };
+        BulkVocabularyConfirmRequest: {
+            items: components["schemas"]["BulkVocabularyItem"][];
+            /** @description Tags to put on every added word */
+            tagIds?: string[];
+        };
+        /** @description A previewed line the learner kept, possibly edited */
+        BulkVocabularyItem: {
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @example der Hund */
+            lemma: string;
+            notes?: string;
+            /** @enum {string} */
+            partOfSpeech?: "NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER";
+            /** @example dog */
+            translation?: string;
+        };
+        BulkVocabularyItemResult: {
+            /**
+             * Format: uuid
+             * @description DUPLICATE: the word you already have
+             */
+            existingId?: string;
+            /** @description INVALID: the field at fault */
+            field?: string;
+            /**
+             * Format: uuid
+             * @description CREATED: the new word's ID
+             */
+            id?: string;
+            /**
+             * Format: int32
+             * @description 0-based position in the request's items
+             */
+            index?: number;
+            lemma?: string;
+            message?: string;
+            /** @enum {string} */
+            status?: "CREATED" | "DUPLICATE" | "INVALID";
+        };
+        BulkVocabularyPreview: {
+            /** Format: int32 */
+            duplicateCount?: number;
+            /** Format: int32 */
+            invalidCount?: number;
+            lines?: components["schemas"]["BulkVocabularyPreviewLine"][];
+            /** Format: int32 */
+            newCount?: number;
+        };
+        BulkVocabularyPreviewLine: {
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /**
+             * Format: int32
+             * @description DUPLICATE of an earlier line of this input: its line
+             */
+            duplicateOfLine?: number;
+            /**
+             * Format: uuid
+             * @description DUPLICATE of a word you have: its ID
+             */
+            existingId?: string;
+            lemma?: string;
+            /**
+             * Format: int32
+             * @description 1-based line in the input; blank lines are counted
+             */
+            line?: number;
+            /**
+             * @description Why the line is DUPLICATE or INVALID
+             * @example already in your vocabulary
+             */
+            message?: string;
+            notes?: string;
+            /** @enum {string} */
+            partOfSpeech?: "NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER";
+            /** @enum {string} */
+            status?: "NEW" | "DUPLICATE" | "INVALID";
+            /** @description The line as written */
+            text?: string;
+            translation?: string;
+        };
+        BulkVocabularyPreviewRequest: {
+            /**
+             * @description Defaults to TEXT
+             * @enum {string}
+             */
+            format?: "TEXT" | "CSV";
+            /**
+             * @description TEXT: one word per line, optionally 'word - translation' (also '=', tab, en or em dash). CSV: comma or semicolon separated; columns lemma, translation, or any order with a header row naming lemma|word, translation, partOfSpeech|pos, cefrLevel|level, notes. At most 500 lines.
+             * @example der Hund - dog
+             *     die Katze - cat
+             *     laufen
+             */
+            text: string;
+        };
+        BulkVocabularyResult: {
+            /** Format: int32 */
+            createdCount?: number;
+            /** Format: int32 */
+            duplicateCount?: number;
+            /** Format: int32 */
+            invalidCount?: number;
+            results?: components["schemas"]["BulkVocabularyItemResult"][];
         };
         ChangePasswordRequest: {
             currentPassword: string;
@@ -2506,6 +2651,166 @@ export interface operations {
                 };
             };
             /** @description Already in your vocabulary (code VOCABULARY_DUPLICATE, see existingId), or no active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    preview: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkVocabularyPreviewRequest"];
+            };
+        };
+        responses: {
+            /** @description One entry per non-blank line */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkVocabularyPreview"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    confirm: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BulkVocabularyConfirmRequest"];
+            };
+        };
+        responses: {
+            /** @description One result per item, in request order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BulkVocabularyResult"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
             409: {
                 headers: {
                     [name: string]: unknown;

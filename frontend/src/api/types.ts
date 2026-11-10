@@ -54,3 +54,17 @@ export type VocabularyExampleRequest = Schemas['VocabularyExampleRequest']
 export type UpdateVocabularyRequest = Schemas['UpdateVocabularyRequest']
 export type PartOfSpeech = NonNullable<VocabularyItem['partOfSpeech']>
 export type SortOrder = Schemas['SortOrder']
+
+// Bulk vocabulary input
+export type BulkVocabularyPreviewRequest =
+  Schemas['BulkVocabularyPreviewRequest']
+export type BulkVocabularyFormat = NonNullable<
+  BulkVocabularyPreviewRequest['format']
+>
+export type BulkVocabularyPreview = Schemas['BulkVocabularyPreview']
+export type BulkVocabularyPreviewLine = Schemas['BulkVocabularyPreviewLine']
+export type BulkVocabularyItem = Schemas['BulkVocabularyItem']
+export type BulkVocabularyConfirmRequest =
+  Schemas['BulkVocabularyConfirmRequest']
+export type BulkVocabularyResult = Schemas['BulkVocabularyResult']
+export type BulkVocabularyItemResult = Schemas['BulkVocabularyItemResult']

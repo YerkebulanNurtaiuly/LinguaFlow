@@ -154,7 +154,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **VOC-03 — Tags / organization** (S) — _deps: VOC-02_
   User-defined tags (many-to-many) for grouping words (e.g. "Food", "Chapter 3").
 
-- [ ] **VOC-04 — Bulk vocabulary input** (M) — _deps: VOC-02_
+- [x] **VOC-04 — Bulk vocabulary input** (M) — _deps: VOC-02_
   `POST /api/vocabulary/bulk` accepts raw text (one word/phrase per line, optional `word - translation` format) or CSV. Returns a **preview** per line: parsed, duplicate, invalid. Second call confirms the selected items.
   _Done when:_ 100 lines are processed in one request with clear per-line results.
 
