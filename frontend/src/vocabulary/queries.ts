@@ -8,6 +8,7 @@ import {
   deleteVocabularyItem,
   fetchTags,
   fetchVocabulary,
+  fetchVocabularyItem,
   type VocabularyQuery,
 } from './vocabularyApi'
 
@@ -39,4 +40,22 @@ export function useDeleteVocabularyItem() {
         queryClient.invalidateQueries({ queryKey: TAGS_QUERY_KEY }),
       ]),
   })
+}
+
+/** One word with its examples, for the edit form. */
+export function useVocabularyItem(id: string) {
+  return useQuery({
+    queryKey: [...VOCABULARY_QUERY_KEY, 'item', id],
+    queryFn: () => fetchVocabularyItem(id),
+  })
+}
+
+/** Refreshes lists, single words and tag counts after a word or tag changed. */
+export function useInvalidateVocabulary() {
+  const queryClient = useQueryClient()
+  return () =>
+    Promise.all([
+      queryClient.invalidateQueries({ queryKey: VOCABULARY_QUERY_KEY }),
+      queryClient.invalidateQueries({ queryKey: TAGS_QUERY_KEY }),
+    ])
 }

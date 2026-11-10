@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-09 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
-- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06) and Vocabulary (FE-VOC-01) are built.
+- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06) and Vocabulary (FE-VOC-01, FE-VOC-02) are built.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
 - Flyway migrations exist up to `V4__user_action_tokens.sql` (V4 is AUTH-07). Phase 2 has started: VOC-01 (vocabulary service), VOC-02 (vocabulary API), VOC-03 (tags), VOC-04 (bulk input) and VOC-07 (CSV import/export) are done; VOC-05 and VOC-06 wait for the AI layer. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet; they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use. There's no Docker Compose yet.
 
@@ -238,6 +238,15 @@ Conventions:
   - **Field pitfall:** `Field` wires its label and ARIA to its *direct* child, so never wrap the control in a div inside `Field`. Put decorations such as the search icon outside it.
   - **Table:** less important columns hide on narrow screens (status moves under the word), and there's no horizontal scrolling at 375 px. AI status shows as "AI pending" or "AI failed" badges; READY shows nothing.
   - **Delete:** a `ConfirmDialog`. On failure the dialog stays open and the global toast reports the error. Deleting the last word of a page steps back a page.
+- **Add and edit a word (FE-VOC-02):** `WordModal` holds `WordForm`. "Add word" (header and empty state) opens it in add mode; clicking a word in the table opens edit mode, which loads `GET /vocabulary/{id}` (`useVocabularyItem`).
+  - **Form logic:** the pure functions live in `wordFormValues.ts`. It isn't named `wordForm.ts` because on Windows that collides with `WordForm.tsx` (TS1261).
+  - **Requests:** `toCreateRequest` sends only filled-in fields. `toUpdateRequest` sends only changed fields (null when nothing changed) and `""` to clear text. Gender and plural are only shown and sent for nouns or untyped words.
+  - **Choices can't be cleared:** the PATCH can't clear type, gender or level, so once one is set its select has no empty option. MASTERED appears only as a disabled option on mastered words.
+  - **Edit mode:** AI-generated fields (`aiGeneratedFields`) get the hint "Filled in by AI…", and examples are shown read-only (the API can't edit them yet). Add mode can add up to 10 examples (`useFieldArray`).
+  - **Duplicates:** a 409 `VOCABULARY_DUPLICATE` shows an info alert with "Open “…”", which switches the modal to edit the existing word. The page keys `WordModal` by target, so the form starts fresh.
+  - **Tags:** checkboxes, plus a "New tag" input. Enter adds the tag without submitting, and a `TAG_NAME_TAKEN` selects the existing tag.
+  - **After saving:** `useInvalidateVocabulary()` refreshes lists, words and tag counts.
+  - **Focus:** add mode focuses the word field through `Modal initialFocus`. `WordForm` takes a `lemmaRef` merged with RHF's ref.
 - **Settings (FE-06):** `pages/settings/SettingsPage.tsx` has one `SettingsSection` card per area: profile, one per learning language, password, and deleting the account.
   - **Account API:** the calls are in `src/account/accountApi.ts`. `changePassword` stores the new access token, and `deleteAccount` clears the session.
   - **After saving:** the profile updates `CURRENT_USER_QUERY_KEY` and the language settings update `MY_LANGUAGES_QUERY_KEY` with the response, so the sidebar and other screens refresh without a refetch. Reset the form with the saved values so Save is disabled again.

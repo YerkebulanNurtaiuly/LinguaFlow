@@ -40,6 +40,8 @@ interface VocabularyTableProps {
   words: VocabularyWord[]
   caption: string
   onDelete: (word: VocabularyWord) => void
+  /** Opens the word for editing; the word itself is the button */
+  onEdit: (word: VocabularyWord) => void
 }
 
 /**
@@ -50,6 +52,7 @@ export function VocabularyTable({
   words,
   caption,
   onDelete,
+  onEdit,
 }: VocabularyTableProps) {
   return (
     <Table>
@@ -71,7 +74,13 @@ export function VocabularyTable({
         {words.map((word) => (
           <Tr key={word.id}>
             <Td>
-              <div className="font-medium">{word.lemma}</div>
+              <button
+                type="button"
+                onClick={() => onEdit(word)}
+                className="rounded text-left font-medium text-fg hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              >
+                {word.lemma}
+              </button>
               {word.plural && (
                 <div className="text-xs text-fg-muted">
                   <span className="sr-only">Plural: </span>

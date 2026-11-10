@@ -1,5 +1,7 @@
 import { z } from 'zod'
 import type {
+  CreateVocabularyRequest,
+  UpdateVocabularyRequest,
   VocabularyItem as ApiVocabularyItem,
   VocabularyPage as ApiVocabularyPage,
   VocabularyTagSummary,
@@ -31,9 +33,12 @@ export const KNOWLEDGE_STATUSES = [
 
 export const AI_STATUSES = ['PENDING_AI', 'READY', 'AI_FAILED'] as const
 
+export const GENDERS = ['MASCULINE', 'FEMININE', 'NEUTER'] as const
+
 export type PartOfSpeech = (typeof PARTS_OF_SPEECH)[number]
 export type KnowledgeStatus = (typeof KNOWLEDGE_STATUSES)[number]
 export type AiStatus = (typeof AI_STATUSES)[number]
+export type Gender = (typeof GENDERS)[number]
 
 /** Optional in the API and sent as null; undefined on the client. */
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -45,10 +50,21 @@ const vocabularyItemSchema = z.object({
   article: optional(z.string()),
   partOfSpeech: optional(z.enum(PARTS_OF_SPEECH)),
   translation: optional(z.string()),
+  gender: optional(z.enum(GENDERS)),
   plural: optional(z.string()),
   cefrLevel: optional(z.enum(CEFR_LEVELS)),
   status: z.enum(KNOWLEDGE_STATUSES),
   aiStatus: z.enum(AI_STATUSES),
+  // Field names whose current value came from AI (VOC-05)
+  aiGeneratedFields: z.array(z.string()),
+  examples: z.array(
+    z.object({
+      id: z.string(),
+      sentence: z.string(),
+      translation: optional(z.string()),
+      aiGenerated: z.boolean(),
+    }),
+  ),
   notes: optional(z.string()),
   tags: z.array(z.object({ id: z.string(), name: z.string() })),
   createdAt: z.string(),
@@ -137,4 +153,45 @@ export async function deleteVocabularyItem(id: string): Promise<void> {
 export async function fetchTags(): Promise<TagWithCount[]> {
   const { data } = await api.get<unknown>('/tags')
   return z.array(tagSchema).parse(data)
+}
+
+export type VocabularyExample = VocabularyWord['examples'][number]
+
+export async function fetchVocabularyItem(id: string): Promise<VocabularyWord> {
+  const { data } = await api.get<unknown>(
+    `/vocabulary/${encodeURIComponent(id)}`,
+  )
+  return vocabularyItemSchema.parse(data)
+}
+
+/**
+ * Adds a word to the active language. A word the learner already has is rejected
+ * with 409 VOCABULARY_DUPLICATE and the existing word's `existingId`.
+ */
+export async function createVocabularyItem(
+  request: CreateVocabularyRequest,
+): Promise<VocabularyWord> {
+  const { data } = await api.post<unknown>('/vocabulary', request)
+  return vocabularyItemSchema.parse(data)
+}
+
+/**
+ * Partial update: absent fields stay unchanged, an empty string clears translation,
+ * plural or notes, and `tagIds` replaces all tags.
+ */
+export async function updateVocabularyItem(
+  id: string,
+  request: UpdateVocabularyRequest,
+): Promise<VocabularyWord> {
+  const { data } = await api.patch<unknown>(
+    `/vocabulary/${encodeURIComponent(id)}`,
+    request,
+  )
+  return vocabularyItemSchema.parse(data)
+}
+
+/** Creates a tag in the active language; a taken name is 409 TAG_NAME_TAKEN. */
+export async function createTag(name: string): Promise<TagWithCount> {
+  const { data } = await api.post<unknown>('/tags', { name })
+  return tagSchema.parse(data)
 }

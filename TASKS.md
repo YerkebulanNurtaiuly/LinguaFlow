@@ -171,7 +171,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-VOC-01 — Vocabulary list page** (M) — _deps: FE-02, VOC-02_
   Table/cards with search, filters, pagination, AI status indicator, inline delete.
 
-- [ ] **FE-VOC-02 — Add / edit word form** (M) — _deps: FE-VOC-01_
+- [x] **FE-VOC-02 — Add / edit word form** (M) — _deps: FE-VOC-01_
   Single-word form with optional manual fields; edit modal showing AI-generated fields and examples; duplicate warning linking to existing word.
 
 - [ ] **FE-VOC-03 — Bulk add screen** (M) — _deps: FE-VOC-01, VOC-04_

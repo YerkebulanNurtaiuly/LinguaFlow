@@ -1,4 +1,10 @@
-import { BookOpen, ChevronLeft, ChevronRight, SearchX } from 'lucide-react'
+import {
+  BookOpen,
+  ChevronLeft,
+  ChevronRight,
+  Plus,
+  SearchX,
+} from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { describeError } from '@/api/errors'
@@ -28,6 +34,7 @@ import {
   queryFromParams,
 } from './vocabularyFilters'
 import { VocabularyTable } from './VocabularyTable'
+import { WordModal, type WordModalTarget } from './WordModal'
 
 const wordCount = (count: number) =>
   `${count.toLocaleString()} ${count === 1 ? 'word' : 'words'}`
@@ -41,6 +48,7 @@ export function VocabularyPage() {
   const remove = useDeleteVocabularyItem()
   const { toast } = useToast()
   const [toDelete, setToDelete] = useState<VocabularyWord | null>(null)
+  const [modal, setModal] = useState<WordModalTarget | null>(null)
 
   const update = useCallback(
     (changes: Partial<VocabularyQuery>) => {
@@ -88,13 +96,19 @@ export function VocabularyPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Vocabulary</h1>
-        <p className="mt-2 text-fg-muted">
-          {data && !filtered
-            ? `${wordCount(data.totalElements)} in your collection.`
-            : 'Your words with translations, levels and tags.'}
-        </p>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Vocabulary</h1>
+          <p className="mt-2 text-fg-muted">
+            {data && !filtered
+              ? `${wordCount(data.totalElements)} in your collection.`
+              : 'Your words with translations, levels and tags.'}
+          </p>
+        </div>
+        <Button onClick={() => setModal({ mode: 'add' })}>
+          <Plus className="size-4" aria-hidden="true" />
+          Add word
+        </Button>
       </div>
 
       <VocabularyFilterBar
@@ -130,6 +144,12 @@ export function VocabularyPage() {
             icon={BookOpen}
             title="No words yet"
             description="Words you add will appear here, with their translations, levels and tags."
+            action={
+              <Button onClick={() => setModal({ mode: 'add' })}>
+                <Plus className="size-4" aria-hidden="true" />
+                Add your first word
+              </Button>
+            }
           />
         )
       ) : (
@@ -144,6 +164,7 @@ export function VocabularyPage() {
             words={data.content}
             caption={`Your vocabulary, ${first} to ${last} of ${data.totalElements}`}
             onDelete={setToDelete}
+            onEdit={(word) => setModal({ mode: 'edit', id: word.id })}
           />
           <nav
             aria-label="Pagination"
@@ -179,6 +200,15 @@ export function VocabularyPage() {
             )}
           </nav>
         </div>
+      )}
+
+      {modal && (
+        <WordModal
+          key={modal.mode === 'edit' ? modal.id : 'add'}
+          target={modal}
+          onClose={() => setModal(null)}
+          onOpen={setModal}
+        />
       )}
 
       <ConfirmDialog

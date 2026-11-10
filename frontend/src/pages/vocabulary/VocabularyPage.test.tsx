@@ -28,6 +28,9 @@ function word(overrides: Partial<VocabularyWord> = {}): VocabularyWord {
     updatedAt: '2026-11-01T10:00:00Z',
     version: 0,
     notes: undefined,
+    gender: 'MASCULINE',
+    aiGeneratedFields: [],
+    examples: [],
     ...overrides,
   }
 }
