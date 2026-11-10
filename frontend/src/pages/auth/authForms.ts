@@ -18,7 +18,7 @@ const email = z
 export const PASSWORD_MIN_LENGTH = 10
 const PASSWORD_MAX_BYTES = 72
 
-const newPassword = z
+export const newPasswordSchema = z
   .string()
   .min(PASSWORD_MIN_LENGTH, `Use at least ${PASSWORD_MIN_LENGTH} characters`)
   .refine((value) => value.trim().length > 0, 'Password cannot be only spaces')
@@ -39,7 +39,7 @@ export const registerSchema = z.object({
     .min(1, 'Enter your name')
     .max(100, 'Name is too long'),
   email,
-  password: newPassword,
+  password: newPasswordSchema,
 }) satisfies z.ZodType<RegistrationRequest>
 
 export type LoginValues = z.infer<typeof loginSchema>

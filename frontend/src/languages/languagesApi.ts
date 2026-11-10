@@ -9,7 +9,7 @@ import { api } from '@/lib/api'
 
 export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
-const EXERCISE_TYPES = [
+export const EXERCISE_TYPES = [
   'FILL_BLANK',
   'MULTIPLE_CHOICE',
   'TRANSLATION',
@@ -64,6 +64,11 @@ export async function addLanguage(
 ): Promise<LearnedLanguage> {
   const { data } = await api.post<unknown>('/users/me/languages', request)
   return userLanguageSchema.parse(data)
+}
+
+/** Stops learning a language. Permanently deletes ALL learning data for it. */
+export async function removeLanguage(languageCode: string): Promise<void> {
+  await api.delete(`/users/me/languages/${encodeURIComponent(languageCode)}`)
 }
 
 /** Partial update: absent fields (also inside `settings`) stay unchanged. */

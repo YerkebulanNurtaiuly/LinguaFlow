@@ -21,6 +21,8 @@ export interface RecordedRequest {
   method: string
   url: string
   authorization: string | undefined
+  /** Parsed JSON request body, if any */
+  body: unknown
 }
 
 const handlers = new Map<string, Handler>()
@@ -61,6 +63,7 @@ export const fakeAdapter: AxiosAdapter = async (config) => {
     method,
     url,
     authorization: typeof auth === 'string' ? auth : undefined,
+    body: parseBody(config.data),
   })
 
   const handler =
@@ -111,4 +114,21 @@ export const fakeApi = {
     resetFallbacks()
     recorded.length = 0
   },
+}
+
+function parseBody(data: unknown): unknown {
+  if (typeof data !== 'string') return data
+  try {
+    return JSON.parse(data)
+  } catch {
+    return data
+  }
+}
+
+/** The JSON body of the last `method` request to `url`. */
+export function sentBody(method: string, url: string): unknown {
+  return fakeApi
+    .requests(url)
+    .filter((r) => r.method === method.toUpperCase())
+    .at(-1)?.body
 }

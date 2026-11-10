@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { Navigate, type RouteObject } from 'react-router'
 import { AppLayout } from '@/app/layouts/AppLayout'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
@@ -12,8 +13,14 @@ import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
+import { SettingsPage } from '@/pages/settings/SettingsPage'
 
 const title = (value: string): RouteHandle => ({ title: value })
+
+/** Sections that are built; the others still show a placeholder. */
+const SECTION_PAGES: Partial<Record<string, ReactNode>> = {
+  '/settings': <SettingsPage />,
+}
 
 /**
  * The full route map. Sections render placeholders until their feature task replaces
@@ -62,7 +69,7 @@ export const routes: RouteObject[] = [
               ...NAV_ITEMS.map(({ path, label, description }) => ({
                 path,
                 handle: title(label),
-                element: (
+                element: SECTION_PAGES[path] ?? (
                   <PlaceholderPage title={label} description={description} />
                 ),
               })),
