@@ -41,3 +41,14 @@ export type LearningSettingsUpdate = Schemas['SettingsUpdate']
 export type ExerciseType = NonNullable<
   LearningSettings['preferredExerciseTypes']
 >[number]
+
+// Vocabulary
+export type VocabularyItem = Schemas['VocabularyItem']
+export type VocabularyExample = Schemas['VocabularyExample']
+export type VocabularyTag = Schemas['VocabularyTag']
+export type VocabularyPage = Schemas['PageResponseVocabularyItem']
+export type CreateVocabularyRequest = Schemas['CreateVocabularyRequest']
+export type VocabularyExampleRequest = Schemas['VocabularyExampleRequest']
+export type UpdateVocabularyRequest = Schemas['UpdateVocabularyRequest']
+export type PartOfSpeech = NonNullable<VocabularyItem['partOfSpeech']>
+export type SortOrder = Schemas['SortOrder']

@@ -30,6 +30,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
 import org.hibernate.type.SqlTypes;
@@ -109,10 +110,13 @@ public class VocabularyItem extends AuditableEntity implements OwnedEntity {
 	@Column(nullable = false)
 	private long version;
 
+	// Lists load the collections of a whole page in a few batched queries, not one per item
+	@BatchSize(size = 100)
 	@OneToMany(mappedBy = "item", cascade = CascadeType.ALL, orphanRemoval = true)
 	@OrderBy("position")
 	private List<VocabularyExample> examples = new ArrayList<>();
 
+	@BatchSize(size = 100)
 	@ManyToMany
 	@JoinTable(name = "vocabulary_item_tags", joinColumns = @JoinColumn(name = "vocabulary_item_id"),
 			inverseJoinColumns = @JoinColumn(name = "tag_id"))

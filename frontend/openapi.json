@@ -22,6 +22,9 @@
     "description" : "The current user's account",
     "name" : "Profile"
   }, {
+    "description" : "The learner's words and phrases",
+    "name" : "Vocabulary"
+  }, {
     "description" : "The current user's account (password change and deletion: see Auth)",
     "name" : "Profile"
   }, {
@@ -907,7 +910,7 @@
         "tags" : [ "Profile" ]
       },
       "get" : {
-        "operationId" : "get",
+        "operationId" : "get_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -984,7 +987,7 @@
       },
       "patch" : {
         "description" : "Only the fields present in the body are changed.",
-        "operationId" : "update",
+        "operationId" : "update_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -1328,7 +1331,7 @@
       },
       "patch" : {
         "description" : "Partial update: absent fields (including fields inside settings) stay unchanged.",
-        "operationId" : "update_1",
+        "operationId" : "update_2",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -1516,6 +1519,529 @@
         "summary" : "Change the password",
         "tags" : [ "Profile" ]
       }
+    },
+    "/api/vocabulary" : {
+      "get" : {
+        "description" : "Words in the active language, newest first by default. Filters combine with AND; repeating a filter (e.g. status=NEW&status=LEARNING) means any of them. Sortable by: createdAt, updatedAt, lemma, translation, cefrLevel, status.",
+        "operationId" : "list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Text in the lemma (article, case and ß/ss ignored) or the translation",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        }, {
+          "in" : "query",
+          "name" : "partOfSpeech",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NOUN", "VERB", "ADJECTIVE", "ADVERB", "PRONOUN", "PREPOSITION", "CONJUNCTION", "ARTICLE", "NUMERAL", "INTERJECTION", "PHRASE", "OTHER" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "cefrLevel",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+            }
+          }
+        }, {
+          "description" : "Only words of this study session",
+          "in" : "query",
+          "name" : "sessionId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Only words with this tag",
+          "in" : "query",
+          "name" : "tagId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseVocabularyItem"
+                }
+              }
+            },
+            "description" : "One page of words"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "No active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List vocabulary",
+        "tags" : [ "Vocabulary" ]
+      },
+      "post" : {
+        "description" : "Added to the active language. A word you already have (same lemma ignoring article, case and ß/ss, and same part of speech) is rejected with 409 and its existingId.",
+        "operationId" : "create",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateVocabularyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VocabularyItem"
+                }
+              }
+            },
+            "description" : "Word added"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Already in your vocabulary (code VOCABULARY_DUPLICATE, see existingId), or no active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Add a word",
+        "tags" : [ "Vocabulary" ]
+      }
+    },
+    "/api/vocabulary/{id}" : {
+      "delete" : {
+        "description" : "Also deletes its examples, flashcards and progress.",
+        "operationId" : "delete",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Deleted"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Delete a word",
+        "tags" : [ "Vocabulary" ]
+      },
+      "get" : {
+        "operationId" : "get",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VocabularyItem"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Get one word",
+        "tags" : [ "Vocabulary" ]
+      },
+      "patch" : {
+        "description" : "Partial update. Fields you edit stop counting as AI-generated.",
+        "operationId" : "update",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateVocabularyRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VocabularyItem"
+                }
+              }
+            },
+            "description" : "Word updated"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "The new lemma clashes with another word (code VOCABULARY_DUPLICATE, see existingId), or the word was changed meanwhile (code CONFLICT)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Edit a word",
+        "tags" : [ "Vocabulary" ]
+      }
     }
   },
   "components" : {
@@ -1618,6 +2144,62 @@
           }
         },
         "required" : [ "currentPassword", "newPassword" ]
+      },
+      "CreateVocabularyRequest" : {
+        "type" : "object",
+        "description" : "Only lemma is required; missing details are filled in by AI enrichment later",
+        "properties" : {
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "examples" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VocabularyExampleRequest"
+            },
+            "maxItems" : 10,
+            "minItems" : 0
+          },
+          "gender" : {
+            "type" : "string",
+            "enum" : [ "MASCULINE", "FEMININE", "NEUTER" ]
+          },
+          "lemma" : {
+            "type" : "string",
+            "description" : "The word or phrase as you want to see it, article included",
+            "example" : "der Hund",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "partOfSpeech" : {
+            "type" : "string",
+            "enum" : [ "NOUN", "VERB", "ADJECTIVE", "ADVERB", "PRONOUN", "PREPOSITION", "CONJUNCTION", "ARTICLE", "NUMERAL", "INTERJECTION", "PHRASE", "OTHER" ]
+          },
+          "plural" : {
+            "type" : "string",
+            "example" : "die Hunde",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Defaults to LEARNING; MASTERED is earned, not set",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "translation" : {
+            "type" : "string",
+            "example" : "dog",
+            "maxLength" : 500,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "lemma" ]
       },
       "DeleteAccountRequest" : {
         "type" : "object",
@@ -1726,6 +2308,60 @@
           }
         },
         "required" : [ "email", "password" ]
+      },
+      "PageResponseVocabularyItem" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VocabularyItem"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "Pageable" : {
+        "type" : "object",
+        "properties" : {
+          "page" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 0
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32",
+            "minimum" : 1
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          }
+        }
       },
       "PasswordResetRequest" : {
         "type" : "object",
@@ -1837,6 +2473,17 @@
           }
         }
       },
+      "SortOrder" : {
+        "type" : "object",
+        "properties" : {
+          "direction" : {
+            "type" : "string"
+          },
+          "property" : {
+            "type" : "string"
+          }
+        }
+      },
       "TokenResponse" : {
         "type" : "object",
         "properties" : {
@@ -1901,6 +2548,51 @@
             "description" : "IANA time zone; defines the user's today for reviews and streaks",
             "example" : "Europe/Berlin",
             "maxLength" : 64,
+            "minLength" : 0
+          }
+        }
+      },
+      "UpdateVocabularyRequest" : {
+        "type" : "object",
+        "description" : "Partial update: absent or null fields stay unchanged; an empty string clears a text field",
+        "properties" : {
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "gender" : {
+            "type" : "string",
+            "enum" : [ "MASCULINE", "FEMININE", "NEUTER" ]
+          },
+          "lemma" : {
+            "type" : "string",
+            "example" : "der Hund",
+            "maxLength" : 200,
+            "minLength" : 1,
+            "pattern" : "(?s).*\\S.*"
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "partOfSpeech" : {
+            "type" : "string",
+            "enum" : [ "NOUN", "VERB", "ADJECTIVE", "ADVERB", "PRONOUN", "PREPOSITION", "CONJUNCTION", "ARTICLE", "NUMERAL", "INTERJECTION", "PHRASE", "OTHER" ]
+          },
+          "plural" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "MASTERED can't be set; it is earned through practice",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "translation" : {
+            "type" : "string",
+            "maxLength" : 500,
             "minLength" : 0
           }
         }
@@ -1977,6 +2669,140 @@
           }
         },
         "required" : [ "token" ]
+      },
+      "VocabularyExample" : {
+        "type" : "object",
+        "properties" : {
+          "aiGenerated" : {
+            "type" : "boolean"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sentence" : {
+            "type" : "string"
+          },
+          "translation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "VocabularyExampleRequest" : {
+        "type" : "object",
+        "properties" : {
+          "sentence" : {
+            "type" : "string",
+            "example" : "Der Hund bellt.",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "translation" : {
+            "type" : "string",
+            "example" : "The dog barks.",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "sentence" ]
+      },
+      "VocabularyItem" : {
+        "type" : "object",
+        "properties" : {
+          "aiGeneratedFields" : {
+            "type" : "array",
+            "description" : "Fields whose current value came from AI",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "aiStatus" : {
+            "type" : "string",
+            "enum" : [ "PENDING_AI", "READY", "AI_FAILED" ]
+          },
+          "article" : {
+            "type" : "string",
+            "description" : "Definite article, derived from gender for German nouns",
+            "example" : "der"
+          },
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "examples" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VocabularyExample"
+            }
+          },
+          "extra" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "Word-type data, e.g. verbs: praeteritum, partizip2, auxiliary"
+          },
+          "gender" : {
+            "type" : "string",
+            "enum" : [ "MASCULINE", "FEMININE", "NEUTER" ]
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "lemma" : {
+            "type" : "string",
+            "example" : "der Hund"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "partOfSpeech" : {
+            "type" : "string",
+            "enum" : [ "NOUN", "VERB", "ADJECTIVE", "ADVERB", "PRONOUN", "PREPOSITION", "CONJUNCTION", "ARTICLE", "NUMERAL", "INTERJECTION", "PHRASE", "OTHER" ]
+          },
+          "plural" : {
+            "type" : "string",
+            "example" : "die Hunde"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "tags" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VocabularyTag"
+            }
+          },
+          "translation" : {
+            "type" : "string",
+            "example" : "dog"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Increases with every change"
+          }
+        }
+      },
+      "VocabularyTag" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        }
       }
     },
     "securitySchemes" : {

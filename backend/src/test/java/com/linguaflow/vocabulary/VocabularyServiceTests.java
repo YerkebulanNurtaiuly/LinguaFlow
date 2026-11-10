@@ -336,7 +336,7 @@ class VocabularyServiceTests {
 			vocabulary.create(anna, NewVocabularyItem.of("die Katze"));
 			vocabulary.create(ben, NewVocabularyItem.of("das Pferd"));
 
-			var page = vocabulary.list(anna, PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")));
+			var page = vocabulary.list(anna, VocabularyFilter.none(), PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt")));
 
 			assertThat(page.getContent()).extracting(VocabularyItem::getLemma)
 				.containsExactlyInAnyOrder("der Hund", "die Katze");

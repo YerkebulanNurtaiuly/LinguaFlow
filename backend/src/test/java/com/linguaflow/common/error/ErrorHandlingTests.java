@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpHeaders;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
@@ -116,6 +117,12 @@ class ErrorHandlingTests {
 		void conflictExceptionMapsTo409() throws Exception {
 			expectProblem(mvc.perform(post("/api/test/conflict")), 409, "CONFLICT", "/api/test/conflict")
 				.andExpect(jsonPath("$.detail").value("Word already exists"));
+		}
+
+		@Test
+		void concurrentModificationIs409() throws Exception {
+			expectProblem(mvc.perform(post("/api/test/stale")), 409, "CONFLICT", "/api/test/stale")
+				.andExpect(jsonPath("$.detail").value("This was changed in the meantime. Reload it and try again."));
 		}
 
 		@Test
@@ -237,6 +244,11 @@ class ErrorHandlingTests {
 		@PostMapping("/conflict")
 		void conflict() {
 			throw new ConflictException("Word already exists");
+		}
+
+		@PostMapping("/stale")
+		void stale() {
+			throw new ObjectOptimisticLockingFailureException("VocabularyItem", UUID.randomUUID());
 		}
 
 		@PostMapping("/duplicate")

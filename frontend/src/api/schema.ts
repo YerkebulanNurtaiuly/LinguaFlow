@@ -217,7 +217,7 @@ export interface paths {
             cookie?: never;
         };
         /** Get the current user's profile */
-        get: operations["get"];
+        get: operations["get_1"];
         put?: never;
         post?: never;
         /**
@@ -231,7 +231,7 @@ export interface paths {
          * Update display name, interface language and/or time zone
          * @description Only the fields present in the body are changed.
          */
-        patch: operations["update"];
+        patch: operations["update_1"];
         trace?: never;
     };
     "/api/users/me/languages": {
@@ -276,7 +276,7 @@ export interface paths {
          * Change explanation language, level or learning settings, or make this the active language
          * @description Partial update: absent fields (including fields inside settings) stay unchanged.
          */
-        patch: operations["update_1"];
+        patch: operations["update_2"];
         trace?: never;
     };
     "/api/users/me/password": {
@@ -297,6 +297,55 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List vocabulary
+         * @description Words in the active language, newest first by default. Filters combine with AND; repeating a filter (e.g. status=NEW&status=LEARNING) means any of them. Sortable by: createdAt, updatedAt, lemma, translation, cefrLevel, status.
+         */
+        get: operations["list"];
+        put?: never;
+        /**
+         * Add a word
+         * @description Added to the active language. A word you already have (same lemma ignoring article, case and ß/ss, and same part of speech) is rejected with 409 and its existingId.
+         */
+        post: operations["create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one word */
+        get: operations["get"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a word
+         * @description Also deletes its examples, flashcards and progress.
+         */
+        delete: operations["delete"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a word
+         * @description Partial update. Fields you edit stop counting as AI-generated.
+         */
+        patch: operations["update"];
         trace?: never;
     };
 }
@@ -363,6 +412,31 @@ export interface components {
             /** @description At least 10 characters, at most 72 bytes */
             newPassword: string;
         };
+        /** @description Only lemma is required; missing details are filled in by AI enrichment later */
+        CreateVocabularyRequest: {
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            examples?: components["schemas"]["VocabularyExampleRequest"][];
+            /** @enum {string} */
+            gender?: "MASCULINE" | "FEMININE" | "NEUTER";
+            /**
+             * @description The word or phrase as you want to see it, article included
+             * @example der Hund
+             */
+            lemma: string;
+            notes?: string;
+            /** @enum {string} */
+            partOfSpeech?: "NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER";
+            /** @example die Hunde */
+            plural?: string;
+            /**
+             * @description Defaults to LEARNING; MASTERED is earned, not set
+             * @enum {string}
+             */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            /** @example dog */
+            translation?: string;
+        };
         DeleteAccountRequest: {
             /** @description Current password, to confirm */
             password: string;
@@ -415,6 +489,25 @@ export interface components {
             email: string;
             /** @example demo-password-123 */
             password: string;
+        };
+        PageResponseVocabularyItem: {
+            content?: components["schemas"]["VocabularyItem"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        Pageable: {
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: string[];
         };
         PasswordResetRequest: {
             /**
@@ -470,6 +563,10 @@ export interface components {
             /** @description Empty list = no preference; duplicates are ignored */
             preferredExerciseTypes?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
         };
+        SortOrder: {
+            direction?: string;
+            property?: string;
+        };
         TokenResponse: {
             accessToken?: string;
             /** Format: date-time */
@@ -506,6 +603,25 @@ export interface components {
              */
             timezone?: string;
         };
+        /** @description Partial update: absent or null fields stay unchanged; an empty string clears a text field */
+        UpdateVocabularyRequest: {
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @enum {string} */
+            gender?: "MASCULINE" | "FEMININE" | "NEUTER";
+            /** @example der Hund */
+            lemma?: string;
+            notes?: string;
+            /** @enum {string} */
+            partOfSpeech?: "NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER";
+            plural?: string;
+            /**
+             * @description MASTERED can't be set; it is earned through practice
+             * @enum {string}
+             */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            translation?: string;
+        };
         UserLanguageResponse: {
             active?: boolean;
             /** Format: date-time */
@@ -536,6 +652,67 @@ export interface components {
         VerifyEmailRequest: {
             /** @description Token from the verification link */
             token: string;
+        };
+        VocabularyExample: {
+            aiGenerated?: boolean;
+            /** Format: uuid */
+            id?: string;
+            sentence?: string;
+            translation?: string;
+        };
+        VocabularyExampleRequest: {
+            /** @example Der Hund bellt. */
+            sentence: string;
+            /** @example The dog barks. */
+            translation?: string;
+        };
+        VocabularyItem: {
+            /** @description Fields whose current value came from AI */
+            aiGeneratedFields?: string[];
+            /** @enum {string} */
+            aiStatus?: "PENDING_AI" | "READY" | "AI_FAILED";
+            /**
+             * @description Definite article, derived from gender for German nouns
+             * @example der
+             */
+            article?: string;
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** Format: date-time */
+            createdAt?: string;
+            examples?: components["schemas"]["VocabularyExample"][];
+            /** @description Word-type data, e.g. verbs: praeteritum, partizip2, auxiliary */
+            extra?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            gender?: "MASCULINE" | "FEMININE" | "NEUTER";
+            /** Format: uuid */
+            id?: string;
+            /** @example der Hund */
+            lemma?: string;
+            notes?: string;
+            /** @enum {string} */
+            partOfSpeech?: "NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER";
+            /** @example die Hunde */
+            plural?: string;
+            /** @enum {string} */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            tags?: components["schemas"]["VocabularyTag"][];
+            /** @example dog */
+            translation?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            /**
+             * Format: int64
+             * @description Increases with every change
+             */
+            version?: number;
+        };
+        VocabularyTag: {
+            /** Format: uuid */
+            id?: string;
+            name?: string;
         };
     };
     responses: never;
@@ -1241,7 +1418,7 @@ export interface operations {
             };
         };
     };
-    get: {
+    get_1: {
         parameters: {
             query: {
                 userId: string;
@@ -1375,7 +1552,7 @@ export interface operations {
             };
         };
     };
-    update: {
+    update_1: {
         parameters: {
             query: {
                 userId: string;
@@ -1660,7 +1837,7 @@ export interface operations {
             };
         };
     };
-    update_1: {
+    update_2: {
         parameters: {
             query: {
                 userId: string;
@@ -1788,6 +1965,390 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    list: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description Text in the lemma (article, case and ß/ss ignored) or the translation */
+                q?: string;
+                partOfSpeech?: ("NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER")[];
+                cefrLevel?: ("A1" | "A2" | "B1" | "B2" | "C1" | "C2")[];
+                status?: ("NEW" | "LEARNING" | "LEARNED" | "MASTERED")[];
+                /** @description Only words of this study session */
+                sessionId?: string;
+                /** @description Only words with this tag */
+                tagId?: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of words */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseVocabularyItem"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    create: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateVocabularyRequest"];
+            };
+        };
+        responses: {
+            /** @description Word added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyItem"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Already in your vocabulary (code VOCABULARY_DUPLICATE, see existingId), or no active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    get: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyItem"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    delete: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    update: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateVocabularyRequest"];
+            };
+        };
+        responses: {
+            /** @description Word updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyItem"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description The new lemma clashes with another word (code VOCABULARY_DUPLICATE, see existingId), or the word was changed meanwhile (code CONFLICT) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

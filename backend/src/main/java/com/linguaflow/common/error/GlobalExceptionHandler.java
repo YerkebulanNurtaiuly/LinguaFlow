@@ -12,6 +12,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
@@ -57,6 +58,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(InvalidFieldException.class)
 	ResponseEntity<Object> handleInvalidField(InvalidFieldException ex, WebRequest request) {
 		return validationFailed(ex, List.of(new FieldError(ex.field(), ex.getMessage())), request);
+	}
+
+	/** Two writers raced on an entity with {@code @Version}; the loser has to reload. */
+	@ExceptionHandler(OptimisticLockingFailureException.class)
+	ResponseEntity<Object> handleOptimisticLock(OptimisticLockingFailureException ex, WebRequest request) {
+		ProblemDetail body = problem(ErrorCode.CONFLICT,
+				"This was changed in the meantime. Reload it and try again.");
+		return handleExceptionInternal(ex, body, new HttpHeaders(), ErrorCode.CONFLICT.status(), request);
 	}
 
 	@ExceptionHandler(ConstraintViolationException.class)

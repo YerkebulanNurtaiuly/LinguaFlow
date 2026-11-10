@@ -93,11 +93,14 @@ public class VocabularyService {
 		return loaded(items.requireOwned(id, userId));
 	}
 
-	/** One page of the user's words in their active language. */
+	/**
+	 * One page of the user's words in their active language that match {@code filter}.
+	 * Sort properties must be VocabularyItem attributes.
+	 */
 	@Transactional(readOnly = true)
-	public Page<VocabularyItem> list(UUID userId, Pageable pageable) {
+	public Page<VocabularyItem> list(UUID userId, VocabularyFilter filter, Pageable pageable) {
 		String language = activeLanguages.requireActive(userId);
-		Page<VocabularyItem> page = items.findAllByUserIdAndLanguageCode(userId, language, pageable);
+		Page<VocabularyItem> page = items.search(userId, language, filter, pageable);
 		page.forEach(VocabularyService::loaded);
 		return page;
 	}
