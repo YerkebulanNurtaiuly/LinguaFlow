@@ -46,6 +46,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<Object> handleApiException(ApiException ex, WebRequest request) {
 		ProblemDetail body = problem(ex.code(), ex.getMessage());
+		ex.properties().forEach(body::setProperty);
 		HttpHeaders headers = new HttpHeaders();
 		if (ex instanceof RateLimitExceededException limited) {
 			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(limited.retryAfterSeconds()));

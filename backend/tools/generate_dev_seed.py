@@ -16,9 +16,12 @@ def q(v):
     if isinstance(v, (int,)): return str(v)
     return "'" + str(v).replace("'", "''") + "'"
 def norm(lemma):
-    s = unicodedata.normalize('NFC', lemma.strip().lower())
+    # Must match com.linguaflow.vocabulary.LemmaNormalizer (LemmaNormalizerTests checks the seed)
+    s = unicodedata.normalize('NFC', ' '.join(lemma.split()).lower())
     for art in ('der ', 'die ', 'das '):
-        if s.startswith(art): s = s[len(art):]
+        if s.startswith(art):
+            s = s[len(art):]
+            break
     return s.replace('ß', 'ss')
 
 USER = uid('demo-user')

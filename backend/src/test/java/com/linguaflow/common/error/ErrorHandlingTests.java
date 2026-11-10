@@ -1,6 +1,7 @@
 package com.linguaflow.common.error;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.linguaflow.auth.JwtConfig;
 import com.linguaflow.common.config.ClockConfig;
@@ -8,6 +9,7 @@ import com.linguaflow.common.config.CorsConfig;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import com.linguaflow.common.config.SecurityConfig;
 import com.linguaflow.common.web.PageResponse;
+import com.linguaflow.vocabulary.DuplicateVocabularyItemException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -57,6 +59,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 		CorsConfig.class, JwtConfig.class, ClockConfig.class })
 @ActiveProfiles("test")
 class ErrorHandlingTests {
+
+	private static final UUID EXISTING_ID = UUID.fromString("0190a6f0-0000-7000-8000-00000000abcd");
 
 	private static final String UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 
@@ -112,6 +116,13 @@ class ErrorHandlingTests {
 		void conflictExceptionMapsTo409() throws Exception {
 			expectProblem(mvc.perform(post("/api/test/conflict")), 409, "CONFLICT", "/api/test/conflict")
 				.andExpect(jsonPath("$.detail").value("Word already exists"));
+		}
+
+		@Test
+		void exceptionPropertiesBecomeProblemFields() throws Exception {
+			expectProblem(mvc.perform(post("/api/test/duplicate")), 409, "VOCABULARY_DUPLICATE", "/api/test/duplicate")
+				.andExpect(jsonPath("$.detail").value("\"der Hund\" is already in your vocabulary"))
+				.andExpect(jsonPath("$.existingId").value(EXISTING_ID.toString()));
 		}
 
 		@Test
@@ -226,6 +237,11 @@ class ErrorHandlingTests {
 		@PostMapping("/conflict")
 		void conflict() {
 			throw new ConflictException("Word already exists");
+		}
+
+		@PostMapping("/duplicate")
+		void duplicate() {
+			throw new DuplicateVocabularyItemException("der Hund", EXISTING_ID);
 		}
 
 		@GetMapping("/boom")

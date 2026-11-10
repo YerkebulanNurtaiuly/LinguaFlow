@@ -125,6 +125,28 @@ public class VocabularyItem extends AuditableEntity implements OwnedEntity {
 		this.normalizedLemma = Objects.requireNonNull(normalizedLemma);
 	}
 
+	/** Changes the lemma; the caller supplies its {@link LemmaNormalizer} key. */
+	public void rename(String lemma, String normalizedLemma) {
+		this.lemma = Objects.requireNonNull(lemma);
+		this.normalizedLemma = Objects.requireNonNull(normalizedLemma);
+	}
+
+	/**
+	 * Sets the knowledge status on the learner's request. MASTERED can't be chosen: it is
+	 * earned through practice (PRG-02), which uses {@link #setStatus} directly.
+	 */
+	public void changeStatusByUser(KnowledgeStatus newStatus) {
+		if (newStatus == KnowledgeStatus.MASTERED) {
+			throw new IllegalArgumentException("MASTERED is earned through practice, not set by the user");
+		}
+		this.status = Objects.requireNonNull(newStatus);
+	}
+
+	/** The user changed {@code field}, so its value no longer counts as AI-generated (VOC-05: user edits win). */
+	public void markEditedByUser(String field) {
+		aiGeneratedFields.remove(field);
+	}
+
 	public void setExtra(Map<String, Object> extra) {
 		this.extra = new HashMap<>(extra);
 	}

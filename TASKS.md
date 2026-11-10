@@ -144,7 +144,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 6: Vocabulary (`VOC`)
 
-- [ ] **VOC-01 — Vocabulary entity, repository, service** (M) — _deps: DB-03, AUTH-05_
+- [x] **VOC-01 — Vocabulary entity, repository, service** (M) — _deps: DB-03, AUTH-05_
   Lemma normalization (trim, lower-case, strip German article prefix "der/die/das", Unicode NFC, handle ß/ss consistently) used for duplicate detection.
 
 - [ ] **VOC-02 — Vocabulary CRUD API** (M) — _deps: VOC-01_

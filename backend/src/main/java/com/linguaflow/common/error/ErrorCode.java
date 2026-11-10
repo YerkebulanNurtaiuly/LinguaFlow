@@ -24,6 +24,7 @@ public enum ErrorCode {
 	CONFLICT(HttpStatus.CONFLICT, "Conflict"),
 	EMAIL_TAKEN(HttpStatus.CONFLICT, "Email already registered"),
 	NO_ACTIVE_LANGUAGE(HttpStatus.CONFLICT, "No active language"),
+	VOCABULARY_DUPLICATE(HttpStatus.CONFLICT, "Vocabulary item already exists"),
 	PAYLOAD_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "Payload too large"),
 	UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type"),
 	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "Too many requests"),

@@ -1554,7 +1554,7 @@
           "code" : {
             "type" : "string",
             "description" : "Stable machine-readable error code",
-            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
+            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "VOCABULARY_DUPLICATE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
           },
           "correlationId" : {
             "type" : "string",
@@ -1570,6 +1570,11 @@
             "items" : {
               "$ref" : "#/components/schemas/FieldError"
             }
+          },
+          "existingId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Present for VOCABULARY_DUPLICATE: ID of the item that already exists"
           },
           "instance" : {
             "type" : "string",
