@@ -186,7 +186,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Status `NEW → LEARNING → LEARNED → MASTERED`. Manual change allowed for `LEARNING/LEARNED`; `MASTERED` granted automatically by PRG rules (or manually with confirmation). Store status history.
   _Done when:_ adding a topic never auto-marks it mastered (design principle 6).
 
-- [ ] **GRM-03 — Predefined topic catalog (suggestions)** (S) — _deps: GRM-01_
+- [x] **GRM-03 — Predefined topic catalog (suggestions)** (S) — _deps: GRM-01_
   Seed table of common German grammar topics per CEFR level (Akkusativ, Dativ, Perfekt, Nebensätze, Adjektivdeklination, Konjunktiv II …) the user can pick from instead of typing.
 
 - [ ] **GRM-04 — AI grammar explanation** (S) — _deps: GRM-01, AI-03_

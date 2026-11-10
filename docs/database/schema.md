@@ -423,7 +423,7 @@ This table is shared between users. It may only hold **language data**, such as 
 | `V2__learning_material.sql` | DB-03 | `pg_trgm` extension, `vocabulary_items`, `vocabulary_examples`, `tags`, `vocabulary_item_tags`, `grammar_topic_catalog`, `grammar_topics`, `grammar_topic_status_history`, `study_sessions`, `session_vocabulary`, `session_grammar` |
 | `V3__practice_and_progress.sql` | DB-04 | In FK order: `ai_jobs`, `ai_requests`, `ai_cache`, `practice_sessions`, `flashcards`, `srs_state`, `flashcard_reviews`, `exercise_sets`, `exercises`, `exercise_grammar_topics`, `exercise_vocabulary`, `exercise_attempts`, `mistakes`, `practice_session_items`, `grammar_topic_progress`, `vocabulary_progress` |
 | `V4__user_action_tokens.sql` | AUTH-07 | `user_action_tokens` |
-| `V5__grammar_catalog_seed.sql` | GRM-03 | Seed rows for the German topic catalog |
+| `V5__grammar_catalog_seed.sql` | GRM-03 | Seed rows for the German topic catalog (52 topics, A1–C1; IDs are `md5('grammar-catalog:de:<slug>')::uuid`) |
 | `R__dev_seed.sql` | DB-05 | Demo data, dev profile only |
 
 Applied migrations are never edited. Every change is a new `V<n>__…` file.

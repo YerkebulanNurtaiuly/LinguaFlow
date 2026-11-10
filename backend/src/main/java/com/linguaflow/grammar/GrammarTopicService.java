@@ -39,9 +39,17 @@ public class GrammarTopicService {
 
 	public static final int MAX_NOTES_LENGTH = 20_000;
 
-	/** A new topic; only the title is required, the status defaults to NEW. */
+	/**
+	 * A new topic; only the title is required, the status defaults to NEW.
+	 * {@code catalogTopicId} links it to the catalog entry it was picked from (GRM-03).
+	 */
 	public record NewGrammarTopic(String title, String description, String personalNotes, CefrLevel cefrLevel,
-			KnowledgeStatus status) {
+			KnowledgeStatus status, UUID catalogTopicId) {
+
+		public NewGrammarTopic(String title, String description, String personalNotes, CefrLevel cefrLevel,
+				KnowledgeStatus status) {
+			this(title, description, personalNotes, cefrLevel, status, null);
+		}
 
 		public static NewGrammarTopic of(String title) {
 			return new NewGrammarTopic(title, null, null, null, null);
@@ -95,6 +103,7 @@ public class GrammarTopicService {
 		topic.setDescription(clean(request.description(), "description", MAX_DESCRIPTION_LENGTH));
 		topic.setPersonalNotes(cleanNotes(request.personalNotes()));
 		topic.setCefrLevel(request.cefrLevel());
+		topic.setCatalogTopicId(request.catalogTopicId());
 		return saveRejectingDuplicates(() -> topics.saveAndFlush(topic), userId, () -> language, title);
 	}
 

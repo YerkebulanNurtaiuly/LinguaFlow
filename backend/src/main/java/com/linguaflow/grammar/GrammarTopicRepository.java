@@ -1,5 +1,6 @@
 package com.linguaflow.grammar;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -19,5 +20,12 @@ public interface GrammarTopicRepository extends OwnedRepository<GrammarTopic>, G
 			""")
 	Optional<UUID> findDuplicateId(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("normalizedTitle") String normalizedTitle);
+
+	/** What identifies each of the user's topics in a language, for matching against the catalog. */
+	@Query("""
+			select new com.linguaflow.grammar.GrammarTopicKey(t.id, t.catalogTopicId, t.normalizedTitle)
+			from GrammarTopic t where t.userId = :userId and t.languageCode = :languageCode
+			""")
+	List<GrammarTopicKey> findKeys(@Param("userId") UUID userId, @Param("languageCode") String languageCode);
 
 }

@@ -994,6 +994,215 @@
         "tags" : [ "Grammar" ]
       }
     },
+    "/api/grammar-topics/catalog" : {
+      "get" : {
+        "description" : "The catalog of the active language, by level then title, with the topics you already have marked. Repeat cefrLevel for several levels.",
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "cefrLevel",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/GrammarCatalogEntry"
+                  }
+                }
+              }
+            },
+            "description" : "The catalog entries"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "No active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List suggested grammar topics",
+        "tags" : [ "Grammar" ]
+      }
+    },
+    "/api/grammar-topics/catalog/{id}" : {
+      "post" : {
+        "description" : "Adds the entry as one of your topics, with its title, description and level, in the active language. The body is optional.",
+        "operationId" : "add_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AddCatalogTopicRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrammarTopic"
+                }
+              }
+            },
+            "description" : "Topic added"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "You already have a topic with that title (code GRAMMAR_TOPIC_DUPLICATE, see existingId)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Add a suggested topic",
+        "tags" : [ "Grammar" ]
+      }
+    },
     "/api/grammar-topics/{id}" : {
       "delete" : {
         "description" : "Also deletes its status history and progress.",
@@ -3455,6 +3664,16 @@
   },
   "components" : {
     "schemas" : {
+      "AddCatalogTopicRequest" : {
+        "type" : "object",
+        "properties" : {
+          "status" : {
+            "type" : "string",
+            "description" : "Defaults to NEW; MASTERED is earned, not set",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          }
+        }
+      },
       "AddLanguageRequest" : {
         "type" : "object",
         "properties" : {
@@ -3878,6 +4097,35 @@
           },
           "message" : {
             "type" : "string"
+          }
+        }
+      },
+      "GrammarCatalogEntry" : {
+        "type" : "object",
+        "properties" : {
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "slug" : {
+            "type" : "string",
+            "example" : "dativ"
+          },
+          "title" : {
+            "type" : "string",
+            "example" : "Dativ"
+          },
+          "topicId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Your topic for this entry, if you already have it (picked from here or with the same title); null if you can add it"
           }
         }
       },
