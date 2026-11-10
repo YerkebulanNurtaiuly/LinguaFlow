@@ -6,8 +6,11 @@ import {
 } from 'axios'
 
 export interface FakeReply {
+  /** HTTP status; 0 simulates a network failure (no response at all) */
   status: number
   data?: unknown
+  /** Response headers, lower-case names */
+  headers?: Record<string, string>
 }
 
 type Handler = (
@@ -66,11 +69,14 @@ export const fakeAdapter: AxiosAdapter = async (config) => {
     throw new Error(`Unexpected request in test: ${method} ${url}`)
   }
   const reply = await handler(config)
+  if (reply.status === 0) {
+    throw new AxiosError('Network Error', AxiosError.ERR_NETWORK, config)
+  }
   const response: AxiosResponse = {
     data: reply.data,
     status: reply.status,
     statusText: '',
-    headers: {},
+    headers: reply.headers ?? {},
     config,
   }
   if (reply.status >= 400) {

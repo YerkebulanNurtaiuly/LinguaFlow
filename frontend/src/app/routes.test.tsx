@@ -106,10 +106,10 @@ describe('app shell and routing', () => {
   it.each([
     ['/login', 'Log in'],
     ['/register', 'Create account'],
-  ])('renders %s without the app navigation', (path, heading) => {
-    renderRoute(path)
+  ])('renders %s without the app navigation', async (path, heading) => {
+    renderRoute(path, { session: 'anonymous' })
     expect(
-      screen.getByRole('heading', { level: 1, name: heading }),
+      await screen.findByRole('heading', { level: 1, name: heading }),
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('navigation', { name: 'Main' }),

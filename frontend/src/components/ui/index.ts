@@ -1,4 +1,6 @@
 /** Design system (FE-02). Import UI building blocks from '@/components/ui'. */
+export { Alert } from './Alert'
+export type { AlertProps, AlertVariant } from './Alert'
 export { Badge, CefrBadge, StatusBadge } from './Badge'
 export type { BadgeVariant, CefrLevel, KnowledgeStatus } from './Badge'
 export { Button } from './Button'

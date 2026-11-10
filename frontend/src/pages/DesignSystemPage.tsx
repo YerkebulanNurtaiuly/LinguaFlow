@@ -1,6 +1,7 @@
 import { BookOpen } from 'lucide-react'
 import { useState } from 'react'
 import {
+  Alert,
   Badge,
   Button,
   Card,
@@ -55,6 +56,19 @@ export function DesignSystemPage() {
           <Button size="sm">Small</Button>
           <Button size="lg">Large</Button>
           <Button disabled>Disabled</Button>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Alerts</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <Alert variant="danger">Wrong email or password.</Alert>
+          <Alert variant="success" title="Account created">
+            Check your inbox for the verification link.
+          </Alert>
+          <Alert>Your session has ended. Log in again.</Alert>
         </CardContent>
       </Card>
 

@@ -3,7 +3,10 @@ import { AppLayout } from '@/app/layouts/AppLayout'
 import { AuthLayout } from '@/app/layouts/AuthLayout'
 import { NAV_ITEMS } from '@/app/navigation'
 import type { RouteHandle } from '@/app/RouteTitle'
+import { GuestRoute } from '@/auth/GuestRoute'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
+import { LoginPage } from '@/pages/auth/LoginPage'
+import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
@@ -12,33 +15,25 @@ const title = (value: string): RouteHandle => ({ title: value })
 
 /**
  * The full route map. Sections render placeholders until their feature task replaces
- * the element (e.g. FE-VOC-01 for /vocabulary); login/register forms arrive in FE-04.
- * Everything inside AppLayout requires a session (ProtectedRoute redirects to /login).
+ * the element (e.g. FE-VOC-01 for /vocabulary). Everything inside AppLayout requires a
+ * session (ProtectedRoute redirects to /login); /login and /register are for logged-out
+ * users only (GuestRoute sends a logged-in user on).
  */
 export const routes: RouteObject[] = [
   { index: true, element: <Navigate to="/dashboard" replace /> },
   {
-    element: <AuthLayout />,
+    element: <GuestRoute />,
     children: [
       {
-        path: '/login',
-        handle: title('Log in'),
-        element: (
-          <PlaceholderPage
-            title="Log in"
-            description="Log in with your email and password."
-          />
-        ),
-      },
-      {
-        path: '/register',
-        handle: title('Create account'),
-        element: (
-          <PlaceholderPage
-            title="Create account"
-            description="Start learning with your own vocabulary and grammar."
-          />
-        ),
+        element: <AuthLayout />,
+        children: [
+          { path: '/login', handle: title('Log in'), element: <LoginPage /> },
+          {
+            path: '/register',
+            handle: title('Create account'),
+            element: <RegisterPage />,
+          },
+        ],
       },
     ],
   },

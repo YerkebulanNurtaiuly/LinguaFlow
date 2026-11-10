@@ -1,11 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
-import { Spinner } from '@/components/ui'
+import { FullPageLoader } from '@/components/layout/FullPageLoader'
 import { useAuth } from './authContext'
-
-/** Where the login page should send the user back to after logging in. */
-export interface LoginRedirectState {
-  from?: string
-}
+import type { AuthPageState } from './redirect'
 
 /**
  * Renders its child routes only for a logged-in user. Anonymous visitors are sent to
@@ -15,20 +11,10 @@ export function ProtectedRoute() {
   const { status } = useAuth()
   const location = useLocation()
 
-  if (status === 'loading') {
-    return (
-      <div
-        role="status"
-        className="flex min-h-screen items-center justify-center gap-3 bg-canvas text-fg-muted"
-      >
-        <Spinner className="size-5" />
-        <span className="text-sm">Loading…</span>
-      </div>
-    )
-  }
+  if (status === 'loading') return <FullPageLoader />
 
   if (status === 'anonymous') {
-    const state: LoginRedirectState = {
+    const state: AuthPageState = {
       from: `${location.pathname}${location.search}${location.hash}`,
     }
     return <Navigate to="/login" replace state={state} />

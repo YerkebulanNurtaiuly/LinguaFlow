@@ -31,6 +31,21 @@ export function getFieldErrors(error: unknown): Record<string, string> {
   return fieldErrors
 }
 
+/** True when the request never got an HTTP response (offline, server down, CORS). */
+export function isNetworkError(error: unknown): boolean {
+  return isAxiosError(error) && !error.response
+}
+
+/** Seconds from the Retry-After header of a 429 response, if present. */
+export function getRetryAfterSeconds(error: unknown): number | undefined {
+  if (!isAxiosError(error)) return undefined
+  const value: unknown = error.response?.headers['retry-after']
+  const seconds = Number(value)
+  return value != null && Number.isFinite(seconds) && seconds >= 0
+    ? Math.ceil(seconds)
+    : undefined
+}
+
 /** A message that is safe to show to the user. */
 export function getErrorMessage(
   error: unknown,

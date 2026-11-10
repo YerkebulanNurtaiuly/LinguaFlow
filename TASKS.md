@@ -126,7 +126,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-03 — API layer & auth state** (M) — _deps: FE-01, INF-09, AUTH-03_
   HTTP client with access-token injection, silent refresh on 401 with request queueing, logout on refresh failure. Auth context/store, `ProtectedRoute`.
 
-- [ ] **FE-04 — Login & registration pages** (S) — _deps: FE-03_
+- [x] **FE-04 — Login & registration pages** (S) — _deps: FE-03_
   Forms with Zod validation, server error display, redirect after login.
 
 - [ ] **FE-05 — Onboarding flow** (S) — _deps: FE-04, USR-02_

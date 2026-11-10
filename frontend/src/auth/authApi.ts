@@ -1,5 +1,9 @@
 import { z } from 'zod'
-import type { LoginRequest, UserProfile } from '@/api/types'
+import type {
+  LoginRequest,
+  RegistrationRequest,
+  UserProfile,
+} from '@/api/types'
 import { api, tokenResponseSchema } from '@/lib/api'
 import { tokenStore } from './tokenStore'
 
@@ -18,6 +22,11 @@ const currentUserSchema = z.object({
 }) satisfies z.ZodType<UserProfile>
 
 export type CurrentUser = z.infer<typeof currentUserSchema>
+
+/** Creates an account. Doesn't log in; call `login` next. */
+export async function register(request: RegistrationRequest): Promise<void> {
+  await api.post('/auth/register', request, { skipAuthRefresh: true })
+}
 
 /** Logs in and starts the session; the refresh cookie is set by the response. */
 export async function login(credentials: LoginRequest): Promise<void> {

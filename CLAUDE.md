@@ -185,7 +185,11 @@ Conventions:
   - **Ending the session:** a refresh rejected with 401 clears the token, which logs the user out. Network or 5xx errors during refresh keep the session. When the token is cleared, `AuthProvider` drops the whole query cache.
   - **Auth endpoints:** pass `skipAuthRefresh: true` on calls to them (login, logout, refresh), because their 401 means wrong credentials, not an expired token. Use the functions in `auth/authApi.ts`.
   - **In components:** `useAuth()` returns `{ status: 'loading' | 'authenticated' | 'anonymous', user, login, logout }`. `user` is the `/users/me` profile under the query key `CURRENT_USER_QUERY_KEY`; after a profile change, update that cache entry.
-  - **Route guard:** `ProtectedRoute` wraps `AppLayout`. Anonymous visitors go to `/login` with `state.from` (type `LoginRedirectState`) holding the page they wanted.
+  - **Route guards:** `ProtectedRoute` wraps `AppLayout`. Anonymous visitors go to `/login` with `state.from` (type `AuthPageState` in `auth/redirect.ts`) holding the page they wanted.
+    - `GuestRoute` wraps `/login` and `/register`. It sends a logged-in user to `redirectTarget(state)`, which is `state.from` if it's a safe in-app path, otherwise `/dashboard`.
+    - Because of that, the login and register pages never navigate on success: setting the token is enough.
+  - **Login and registration pages (FE-04):** `pages/auth/`. Their Zod schemas (`authForms.ts`) mirror the backend rules, including the password limits: at least 10 characters and at most 72 UTF-8 bytes. `authErrorMessage` turns API errors into the form-level message.
+    - Registration logs straight in afterwards. If that login fails, the user lands on `/login` with `state.registeredEmail`, which prefills the email field.
   - **Password change:** it returns new tokens. Put the new access token in `tokenStore.set(...)`.
 - **Routes:** all routes are defined in `src/app/routes.tsx`.
   - `AuthLayout` (a centered card, no navigation) wraps `/login` and `/register`.
@@ -194,8 +198,8 @@ Conventions:
   - Every route sets `handle: { title }`; `RouteTitle` turns it into `document.title` ("Vocabulary · LinguaFlow").
   - To build a section, replace its `PlaceholderPage` element in `routes.tsx`. Add new sections to `NAV_ITEMS`.
   - Tests render routes with `renderRoute(path, { session, user })` from `src/test/renderWithProviders.tsx`, which uses a memory router, a fresh QueryClient and `AuthProvider`. It starts logged in as `testUser` by default; pass `session: 'anonymous'` to start without a session. It returns `{ router, queryClient }`. `src/app/routes.test.tsx` covers the shell and `src/auth/auth.test.tsx` the session flows.
-  - **No network in tests:** `src/test/setup.ts` installs `fakeAdapter` on `api`. Answer requests with `fakeApi.on(method, url, reply | handler)` and inspect them with `fakeApi.requests(url)`. An unregistered request fails the test. `/auth/refresh` answers 401 unless the test registers a handler. `fakeApi.fallback` is for helpers' defaults, which a test's own `on` overrides.
-- **Design system (FE-02):** building blocks live in `src/components/ui` and are imported from `@/components/ui`. They are Button, Field with Input, Select and Textarea, Badge/CefrBadge/StatusBadge, Card, Table, Tabs, Modal, ConfirmDialog, Toast (`useToast`), EmptyState, Skeleton/SkeletonText, Spinner and ThemeToggle. Build pages from these rather than raw elements.
+  - **No network in tests:** `src/test/setup.ts` installs `fakeAdapter` on `api`. Answer requests with `fakeApi.on(method, url, reply | handler)`, where a reply is `{ status, data?, headers? }` and `status: 0` simulates a network failure, and inspect them with `fakeApi.requests(url)`. An unregistered request fails the test. `/auth/refresh` answers 401 unless the test registers a handler. `fakeApi.fallback` is for helpers' defaults, which a test's own `on` overrides.
+- **Design system (FE-02):** building blocks live in `src/components/ui` and are imported from `@/components/ui`. They are Alert, Button, Field with Input, Select and Textarea, Badge/CefrBadge/StatusBadge, Card, Table, Tabs, Modal, ConfirmDialog, Toast (`useToast`), EmptyState, Skeleton/SkeletonText, Spinner and ThemeToggle. Build pages from these rather than raw elements.
   - **Colours:** use only the semantic tokens from `src/index.css` (`bg-canvas`, `bg-surface`, `bg-surface-muted`, `text-fg`, `text-fg-muted`, `text-fg-subtle`, `border-border`, `bg-primary`, `bg-danger`, `bg-{success,warning,info,danger}-soft` and so on). **Never use raw palette classes** like `bg-slate-50`. Light and dark mode both come from the tokens.
   - **Theme:** `ThemeProvider` stores `system`, `light` or `dark` in `localStorage` under `lf-theme` and sets `<html data-theme>`. A script in `index.html` applies the stored theme before first paint.
   - **Forms:** wrap every control in `<Field label hint error>`, which wires `htmlFor`, `aria-describedby` and `aria-invalid`.
@@ -211,7 +215,9 @@ Conventions:
   2. `npm run api:generate` (openapi-typescript) writes `src/api/schema.ts`. CI fails if the file is stale.
   3. Import aliases from `src/api/types.ts`. Add an alias there for each new DTO.
   - After changing the backend API, run `./mvnw test -Dtest=OpenApiDocsTests -Dopenapi.update=true` in `backend/`, then `npm run api:generate` in `frontend/`, and commit both files.
-- **Error handling:** read API errors with `src/api/errors.ts` (`getApiProblem`, `hasErrorCode`, `getFieldErrors`, `getErrorMessage`), which uses the generated `ApiProblem` type.
+- **Error handling:** read API errors with `src/api/errors.ts` (`getApiProblem`, `hasErrorCode`, `getFieldErrors`, `getErrorMessage`, `isNetworkError`, `getRetryAfterSeconds`), which uses the generated `ApiProblem` type.
+- **Forms:** use React Hook Form with `zodResolver` and `noValidate` on the `<form>`. Map a backend `VALIDATION_FAILED` response onto the fields with `applyServerFieldErrors(error, setError, fields)` from `lib/formErrors.ts`. When it returns false, show the error as a form-level `<Alert variant="danger">` above the fields.
+- **Alerts in tests:** the toast provider always renders an empty `role="alert"` region. Use `findAlert()` and `queryAlerts()` from `src/test/queries.ts` instead of `getByRole('alert')`.
 - **openapi-typescript and TypeScript 6:** openapi-typescript only declares support for TypeScript 5, so an npm `overrides` entry in `package.json` points it at the project's TypeScript.
 
 ## CI
