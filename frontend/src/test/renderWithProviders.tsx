@@ -1,11 +1,15 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { render } from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { routes } from '@/app/routes'
 import { AuthProvider } from '@/auth/AuthProvider'
 import type { CurrentUser } from '@/auth/authApi'
 import { tokenStore } from '@/auth/tokenStore'
 import { ThemeProvider, ToastProvider } from '@/components/ui'
+import type {
+  AvailableLanguage,
+  LearnedLanguage,
+} from '@/languages/languagesApi'
 import { fakeApi } from './fakeApi'
 
 export const TEST_ACCESS_TOKEN = 'test-access-token'
@@ -21,6 +25,38 @@ export const testUser: CurrentUser = {
   createdAt: '2026-11-01T10:00:00Z',
 }
 
+/** The language catalog as the backend seeds it: German to learn, English for explanations. */
+export const testCatalog: AvailableLanguage[] = [
+  {
+    code: 'de',
+    name: 'German',
+    nativeName: 'Deutsch',
+    supportedAsTarget: true,
+    supportedAsExplanation: true,
+  },
+  {
+    code: 'en',
+    name: 'English',
+    nativeName: 'English',
+    supportedAsTarget: false,
+    supportedAsExplanation: true,
+  },
+]
+
+export const testLearnedLanguage: LearnedLanguage = {
+  languageCode: 'de',
+  explanationLanguageCode: 'en',
+  selfAssessedLevel: 'A2',
+  active: true,
+  createdAt: '2026-11-01T10:05:00Z',
+  settings: {
+    dailyReviewGoal: 50,
+    newCardsPerDay: 20,
+    practiceSessionLength: 20,
+    preferredExerciseTypes: [],
+  },
+}
+
 export interface RenderRouteOptions {
   /**
    * `authenticated` (default) starts with an access token and `user` as the profile;
@@ -29,17 +65,30 @@ export interface RenderRouteOptions {
    */
   session?: 'authenticated' | 'anonymous'
   user?: CurrentUser
+  /** What GET /users/me/languages returns; `[]` means onboarding isn't done yet */
+  languages?: LearnedLanguage[]
 }
 
-/** Renders the app's routes at `path` with all app providers and a fresh, retry-free query client. */
+/**
+ * Renders the app's routes at `path` with all app providers and a fresh, retry-free
+ * query client. The profile, the user's languages and the catalog are answered by
+ * fallbacks, which a test's own `fakeApi.on` handlers override.
+ */
 export function renderRoute(
   path: string,
-  { session = 'authenticated', user = testUser }: RenderRouteOptions = {},
+  {
+    session = 'authenticated',
+    user = testUser,
+    languages = [testLearnedLanguage],
+  }: RenderRouteOptions = {},
 ) {
-  if (session === 'authenticated') {
-    tokenStore.set(TEST_ACCESS_TOKEN)
-    fakeApi.fallback('GET', '/users/me', { status: 200, data: user })
-  }
+  if (session === 'authenticated') tokenStore.set(TEST_ACCESS_TOKEN)
+  fakeApi.fallback('GET', '/users/me', { status: 200, data: user })
+  fakeApi.fallback('GET', '/users/me/languages', {
+    status: 200,
+    data: languages,
+  })
+  fakeApi.fallback('GET', '/languages', { status: 200, data: testCatalog })
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   })
@@ -56,4 +105,11 @@ export function renderRoute(
     </ThemeProvider>,
   )
   return { ...result, router, queryClient }
+}
+
+/** Like `renderRoute`, then waits until the app shell (after the session and onboarding checks) is shown. */
+export async function renderApp(path: string, options?: RenderRouteOptions) {
+  const view = renderRoute(path, options)
+  await screen.findAllByRole('navigation', { name: 'Main' })
+  return view
 }

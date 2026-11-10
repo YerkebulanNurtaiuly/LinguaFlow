@@ -129,7 +129,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-04 — Login & registration pages** (S) — _deps: FE-03_
   Forms with Zod validation, server error display, redirect after login.
 
-- [ ] **FE-05 — Onboarding flow** (S) — _deps: FE-04, USR-02_
+- [x] **FE-05 — Onboarding flow** (S) — _deps: FE-04, USR-02_
   First-login wizard: choose target language, explanation language, level, daily goal.
 
 - [ ] **FE-06 — Settings page** (S) — _deps: FE-05, USR-03_

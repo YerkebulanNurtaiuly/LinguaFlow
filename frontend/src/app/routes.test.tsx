@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NAV_ITEMS } from '@/app/navigation'
 import { fetchHealth } from '@/lib/health'
-import { renderRoute } from '@/test/renderWithProviders'
+import { renderApp, renderRoute } from '@/test/renderWithProviders'
 
 vi.mock('@/lib/health', () => ({ fetchHealth: vi.fn() }))
 
@@ -22,19 +22,22 @@ describe('app shell and routing', () => {
     ).toBeInTheDocument()
   })
 
-  it.each(NAV_ITEMS)('renders $label at $path inside the shell', (item) => {
-    renderRoute(item.path)
+  it.each(NAV_ITEMS)(
+    'renders $label at $path inside the shell',
+    async (item) => {
+      await renderApp(item.path)
 
-    expect(
-      screen.getByRole('heading', { level: 1, name: item.label }),
-    ).toBeInTheDocument()
-    expect(
-      within(mainNav()).getByRole('link', { name: item.label }),
-    ).toHaveAttribute('aria-current', 'page')
-  })
+      expect(
+        screen.getByRole('heading', { level: 1, name: item.label }),
+      ).toBeInTheDocument()
+      expect(
+        within(mainNav()).getByRole('link', { name: item.label }),
+      ).toHaveAttribute('aria-current', 'page')
+    },
+  )
 
-  it('lists every section in the main navigation', () => {
-    renderRoute('/dashboard')
+  it('lists every section in the main navigation', async () => {
+    await renderApp('/dashboard')
     const links = within(mainNav()).getAllByRole('link')
     expect(links.map((link) => link.getAttribute('href'))).toEqual(
       NAV_ITEMS.map((item) => item.path),
@@ -42,7 +45,7 @@ describe('app shell and routing', () => {
   })
 
   it('navigates when a link is clicked', async () => {
-    renderRoute('/dashboard')
+    await renderApp('/dashboard')
     await userEvent.click(
       within(mainNav()).getByRole('link', { name: 'Grammar' }),
     )
@@ -52,24 +55,24 @@ describe('app shell and routing', () => {
   })
 
   it('sets the document title per page', async () => {
-    renderRoute('/vocabulary')
+    await renderApp('/vocabulary')
     await waitFor(() => expect(document.title).toBe('Vocabulary · LinguaFlow'))
   })
 
   it('shows the backend status in the sidebar', async () => {
-    renderRoute('/dashboard')
+    await renderApp('/dashboard')
     expect(await screen.findByText('UP')).toBeInTheDocument()
   })
 
   it('reports an unreachable backend', async () => {
     vi.mocked(fetchHealth).mockRejectedValue(new Error('network down'))
-    renderRoute('/dashboard')
+    await renderApp('/dashboard')
     expect(await screen.findByText('unreachable')).toBeInTheDocument()
   })
 
   describe('mobile navigation', () => {
     it('opens, and closes again on navigation', async () => {
-      renderRoute('/dashboard')
+      await renderApp('/dashboard')
       const toggle = screen.getByRole('button', { name: 'Open navigation' })
       expect(toggle).toHaveAttribute('aria-expanded', 'false')
 
@@ -90,7 +93,7 @@ describe('app shell and routing', () => {
     })
 
     it('closes on Escape and on backdrop click', async () => {
-      renderRoute('/dashboard')
+      await renderApp('/dashboard')
       const toggle = screen.getByRole('button', { name: 'Open navigation' })
 
       await userEvent.click(toggle)

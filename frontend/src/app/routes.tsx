@@ -5,10 +5,12 @@ import { NAV_ITEMS } from '@/app/navigation'
 import type { RouteHandle } from '@/app/RouteTitle'
 import { GuestRoute } from '@/auth/GuestRoute'
 import { ProtectedRoute } from '@/auth/ProtectedRoute'
+import { OnboardingGate } from '@/onboarding/OnboardingGate'
 import { LoginPage } from '@/pages/auth/LoginPage'
 import { RegisterPage } from '@/pages/auth/RegisterPage'
 import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
+import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 
 const title = (value: string): RouteHandle => ({ title: value })
@@ -16,8 +18,9 @@ const title = (value: string): RouteHandle => ({ title: value })
 /**
  * The full route map. Sections render placeholders until their feature task replaces
  * the element (e.g. FE-VOC-01 for /vocabulary). Everything inside AppLayout requires a
- * session (ProtectedRoute redirects to /login); /login and /register are for logged-out
- * users only (GuestRoute sends a logged-in user on).
+ * session (ProtectedRoute redirects to /login) and a learning language (OnboardingGate
+ * redirects to /onboarding); /login and /register are for logged-out users only
+ * (GuestRoute sends a logged-in user on).
  */
 export const routes: RouteObject[] = [
   { index: true, element: <Navigate to="/dashboard" replace /> },
@@ -41,25 +44,40 @@ export const routes: RouteObject[] = [
     element: <ProtectedRoute />,
     children: [
       {
-        element: <AppLayout />,
+        element: <AuthLayout width="wide" />,
         children: [
-          ...NAV_ITEMS.map(({ path, label, description }) => ({
-            path,
-            handle: title(label),
-            element: (
-              <PlaceholderPage title={label} description={description} />
-            ),
-          })),
-          // Dev-only component showcase; not part of production builds' routes
-          ...(import.meta.env.DEV
-            ? [
-                {
-                  path: '/design-system',
-                  handle: title('Design system'),
-                  element: <DesignSystemPage />,
-                },
-              ]
-            : []),
+          {
+            path: '/onboarding',
+            handle: title('Get started'),
+            element: <OnboardingPage />,
+          },
+        ],
+      },
+      {
+        element: <OnboardingGate />,
+        children: [
+          {
+            element: <AppLayout />,
+            children: [
+              ...NAV_ITEMS.map(({ path, label, description }) => ({
+                path,
+                handle: title(label),
+                element: (
+                  <PlaceholderPage title={label} description={description} />
+                ),
+              })),
+              // Dev-only component showcase; not part of production builds' routes
+              ...(import.meta.env.DEV
+                ? [
+                    {
+                      path: '/design-system',
+                      handle: title('Design system'),
+                      element: <DesignSystemPage />,
+                    },
+                  ]
+                : []),
+            ],
+          },
         ],
       },
     ],

@@ -191,15 +191,25 @@ Conventions:
   - **Login and registration pages (FE-04):** `pages/auth/`. Their Zod schemas (`authForms.ts`) mirror the backend rules, including the password limits: at least 10 characters and at most 72 UTF-8 bytes. `authErrorMessage` turns API errors into the form-level message.
     - Registration logs straight in afterwards. If that login fails, the user lands on `/login` with `state.registeredEmail`, which prefills the email field.
   - **Password change:** it returns new tokens. Put the new access token in `tokenStore.set(...)`.
+- **Learning languages and onboarding (FE-05):**
+  - **API:** `src/languages/languagesApi.ts` has `fetchLanguages`, `fetchMyLanguages`, `addLanguage` and `updateLanguage`, with Zod-validated `AvailableLanguage` and `LearnedLanguage`. The hooks in `languages/queries.ts` are `useLanguages()` and `useMyLanguages()`. After changing a learning language, update or invalidate `MY_LANGUAGES_QUERY_KEY`.
+  - **Gate:** `OnboardingGate`, inside `ProtectedRoute`, wraps `AppLayout`. A user with no learning language goes to `/onboarding` with `state.from`.
+  - **Wizard:** `pages/onboarding/OnboardingPage.tsx` asks for target language, explanation language, level ("not sure" sends no level) and daily goal (`dailyReviewGoal`).
+    - It saves with POST and then PATCH. On a retry, a 409 `CONFLICT` from the POST is ignored, so a half-finished save completes.
+    - Like `GuestRoute`, the page itself redirects once the user has a language, so finishing only has to invalidate the query.
 - **Routes:** all routes are defined in `src/app/routes.tsx`.
-  - `AuthLayout` (a centered card, no navigation) wraps `/login` and `/register`.
+  - `AuthLayout` (a centered card, no navigation) wraps `/login` and `/register`; `<AuthLayout width="wide" />` wraps `/onboarding`.
   - `AppLayout` wraps the sections from `src/app/navigation.ts` (`NAV_ITEMS`: path, label, lucide icon, description). `AppLayout` has a sidebar at `lg` and up, and a top bar with a `MobileNav` drawer below that.
   - `/` redirects to `/dashboard`, and `*` shows `NotFoundPage`.
   - Every route sets `handle: { title }`; `RouteTitle` turns it into `document.title` ("Vocabulary · LinguaFlow").
   - To build a section, replace its `PlaceholderPage` element in `routes.tsx`. Add new sections to `NAV_ITEMS`.
-  - Tests render routes with `renderRoute(path, { session, user })` from `src/test/renderWithProviders.tsx`, which uses a memory router, a fresh QueryClient and `AuthProvider`. It starts logged in as `testUser` by default; pass `session: 'anonymous'` to start without a session. It returns `{ router, queryClient }`. `src/app/routes.test.tsx` covers the shell and `src/auth/auth.test.tsx` the session flows.
+  - Tests render routes with `renderRoute(path, { session, user, languages })` from `src/test/renderWithProviders.tsx`, which uses a memory router, a fresh QueryClient and `AuthProvider`.
+    - By default it starts logged in as `testUser`, learning German (`testLearnedLanguage`). Pass `session: 'anonymous'` to start without a session, or `languages: []` for a user who hasn't onboarded yet.
+    - The profile, the user's languages and the language catalog (`testCatalog`) are answered by fake-API fallbacks, which a test's own `fakeApi.on` overrides.
+    - It returns `{ router, queryClient }`.
+    - The app shell appears asynchronously, after the session and language checks. Use `await renderApp(path)` when a test needs the shell. `src/app/routes.test.tsx` covers the shell and `src/auth/auth.test.tsx` the session flows.
   - **No network in tests:** `src/test/setup.ts` installs `fakeAdapter` on `api`. Answer requests with `fakeApi.on(method, url, reply | handler)`, where a reply is `{ status, data?, headers? }` and `status: 0` simulates a network failure, and inspect them with `fakeApi.requests(url)`. An unregistered request fails the test. `/auth/refresh` answers 401 unless the test registers a handler. `fakeApi.fallback` is for helpers' defaults, which a test's own `on` overrides.
-- **Design system (FE-02):** building blocks live in `src/components/ui` and are imported from `@/components/ui`. They are Alert, Button, Field with Input, Select and Textarea, Badge/CefrBadge/StatusBadge, Card, Table, Tabs, Modal, ConfirmDialog, Toast (`useToast`), EmptyState, Skeleton/SkeletonText, Spinner and ThemeToggle. Build pages from these rather than raw elements.
+- **Design system (FE-02):** building blocks live in `src/components/ui` and are imported from `@/components/ui`. They are Alert, Button, RadioCards (a single choice shown as cards, built on native radios), Field with Input, Select and Textarea, Badge/CefrBadge/StatusBadge, Card, Table, Tabs, Modal, ConfirmDialog, Toast (`useToast`), EmptyState, Skeleton/SkeletonText, Spinner and ThemeToggle. Build pages from these rather than raw elements.
   - **Colours:** use only the semantic tokens from `src/index.css` (`bg-canvas`, `bg-surface`, `bg-surface-muted`, `text-fg`, `text-fg-muted`, `text-fg-subtle`, `border-border`, `bg-primary`, `bg-danger`, `bg-{success,warning,info,danger}-soft` and so on). **Never use raw palette classes** like `bg-slate-50`. Light and dark mode both come from the tokens.
   - **Theme:** `ThemeProvider` stores `system`, `light` or `dark` in `localStorage` under `lf-theme` and sets `<html data-theme>`. A script in `index.html` applies the stored theme before first paint.
   - **Forms:** wrap every control in `<Field label hint error>`, which wires `htmlFor`, `aria-describedby` and `aria-invalid`.

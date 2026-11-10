@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchHealth } from '@/lib/health'
 import { type FakeReply, fakeApi, problem } from '@/test/fakeApi'
-import { renderRoute, testUser } from '@/test/renderWithProviders'
+import { renderApp, renderRoute, testUser } from '@/test/renderWithProviders'
 import { tokenStore } from './tokenStore'
 
 vi.mock('@/lib/health', () => ({ fetchHealth: vi.fn() }))
@@ -74,13 +74,15 @@ describe('auth state and protected routes', () => {
   })
 
   it('shows the current user in the sidebar', async () => {
-    renderRoute('/dashboard')
+    await renderApp('/dashboard')
     expect(await within(sidebar()).findByText('Anna')).toBeInTheDocument()
     expect(within(sidebar()).getByText(testUser.email)).toBeInTheDocument()
   })
 
   it('falls back to the email when the user has no display name', async () => {
-    renderRoute('/dashboard', { user: { ...testUser, displayName: undefined } })
+    await renderApp('/dashboard', {
+      user: { ...testUser, displayName: undefined },
+    })
     expect(
       await within(sidebar()).findByText(testUser.email),
     ).toBeInTheDocument()
@@ -88,7 +90,7 @@ describe('auth state and protected routes', () => {
 
   it('logs out: revokes the session and returns to the login page', async () => {
     fakeApi.on('POST', '/auth/logout', { status: 204 })
-    const { router } = renderRoute('/dashboard')
+    const { router } = await renderApp('/dashboard')
 
     await userEvent.click(
       within(sidebar()).getByRole('button', { name: 'Log out' }),
@@ -116,7 +118,7 @@ describe('auth state and protected routes', () => {
   })
 
   it('drops cached data of the previous user when the session ends', async () => {
-    const { queryClient } = renderRoute('/dashboard')
+    const { queryClient } = await renderApp('/dashboard')
     await within(sidebar()).findByText('Anna')
     queryClient.setQueryData(['vocabulary'], ['Hund'])
 
