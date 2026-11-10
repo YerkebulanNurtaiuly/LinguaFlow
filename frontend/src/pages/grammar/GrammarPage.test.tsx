@@ -19,6 +19,8 @@ function topic(overrides: Partial<GrammarTopic> = {}): GrammarTopic {
     cefrLevel: 'A2',
     status: 'LEARNING',
     catalogTopicId: undefined,
+    aiExplanation: undefined,
+    aiExplanationGeneratedAt: undefined,
     createdAt: '2026-11-01T10:00:00Z',
     updatedAt: '2026-11-01T10:00:00Z',
     version: 0,

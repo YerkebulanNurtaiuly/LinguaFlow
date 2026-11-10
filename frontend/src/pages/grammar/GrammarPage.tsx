@@ -1,6 +1,6 @@
 import { GraduationCap, Plus, Search, SearchX, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { describeError } from '@/api/errors'
 import {
   Button,
@@ -187,7 +187,14 @@ function TopicGroup({ group }: { group: Group }) {
             className="flex flex-col gap-2 rounded-xl border border-border bg-surface p-4"
           >
             <div className="flex items-start justify-between gap-3">
-              <h3 className="font-medium text-fg">{topic.title}</h3>
+              <h3 className="font-medium text-fg">
+                <Link
+                  to={`/grammar/${topic.id}`}
+                  className="rounded hover:text-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+                >
+                  {topic.title}
+                </Link>
+              </h3>
               <StatusBadge status={topic.status} />
             </div>
             {topic.description && (

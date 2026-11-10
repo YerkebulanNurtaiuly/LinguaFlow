@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-09 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
-- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06), Vocabulary (FE-VOC-01 to 03) and Grammar (FE-GRM-01) are built.
+- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06), Vocabulary (FE-VOC-01 to 03) and Grammar (FE-GRM-01, FE-GRM-02) are built.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
 - Flyway migrations exist up to `V5__grammar_catalog_seed.sql` (V4 is AUTH-07, V5 is GRM-03's catalog seed). Phase 2 has started: VOC-01 (vocabulary service), VOC-02 (vocabulary API), VOC-03 (tags), VOC-04 (bulk input) and VOC-07 (CSV import/export) are done; VOC-05 and VOC-06 wait for the AI layer. GRM-01 (grammar topic API), GRM-02 (status lifecycle) and GRM-03 (topic catalog) are done. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet; they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use. There's no Docker Compose yet.
 
@@ -272,9 +272,18 @@ Conventions:
   - **Loading:** `fetchGrammarTopics` loads *all* matching topics page by page (size 100), sorted by `cefrLevel,title`. Learners have tens of topics, so the page groups them by CEFR level (A1 first, "No level set" last) rather than paging.
   - **Filters:** `q`, `status` and `cefrLevel` live in the URL, replacing the history entry; search is debounced like the vocabulary list's.
   - **`AddTopicModal`:** two `Tabs`. "Suggestions" filters the catalog client-side by level and text, shows "Added" for entries the learner has, and adds with `POST /grammar-topics/catalog/{id}`; the dialog stays open, so several can be added. "Your own" is a small RHF form (title, level, starting status, description); a duplicate title is a field error.
-  - **Topic cards:** they don't link anywhere yet; FE-GRM-02 adds the detail page.
+  - **Topic cards:** the title links to the topic's detail page.
   - **Accessible names:** don't build them as `Add<span className="sr-only"> {name}</span>`. Name computation drops the span's leading space ("AddDativ"), so use `aria-label` instead.
   - **Crash test:** `errorHandling.test.tsx` now crashes the Study sessions placeholder. Move it again when that section is built.
+- **Grammar topic detail (FE-GRM-02):** `pages/grammar/topic/GrammarTopicPage.tsx` at `/grammar/:id`. Each area is a `SettingsSection` card.
+  - **Status (`TopicStatusSection`):** `RadioCards`. NEW is only offered while the topic is NEW. MASTERED opens a `ConfirmDialog` and sends `confirmMastered: true`. The status history is listed newest first, with reasons ("by you", "from your practice results").
+  - **Notes (`TopicNotesSection`):** Write/Preview `Tabs`. The preview uses `MarkdownView` (react-markdown, lazy-loaded into its own chunk, so the main bundle stays around 650 kB).
+  - **Safe Markdown:** never add `rehype-raw` or render notes as HTML. `GrammarTopicPage.test.tsx` checks that `<script>`, `<img onerror>` and `javascript:` links are neutralized (SEC-01). `MarkdownView` strips react-markdown's `node` prop before spreading props onto DOM elements.
+  - **AI explanation (`AiExplanationSection`):** shows summary, rules and examples once GRM-04 fills them, and an empty note until then.
+  - **Details (`TopicDetailsSection`):** title, level and description, sending only changed fields. The level can't be cleared once set, and a duplicate title is a field error.
+  - **Saving:** `useSaveTopic` puts the PATCH result into the topic's cache entry and invalidates the rest of `GRAMMAR_QUERY_KEY`.
+  - **Deleting:** navigate away first, then `removeQueries` the topic and its history before invalidating; refetching the deleted topic would show a 404 refresh-error toast. A 404 on load shows "Topic not found".
+  - **Stats:** practice stats (attempts, accuracy) wait for the PRG tasks.
 - **Settings (FE-06):** `pages/settings/SettingsPage.tsx` has one `SettingsSection` card per area: profile, one per learning language, password, and deleting the account.
   - **Account API:** the calls are in `src/account/accountApi.ts`. `changePassword` stores the new access token, and `deleteAccount` clears the session.
   - **After saving:** the profile updates `CURRENT_USER_QUERY_KEY` and the language settings update `MY_LANGUAGES_QUERY_KEY` with the response, so the sidebar and other screens refresh without a refetch. Reset the form with the saved values so Save is disabled again.

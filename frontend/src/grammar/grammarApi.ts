@@ -1,6 +1,8 @@
 import { z } from 'zod'
 import type {
   CreateGrammarTopicRequest,
+  UpdateGrammarTopicRequest,
+  GrammarTopicStatusChange as ApiStatusChange,
   GrammarCatalogEntry as ApiCatalogEntry,
   GrammarTopic as ApiGrammarTopic,
 } from '@/api/types'
@@ -22,6 +24,14 @@ const topicSchema = z.object({
   cefrLevel: optional(z.enum(CEFR_LEVELS)),
   status: z.enum(KNOWLEDGE_STATUSES),
   catalogTopicId: optional(z.string()),
+  aiExplanation: optional(
+    z.object({
+      summary: optional(z.string()),
+      rules: z.array(z.string()),
+      examples: z.array(z.string()),
+    }),
+  ),
+  aiExplanationGeneratedAt: optional(z.string()),
   createdAt: z.string(),
   updatedAt: z.string(),
   version: z.number(),
@@ -103,4 +113,48 @@ export async function addFromCatalog(catalogId: string): Promise<GrammarTopic> {
     `/grammar-topics/catalog/${encodeURIComponent(catalogId)}`,
   )
   return topicSchema.parse(data)
+}
+
+const statusChangeSchema = z.object({
+  fromStatus: optional(z.enum(KNOWLEDGE_STATUSES)),
+  toStatus: z.enum(KNOWLEDGE_STATUSES),
+  reason: z.enum(['CREATED', 'MANUAL', 'MASTERY_RULE', 'DEMOTION_RULE']),
+  changedAt: z.string(),
+}) satisfies z.ZodType<ApiStatusChange>
+
+export type StatusChange = z.infer<typeof statusChangeSchema>
+
+export async function fetchGrammarTopic(id: string): Promise<GrammarTopic> {
+  const { data } = await api.get<unknown>(
+    `/grammar-topics/${encodeURIComponent(id)}`,
+  )
+  return topicSchema.parse(data)
+}
+
+/**
+ * Partial update: absent fields stay unchanged and "" clears the description or notes.
+ * MASTERED needs `confirmMastered: true`; NEW can't be chosen again.
+ */
+export async function updateGrammarTopic(
+  id: string,
+  request: UpdateGrammarTopicRequest,
+): Promise<GrammarTopic> {
+  const { data } = await api.patch<unknown>(
+    `/grammar-topics/${encodeURIComponent(id)}`,
+    request,
+  )
+  return topicSchema.parse(data)
+}
+
+/** Deletes the topic with its history and progress. */
+export async function deleteGrammarTopic(id: string): Promise<void> {
+  await api.delete(`/grammar-topics/${encodeURIComponent(id)}`)
+}
+
+/** Every status change of the topic, oldest first. */
+export async function fetchStatusHistory(id: string): Promise<StatusChange[]> {
+  const { data } = await api.get<unknown>(
+    `/grammar-topics/${encodeURIComponent(id)}/status-history`,
+  )
+  return z.array(statusChangeSchema).parse(data)
 }

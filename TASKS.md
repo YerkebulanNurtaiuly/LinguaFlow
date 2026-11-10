@@ -195,7 +195,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-GRM-01 — Grammar topics page** (M) — _deps: FE-02, GRM-01_
   List grouped by CEFR, status badges, filters, add-from-catalog picker.
 
-- [ ] **FE-GRM-02 — Grammar topic detail/edit** (M) — _deps: FE-GRM-01_
+- [x] **FE-GRM-02 — Grammar topic detail/edit** (M) — _deps: FE-GRM-01_
   Description, Markdown notes editor, AI explanation panel, status control, stats (attempts, accuracy) once PRG exists.
 
 ### Epic 8: Study Sessions (`SES`)
