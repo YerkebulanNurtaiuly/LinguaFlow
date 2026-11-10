@@ -91,6 +91,12 @@ export function renderRoute(
     data: languages,
   })
   fakeApi.fallback('GET', '/languages', { status: 200, data: testCatalog })
+  // An empty vocabulary, so sections that list words render without setup
+  fakeApi.fallback('GET', '/vocabulary', {
+    status: 200,
+    data: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
+  })
+  fakeApi.fallback('GET', '/tags', { status: 200, data: [] })
   const queryClient = createQueryClient({
     defaultOptions: { queries: { retry: false } },
   })

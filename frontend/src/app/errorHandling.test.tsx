@@ -19,15 +19,15 @@ import { renderApp } from '@/test/renderWithProviders'
 
 vi.mock('@/lib/health', () => ({ fetchHealth: vi.fn() }))
 
-// Lets a test make the Vocabulary placeholder crash while rendering
-const crash = vi.hoisted(() => ({ vocabulary: false }))
+// Lets a test make the Grammar placeholder crash while rendering
+const crash = vi.hoisted(() => ({ grammar: false }))
 vi.mock('@/pages/PlaceholderPage', async (importOriginal) => {
   const original =
     await importOriginal<typeof import('@/pages/PlaceholderPage')>()
   return {
     PlaceholderPage: (props: { title: string; description: string }) => {
-      if (crash.vocabulary && props.title === 'Vocabulary') {
-        throw new Error('Vocabulary exploded')
+      if (crash.grammar && props.title === 'Grammar') {
+        throw new Error('Grammar exploded')
       }
       return <original.PlaceholderPage {...props} />
     },
@@ -55,43 +55,43 @@ describe('error boundaries', () => {
   })
 
   afterEach(() => {
-    crash.vocabulary = false
+    crash.grammar = false
     vi.mocked(console.error).mockRestore()
   })
 
   it('shows a crashing section inside the shell, so navigation keeps working', async () => {
-    crash.vocabulary = true
-    await renderApp('/vocabulary')
+    crash.grammar = true
+    await renderApp('/grammar')
 
     expect(
       screen.getByRole('heading', { name: 'Something went wrong' }),
     ).toBeInTheDocument()
     const nav = screen.getAllByRole('navigation', { name: 'Main' })[0]!
-    await userEvent.click(within(nav).getByRole('link', { name: 'Grammar' }))
-
-    expect(
-      screen.getByRole('heading', { level: 1, name: 'Grammar' }),
-    ).toBeInTheDocument()
-  })
-
-  it('renders the section again on Try again', async () => {
-    crash.vocabulary = true
-    await renderApp('/vocabulary')
-    await screen.findByRole('heading', { name: 'Something went wrong' })
-
-    crash.vocabulary = false
-    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    await userEvent.click(within(nav).getByRole('link', { name: 'Vocabulary' }))
 
     expect(
       await screen.findByRole('heading', { level: 1, name: 'Vocabulary' }),
     ).toBeInTheDocument()
   })
 
-  it('shows technical details only in development', async () => {
-    crash.vocabulary = true
-    await renderApp('/vocabulary')
+  it('renders the section again on Try again', async () => {
+    crash.grammar = true
+    await renderApp('/grammar')
+    await screen.findByRole('heading', { name: 'Something went wrong' })
 
-    expect(screen.getByText(/Vocabulary exploded/)).toBeInTheDocument()
+    crash.grammar = false
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Grammar' }),
+    ).toBeInTheDocument()
+  })
+
+  it('shows technical details only in development', async () => {
+    crash.grammar = true
+    await renderApp('/grammar')
+
+    expect(screen.getByText(/Grammar exploded/)).toBeInTheDocument()
   })
 
   it('catches errors outside a section with a full-page fallback', async () => {

@@ -23,6 +23,8 @@ export interface RecordedRequest {
   authorization: string | undefined
   /** Parsed JSON request body, if any */
   body: unknown
+  /** Query string from axios `params` (e.g. "q=hund&page=0"), empty if none */
+  query: string
 }
 
 const handlers = new Map<string, Handler>()
@@ -64,6 +66,7 @@ export const fakeAdapter: AxiosAdapter = async (config) => {
     url,
     authorization: typeof auth === 'string' ? auth : undefined,
     body: parseBody(config.data),
+    query: toQueryString(config.params),
   })
 
   const handler =
@@ -114,6 +117,16 @@ export const fakeApi = {
     resetFallbacks()
     recorded.length = 0
   },
+}
+
+function toQueryString(params: unknown): string {
+  if (params instanceof URLSearchParams) return params.toString()
+  if (params && typeof params === 'object') {
+    return new URLSearchParams(
+      Object.entries(params).map(([k, v]) => [k, String(v)]),
+    ).toString()
+  }
+  return ''
 }
 
 function parseBody(data: unknown): unknown {

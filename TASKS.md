@@ -168,7 +168,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **VOC-07 — Import / export** (S) — _deps: VOC-02_
   CSV export and import of vocabulary.
 
-- [ ] **FE-VOC-01 — Vocabulary list page** (M) — _deps: FE-02, VOC-02_
+- [x] **FE-VOC-01 — Vocabulary list page** (M) — _deps: FE-02, VOC-02_
   Table/cards with search, filters, pagination, AI status indicator, inline delete.
 
 - [ ] **FE-VOC-02 — Add / edit word form** (M) — _deps: FE-VOC-01_
