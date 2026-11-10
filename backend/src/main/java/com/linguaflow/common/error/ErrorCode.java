@@ -26,6 +26,7 @@ public enum ErrorCode {
 	NO_ACTIVE_LANGUAGE(HttpStatus.CONFLICT, "No active language"),
 	VOCABULARY_DUPLICATE(HttpStatus.CONFLICT, "Vocabulary item already exists"),
 	TAG_NAME_TAKEN(HttpStatus.CONFLICT, "Tag name already used"),
+	GRAMMAR_TOPIC_DUPLICATE(HttpStatus.CONFLICT, "Grammar topic already exists"),
 	PAYLOAD_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "Payload too large"),
 	UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type"),
 	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "Too many requests"),

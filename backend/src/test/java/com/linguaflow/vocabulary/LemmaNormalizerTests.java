@@ -76,7 +76,8 @@ class LemmaNormalizerTests {
 		}
 		int start = seed.indexOf("insert into vocabulary_items");
 		assertThat(start).as("vocabulary insert in the seed").isNotNegative();
-		String vocabularyInsert = seed.substring(start, seed.indexOf(';', start));
+		// Notes may contain ";", so the statement ends at its ON CONFLICT clause
+		String vocabularyInsert = seed.substring(start, seed.indexOf("on conflict", start));
 		// ('<uuid>', '<uuid>', 'de', '<lemma>', '<normalized>', ...
 		Matcher row = Pattern.compile("\\('[0-9a-f-]{36}', '[0-9a-f-]{36}', '(\\w+)', '((?:[^']|'')*)', '((?:[^']|'')*)'")
 			.matcher(vocabularyInsert);

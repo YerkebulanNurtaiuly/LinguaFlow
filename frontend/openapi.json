@@ -40,6 +40,9 @@
   }, {
     "description" : "Your labels for grouping words, per learning language",
     "name" : "Tags"
+  }, {
+    "description" : "The grammar topics you study and how well you know them",
+    "name" : "Grammar"
   } ],
   "paths" : {
     "/actuator" : {
@@ -764,6 +767,500 @@
         },
         "summary" : "Send a new email verification link to the current user",
         "tags" : [ "Auth" ]
+      }
+    },
+    "/api/grammar-topics" : {
+      "get" : {
+        "description" : "Topics of the active language, newest first by default. Repeating a filter means any of them. Sortable by: createdAt, updatedAt, title, cefrLevel, status.",
+        "operationId" : "list_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Text in the title or description",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        }, {
+          "in" : "query",
+          "name" : "cefrLevel",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseGrammarTopic"
+                }
+              }
+            },
+            "description" : "One page of topics"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "No active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List grammar topics",
+        "tags" : [ "Grammar" ]
+      },
+      "post" : {
+        "description" : "Added to the active language. A title you already have (ignoring case, spacing, a leading article and ß/ss) is rejected with 409 and its existingId.",
+        "operationId" : "create_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateGrammarTopicRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrammarTopic"
+                }
+              }
+            },
+            "description" : "Topic added"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Already one of your topics (code GRAMMAR_TOPIC_DUPLICATE, see existingId), or no active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Add a grammar topic",
+        "tags" : [ "Grammar" ]
+      }
+    },
+    "/api/grammar-topics/{id}" : {
+      "delete" : {
+        "description" : "Also deletes its status history and progress.",
+        "operationId" : "delete_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Deleted"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Delete a grammar topic",
+        "tags" : [ "Grammar" ]
+      },
+      "get" : {
+        "operationId" : "get_2",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrammarTopic"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Get one grammar topic",
+        "tags" : [ "Grammar" ]
+      },
+      "patch" : {
+        "description" : "Partial update; status changes are recorded.",
+        "operationId" : "update_3",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateGrammarTopicRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrammarTopic"
+                }
+              }
+            },
+            "description" : "Topic updated"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "The new title clashes with another topic (code GRAMMAR_TOPIC_DUPLICATE, see existingId), or the topic was changed meanwhile (code CONFLICT)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Edit a grammar topic",
+        "tags" : [ "Grammar" ]
       }
     },
     "/api/languages" : {
@@ -2902,7 +3399,7 @@
           "code" : {
             "type" : "string",
             "description" : "Stable machine-readable error code",
-            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "VOCABULARY_DUPLICATE", "TAG_NAME_TAKEN", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
+            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "VOCABULARY_DUPLICATE", "TAG_NAME_TAKEN", "GRAMMAR_TOPIC_DUPLICATE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
           },
           "correlationId" : {
             "type" : "string",
@@ -2922,7 +3419,7 @@
           "existingId" : {
             "type" : "string",
             "format" : "uuid",
-            "description" : "Present for VOCABULARY_DUPLICATE and TAG_NAME_TAKEN: ID of the item or tag that already exists"
+            "description" : "Present for VOCABULARY_DUPLICATE, TAG_NAME_TAKEN and GRAMMAR_TOPIC_DUPLICATE: ID of the word, tag or topic that already exists"
           },
           "instance" : {
             "type" : "string",
@@ -3171,6 +3668,40 @@
         },
         "required" : [ "currentPassword", "newPassword" ]
       },
+      "CreateGrammarTopicRequest" : {
+        "type" : "object",
+        "description" : "Only the title is required",
+        "properties" : {
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "description" : {
+            "type" : "string",
+            "example" : "Indirect objects and dative prepositions",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "personalNotes" : {
+            "type" : "string",
+            "description" : "Your own notes, in Markdown",
+            "maxLength" : 20000,
+            "minLength" : 0
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "Defaults to NEW; MASTERED is earned, not set",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "title" : {
+            "type" : "string",
+            "example" : "Dativ",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "title" ]
+      },
       "CreateVocabularyRequest" : {
         "type" : "object",
         "description" : "Only lemma is required; missing details are filled in by AI enrichment later",
@@ -3260,6 +3791,80 @@
           }
         }
       },
+      "GrammarExplanation" : {
+        "type" : "object",
+        "description" : "AI-generated explanation (GRM-04)",
+        "properties" : {
+          "examples" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "rules" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "summary" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GrammarTopic" : {
+        "type" : "object",
+        "properties" : {
+          "aiExplanation" : {
+            "$ref" : "#/components/schemas/GrammarExplanation"
+          },
+          "aiExplanationGeneratedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "catalogTopicId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Catalog entry it was picked from (GRM-03)"
+          },
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "description" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "personalNotes" : {
+            "type" : "string",
+            "description" : "Markdown"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "title" : {
+            "type" : "string",
+            "example" : "Dativ"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Increases with every change"
+          }
+        }
+      },
       "LanguageResponse" : {
         "type" : "object",
         "properties" : {
@@ -3344,6 +3949,39 @@
           }
         },
         "required" : [ "email", "password" ]
+      },
+      "PageResponseGrammarTopic" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarTopic"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
       },
       "PageResponseVocabularyItem" : {
         "type" : "object",
@@ -3552,6 +4190,37 @@
           "tokenType" : {
             "type" : "string",
             "example" : "Bearer"
+          }
+        }
+      },
+      "UpdateGrammarTopicRequest" : {
+        "type" : "object",
+        "description" : "Partial update: absent or null fields stay unchanged; an empty string clears the description or notes",
+        "properties" : {
+          "cefrLevel" : {
+            "type" : "string",
+            "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+          },
+          "description" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "personalNotes" : {
+            "type" : "string",
+            "maxLength" : 20000,
+            "minLength" : 0
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "MASTERED can't be set; it is earned through practice",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "title" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 1,
+            "pattern" : "(?s).*\\S.*"
           }
         }
       },

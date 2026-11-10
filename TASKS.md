@@ -179,7 +179,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 7: Grammar (`GRM`)
 
-- [ ] **GRM-01 — Grammar topic CRUD API** (M) — _deps: DB-03, AUTH-05_
+- [x] **GRM-01 — Grammar topic CRUD API** (M) — _deps: DB-03, AUTH-05_
   `POST/GET/PATCH/DELETE /api/grammar-topics`. Fields: title, description, personal notes (Markdown), CEFR level, status. Filters by CEFR and status; duplicate title check per user-language.
 
 - [ ] **GRM-02 — Knowledge status lifecycle** (S) — _deps: GRM-01_

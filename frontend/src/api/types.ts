@@ -72,3 +72,10 @@ export type BulkVocabularyItemResult = Schemas['BulkVocabularyItemResult']
 // Vocabulary import / export
 export type VocabularyImportResult = Schemas['VocabularyImportResult']
 export type VocabularyImportRow = Schemas['VocabularyImportRow']
+
+// Grammar
+export type GrammarTopic = Schemas['GrammarTopic']
+export type GrammarTopicPage = Schemas['PageResponseGrammarTopic']
+export type GrammarExplanation = Schemas['GrammarExplanation']
+export type CreateGrammarTopicRequest = Schemas['CreateGrammarTopicRequest']
+export type UpdateGrammarTopicRequest = Schemas['UpdateGrammarTopicRequest']

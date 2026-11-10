@@ -192,6 +192,55 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/grammar-topics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List grammar topics
+         * @description Topics of the active language, newest first by default. Repeating a filter means any of them. Sortable by: createdAt, updatedAt, title, cefrLevel, status.
+         */
+        get: operations["list_2"];
+        put?: never;
+        /**
+         * Add a grammar topic
+         * @description Added to the active language. A title you already have (ignoring case, spacing, a leading article and ß/ss) is rejected with 409 and its existingId.
+         */
+        post: operations["create_2"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/grammar-topics/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get one grammar topic */
+        get: operations["get_2"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete a grammar topic
+         * @description Also deletes its status history and progress.
+         */
+        delete: operations["delete_2"];
+        options?: never;
+        head?: never;
+        /**
+         * Edit a grammar topic
+         * @description Partial update; status changes are recorded.
+         */
+        patch: operations["update_3"];
+        trace?: never;
+    };
     "/api/languages": {
         parameters: {
             query?: never;
@@ -499,7 +548,7 @@ export interface components {
              * @description Stable machine-readable error code
              * @enum {string}
              */
-            code: "VALIDATION_FAILED" | "MALFORMED_REQUEST" | "BAD_REQUEST" | "INVALID_TOKEN" | "UNAUTHORIZED" | "INVALID_CREDENTIALS" | "INVALID_REFRESH_TOKEN" | "FORBIDDEN" | "ACCOUNT_DISABLED" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "CONFLICT" | "EMAIL_TAKEN" | "NO_ACTIVE_LANGUAGE" | "VOCABULARY_DUPLICATE" | "TAG_NAME_TAKEN" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "TOO_MANY_REQUESTS" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE";
+            code: "VALIDATION_FAILED" | "MALFORMED_REQUEST" | "BAD_REQUEST" | "INVALID_TOKEN" | "UNAUTHORIZED" | "INVALID_CREDENTIALS" | "INVALID_REFRESH_TOKEN" | "FORBIDDEN" | "ACCOUNT_DISABLED" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "CONFLICT" | "EMAIL_TAKEN" | "NO_ACTIVE_LANGUAGE" | "VOCABULARY_DUPLICATE" | "TAG_NAME_TAKEN" | "GRAMMAR_TOPIC_DUPLICATE" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "TOO_MANY_REQUESTS" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE";
             /** @description ID of the request; quote it when reporting problems */
             correlationId: string;
             /** @example One or more fields are invalid */
@@ -508,7 +557,7 @@ export interface components {
             errors?: components["schemas"]["FieldError"][];
             /**
              * Format: uuid
-             * @description Present for VOCABULARY_DUPLICATE and TAG_NAME_TAKEN: ID of the item or tag that already exists
+             * @description Present for VOCABULARY_DUPLICATE, TAG_NAME_TAKEN and GRAMMAR_TOPIC_DUPLICATE: ID of the word, tag or topic that already exists
              */
             existingId?: string;
             /**
@@ -642,6 +691,22 @@ export interface components {
             /** @description At least 10 characters, at most 72 bytes */
             newPassword: string;
         };
+        /** @description Only the title is required */
+        CreateGrammarTopicRequest: {
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @example Indirect objects and dative prepositions */
+            description?: string;
+            /** @description Your own notes, in Markdown */
+            personalNotes?: string;
+            /**
+             * @description Defaults to NEW; MASTERED is earned, not set
+             * @enum {string}
+             */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            /** @example Dativ */
+            title: string;
+        };
         /** @description Only lemma is required; missing details are filled in by AI enrichment later */
         CreateVocabularyRequest: {
             /** @enum {string} */
@@ -677,6 +742,42 @@ export interface components {
         FieldError: {
             field?: string;
             message?: string;
+        };
+        /** @description AI-generated explanation (GRM-04) */
+        GrammarExplanation: {
+            examples?: string[];
+            rules?: string[];
+            summary?: string;
+        };
+        GrammarTopic: {
+            aiExplanation?: components["schemas"]["GrammarExplanation"];
+            /** Format: date-time */
+            aiExplanationGeneratedAt?: string;
+            /**
+             * Format: uuid
+             * @description Catalog entry it was picked from (GRM-03)
+             */
+            catalogTopicId?: string;
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** Format: date-time */
+            createdAt?: string;
+            description?: string;
+            /** Format: uuid */
+            id?: string;
+            /** @description Markdown */
+            personalNotes?: string;
+            /** @enum {string} */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            /** @example Dativ */
+            title?: string;
+            /** Format: date-time */
+            updatedAt?: string;
+            /**
+             * Format: int64
+             * @description Increases with every change
+             */
+            version?: number;
         };
         LanguageResponse: {
             /** @example de */
@@ -721,6 +822,18 @@ export interface components {
             email: string;
             /** @example demo-password-123 */
             password: string;
+        };
+        PageResponseGrammarTopic: {
+            content?: components["schemas"]["GrammarTopic"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         PageResponseVocabularyItem: {
             content?: components["schemas"]["VocabularyItem"][];
@@ -818,6 +931,19 @@ export interface components {
             expiresIn?: number;
             /** @example Bearer */
             tokenType?: string;
+        };
+        /** @description Partial update: absent or null fields stay unchanged; an empty string clears the description or notes */
+        UpdateGrammarTopicRequest: {
+            /** @enum {string} */
+            cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            description?: string;
+            personalNotes?: string;
+            /**
+             * @description MASTERED can't be set; it is earned through practice
+             * @enum {string}
+             */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            title?: string;
         };
         UpdateLanguageRequest: {
             /** @description true = make this the active language */
@@ -1627,6 +1753,385 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    list_2: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description Text in the title or description */
+                q?: string;
+                cefrLevel?: ("A1" | "A2" | "B1" | "B2" | "C1" | "C2")[];
+                status?: ("NEW" | "LEARNING" | "LEARNED" | "MASTERED")[];
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of topics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseGrammarTopic"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    create_2: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateGrammarTopicRequest"];
+            };
+        };
+        responses: {
+            /** @description Topic added */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrammarTopic"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Already one of your topics (code GRAMMAR_TOPIC_DUPLICATE, see existingId), or no active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    get_2: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrammarTopic"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    delete_2: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    update_3: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateGrammarTopicRequest"];
+            };
+        };
+        responses: {
+            /** @description Topic updated */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrammarTopic"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description The new title clashes with another topic (code GRAMMAR_TOPIC_DUPLICATE, see existingId), or the topic was changed meanwhile (code CONFLICT) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };
