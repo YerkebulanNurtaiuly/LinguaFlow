@@ -15,6 +15,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { GrammarPage } from '@/pages/grammar/GrammarPage'
 import { BulkAddPage } from '@/pages/vocabulary/BulkAddPage'
 import { VocabularyPage } from '@/pages/vocabulary/VocabularyPage'
 
@@ -23,6 +24,7 @@ const title = (value: string): RouteHandle => ({ title: value })
 /** Sections that are built; the others still show a placeholder. */
 const SECTION_PAGES: Partial<Record<string, ReactNode>> = {
   '/settings': <SettingsPage />,
+  '/grammar': <GrammarPage />,
   '/vocabulary': <VocabularyPage />,
 }
 

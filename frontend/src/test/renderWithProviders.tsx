@@ -97,6 +97,11 @@ export function renderRoute(
     data: { content: [], page: 0, size: 20, totalElements: 0, totalPages: 0 },
   })
   fakeApi.fallback('GET', '/tags', { status: 200, data: [] })
+  fakeApi.fallback('GET', '/grammar-topics', {
+    status: 200,
+    data: { content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 },
+  })
+  fakeApi.fallback('GET', '/grammar-topics/catalog', { status: 200, data: [] })
   const queryClient = createQueryClient({
     defaultOptions: { queries: { retry: false } },
   })

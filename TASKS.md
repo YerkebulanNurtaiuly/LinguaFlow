@@ -192,7 +192,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [ ] **GRM-04 — AI grammar explanation** (S) — _deps: GRM-01, AI-03_
   Optional AI-generated summary, rules and examples for a topic, stored separately from personal notes.
 
-- [ ] **FE-GRM-01 — Grammar topics page** (M) — _deps: FE-02, GRM-01_
+- [x] **FE-GRM-01 — Grammar topics page** (M) — _deps: FE-02, GRM-01_
   List grouped by CEFR, status badges, filters, add-from-catalog picker.
 
 - [ ] **FE-GRM-02 — Grammar topic detail/edit** (M) — _deps: FE-GRM-01_
