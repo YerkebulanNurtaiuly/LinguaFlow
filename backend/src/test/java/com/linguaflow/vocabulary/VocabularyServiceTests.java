@@ -24,6 +24,7 @@ import com.linguaflow.user.UserRepository;
 import com.linguaflow.vocabulary.VocabularyCommands.NewExample;
 import com.linguaflow.vocabulary.VocabularyCommands.NewVocabularyItem;
 import com.linguaflow.vocabulary.VocabularyCommands.VocabularyItemChanges;
+import com.linguaflow.vocabulary.VocabularyService.DuplicateRule;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -130,12 +131,37 @@ class VocabularyServiceTests {
 		}
 
 		@Test
-		void aWordWithoutPartOfSpeechOnlyClashesWithAnotherOneWithout() {
-			vocabulary.create(anna, NewVocabularyItem.of("Bank"));
-			vocabulary.create(anna, word("die Bank", PartOfSpeech.NOUN));
+		void aWordWithoutPartOfSpeechMatchesTheWordWithOne() {
+			UUID dog = vocabulary.create(anna, word("der Hund", PartOfSpeech.NOUN)).getId();
 
-			assertThatThrownBy(() -> vocabulary.create(anna, NewVocabularyItem.of("bank")))
-				.isInstanceOf(DuplicateVocabularyItemException.class);
+			assertThatThrownBy(() -> vocabulary.create(anna, NewVocabularyItem.of("Hund")))
+				.isInstanceOfSatisfying(DuplicateVocabularyItemException.class,
+						ex -> assertThat(ex.existingId()).isEqualTo(dog));
+		}
+
+		@Test
+		void aWordWithPartOfSpeechMatchesAnUntypedOne() {
+			UUID bank = vocabulary.create(anna, NewVocabularyItem.of("Bank")).getId();
+
+			assertThatThrownBy(() -> vocabulary.create(anna, word("die Bank", PartOfSpeech.NOUN)))
+				.isInstanceOfSatisfying(DuplicateVocabularyItemException.class,
+						ex -> assertThat(ex.existingId()).isEqualTo(bank));
+			assertThat(items.countByUserId(anna)).isOne();
+		}
+
+		@Test
+		void theExactRuleOnlyMatchesTheSamePartOfSpeech() {
+			UUID untyped = vocabulary.create(anna, NewVocabularyItem.of("Laufen"), DuplicateRule.EXACT).getId();
+			UUID verb = vocabulary.create(anna, word("laufen", PartOfSpeech.VERB), DuplicateRule.EXACT).getId();
+
+			assertThat(items.countByUserId(anna)).isEqualTo(2);
+			assertThatThrownBy(() -> vocabulary.create(anna, NewVocabularyItem.of("laufen"), DuplicateRule.EXACT))
+				.isInstanceOfSatisfying(DuplicateVocabularyItemException.class,
+						ex -> assertThat(ex.existingId()).isEqualTo(untyped));
+			// With both present, the default rule reports the exact match
+			assertThatThrownBy(() -> vocabulary.create(anna, word("laufen", PartOfSpeech.VERB)))
+				.isInstanceOfSatisfying(DuplicateVocabularyItemException.class,
+						ex -> assertThat(ex.existingId()).isEqualTo(verb));
 		}
 
 		@Test
@@ -248,6 +274,24 @@ class VocabularyServiceTests {
 				.isInstanceOfSatisfying(DuplicateVocabularyItemException.class,
 						ex -> assertThat(ex.existingId()).isEqualTo(dog));
 			assertThat(vocabulary.get(anna, cat).getLemma()).isEqualTo("die Katze");
+		}
+
+		@Test
+		void typingAWordChecksItAgainstTheOtherWords() {
+			// Imported side by side under the exact rule
+			UUID untyped = vocabulary.create(anna, NewVocabularyItem.of("Bank"), DuplicateRule.EXACT).getId();
+			UUID noun = vocabulary.create(anna, word("die Bank", PartOfSpeech.NOUN), DuplicateRule.EXACT).getId();
+
+			assertThatThrownBy(() -> vocabulary.update(anna, untyped,
+					new VocabularyItemChanges(null, PartOfSpeech.NOUN, null, null, null, null, null, null)))
+				.isInstanceOfSatisfying(DuplicateVocabularyItemException.class,
+						ex -> assertThat(ex.existingId()).isEqualTo(noun));
+			// "Bank" as a verb is another word, and editing other fields of the untyped one is fine
+			vocabulary.update(anna, untyped,
+					new VocabularyItemChanges(null, null, "bench", null, null, null, null, null));
+			assertThat(vocabulary.update(anna, untyped,
+					new VocabularyItemChanges(null, PartOfSpeech.VERB, null, null, null, null, null, null))
+				.getPartOfSpeech()).isEqualTo(PartOfSpeech.VERB);
 		}
 
 		@Test

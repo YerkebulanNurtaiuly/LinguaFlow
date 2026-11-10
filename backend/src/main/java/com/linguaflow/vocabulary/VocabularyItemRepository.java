@@ -29,6 +29,21 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 	Optional<UUID> findDuplicateId(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("normalizedLemma") String normalizedLemma, @Param("partOfSpeech") PartOfSpeech partOfSpeech);
 
+	/**
+	 * Words that count as the same word for a new or renamed one (schema.md Q2): same
+	 * normalized lemma, and the same part of speech or none on either side. Exact matches
+	 * come first, then the oldest.
+	 */
+	@Query("""
+			select v.id from VocabularyItem v
+			where v.userId = :userId and v.languageCode = :languageCode
+			  and v.normalizedLemma = :normalizedLemma
+			  and (:partOfSpeech is null or v.partOfSpeech is null or v.partOfSpeech = :partOfSpeech)
+			order by case when v.partOfSpeech = :partOfSpeech then 0 else 1 end, v.createdAt, v.id
+			""")
+	List<UUID> findSameWordIds(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("normalizedLemma") String normalizedLemma, @Param("partOfSpeech") PartOfSpeech partOfSpeech);
+
 	/** The user's words in this language with any of these normalized lemmas, oldest first (VOC-04). */
 	@Query("""
 			select new com.linguaflow.vocabulary.ExistingLemma(v.id, v.normalizedLemma, v.partOfSpeech)

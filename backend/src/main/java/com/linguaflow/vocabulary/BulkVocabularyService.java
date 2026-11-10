@@ -23,9 +23,9 @@ import org.springframework.stereotype.Service;
  * {@link #confirm} adds the items the learner kept, each on its own, so one failure
  * doesn't block the rest.
  * <p>
- * Bulk input usually has no part of speech, so its duplicate rule is looser than the
- * unique key: same normalized lemma, and the same part of speech <em>or</em> no part of
- * speech on either side. "Hund" is a duplicate of your "der Hund" (noun).
+ * Duplicates follow the same rule as adding one word ({@link VocabularyService.DuplicateRule#SAME_WORD}):
+ * same normalized lemma, and the same part of speech <em>or</em> none on either side.
+ * "Hund" is a duplicate of your "der Hund" (noun).
  */
 @Service
 public class BulkVocabularyService {

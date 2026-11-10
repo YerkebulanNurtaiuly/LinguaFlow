@@ -168,7 +168,7 @@ The primary key `(user_id, language_code)` is the target of every learning table
 | version | bigint | `@Version` |
 
 Indexes and constraints:
-- **UQ** `(user_id, language_code, normalized_lemma, part_of_speech) NULLS NOT DISTINCT`. This blocks duplicates (VOC-02 returns 409). See open question Q2.
+- **UQ** `(user_id, language_code, normalized_lemma, part_of_speech) NULLS NOT DISTINCT`. This blocks exact duplicates (VOC-02 returns 409); the service also rejects a word whose part of speech is missing on either side (Q2).
 - **IX** `(user_id, language_code, created_at DESC)`: the default list order.
 - **IX** `(user_id, language_code, status)` and `(user_id, language_code, ai_status)`.
 - Search (VOC-02): **IX** GIN `pg_trgm` on `normalized_lemma` and on `lower(translation)`, for `ILIKE '%…%'`. This needs `CREATE EXTENSION pg_trgm` in DB-03.
@@ -433,7 +433,7 @@ Applied migrations are never edited. Every change is a new `V<n>__…` file.
 All five were approved as proposed:
 
 1. **UUIDv7 vs `bigint` identity keys (Q1).** I recommend UUIDv7, for the reasons in section 1. The cost is 16-byte keys instead of 8 and IDs that are less readable when debugging.
-2. **Duplicate rule while the part of speech is unknown (Q2).** The unique constraint includes `part_of_speech`, so the noun "Essen" and the verb "essen" can coexist. A word added before AI has filled in the part of speech has `NULL`, though. Proposal: the service also checks `normalized_lemma` alone and returns 409 with the existing ID unless the user picks a different part of speech. When AI fills in the part of speech and that collides, the item is marked as a duplicate for the user to resolve.
+2. **Duplicate rule while the part of speech is unknown (Q2). Decided:** the unique constraint includes `part_of_speech`, so the noun "Essen" and the verb "essen" can coexist, and a word added before AI has filled in its part of speech has `NULL`. The service therefore treats a missing part of speech on either side as matching any: adding "Hund" when "der Hund" (noun) exists returns 409 with the existing ID, and so does adding the noun "die Bank" when an untyped "Bank" exists. CSV import (VOC-07) compares exactly, like the constraint, so exported files import back completely. Still open: when AI fills in a part of speech that collides, the item is marked as a duplicate for the user to resolve (VOC-05).
 3. **Building flashcard content on read (Q3).** This keeps cards consistent with the word without any sync work. Users can't customise a card independently of its word. A nullable `custom_front` and `custom_back` could be added later.
 4. **Derived progress tables (Q4).** These are extra tables that need keeping in sync, but they keep PRC-01 and PRG-03 fast. The alternative is SQL views over the raw history, which are simpler but get slower as history grows.
 5. **AI cache shared across users (Q5).** It saves cost on common words. It's acceptable only because cached entries contain no user content. Exercise explanations (EX-06) are keyed by the wrong answer, so they're cached only when the normalized answer is short, for example under 100 characters, and contains no personal data.

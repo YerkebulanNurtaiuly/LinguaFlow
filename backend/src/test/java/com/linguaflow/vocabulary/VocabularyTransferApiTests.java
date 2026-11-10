@@ -202,6 +202,13 @@ class VocabularyTransferApiTests {
 		}
 
 		@Test
+		void keepsAnUntypedWordNextToATypedOneWithTheSameLemma() throws Exception {
+			// Unlike adding a word by hand, import compares parts of speech exactly
+			importCsv(anna, "lemma,partOfSpeech\nLaufen,\nlaufen,VERB\n").andExpect(status().isOk())
+				.andExpect(jsonPath("$.createdCount").value(2));
+		}
+
+		@Test
 		void reusesTagsByNameIgnoringCase() throws Exception {
 			String animals = JsonPath.read(postJson(anna, "/api/tags", "{\"name\":\"Tiere\"}"), "$.id");
 

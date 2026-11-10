@@ -124,7 +124,8 @@ public class VocabularyTransferService {
 			try {
 				VocabularyItem created = vocabulary.create(userId,
 						new NewVocabularyItem(row.lemma(), row.partOfSpeech(), row.translation(), row.gender(),
-								row.plural(), row.cefrLevel(), status, row.notes(), List.of(), rowTags));
+								row.plural(), row.cefrLevel(), status, row.notes(), List.of(), rowTags),
+						VocabularyService.DuplicateRule.EXACT);
 				results.add(new RowResult(row.line(), row.lemma(), RowStatus.CREATED, created.getId(), null, note));
 			}
 			catch (DuplicateVocabularyItemException ex) {

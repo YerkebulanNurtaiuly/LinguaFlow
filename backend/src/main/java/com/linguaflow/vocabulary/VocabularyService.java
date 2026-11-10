@@ -1,5 +1,6 @@
 package com.linguaflow.vocabulary;
 
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -25,9 +26,12 @@ import org.springframework.transaction.support.TransactionTemplate;
  * caller; new words go into their active language.
  * <ul>
  * <li>Duplicates: a word is a duplicate when its {@link LemmaNormalizer normalized
- * lemma} and part of speech match one the user already has in that language. They are
- * rejected with {@link DuplicateVocabularyItemException} (409, with the existing ID),
- * also when two requests race past the check and hit the unique constraint.</li>
+ * lemma} matches one the user already has in that language and so does the part of
+ * speech, where a missing part of speech on either side matches any (schema.md Q2): "Hund"
+ * is a duplicate of the noun "der Hund", while the verb "laufen" and the noun "das Laufen"
+ * coexist. They are rejected with {@link DuplicateVocabularyItemException} (409, with the
+ * existing ID), also when two requests race past the check and hit the unique
+ * constraint. CSV import uses {@link DuplicateRule#EXACT} instead.</li>
  * <li>MASTERED can't be set by the learner; it is earned (PRG-02).</li>
  * <li>Gender only applies to nouns.</li>
  * <li>A field the learner edits no longer counts as AI-generated (VOC-05).</li>
@@ -42,6 +46,20 @@ public class VocabularyService {
 	public static final int MAX_LEMMA_LENGTH = 200;
 
 	public static final int MAX_EXAMPLE_LENGTH = 1000;
+
+	/** How a new word is compared with the ones the user has. */
+	public enum DuplicateRule {
+
+		/** Same lemma, and the same part of speech or none on either side (the default). */
+		SAME_WORD,
+
+		/**
+		 * Same lemma and part of speech, nulls matching only nulls: exactly the unique key.
+		 * For CSV import, where files carry parts of speech and must import back completely.
+		 */
+		EXACT
+
+	}
 
 	private final VocabularyItemRepository items;
 
@@ -66,6 +84,11 @@ public class VocabularyService {
 	 * @throws com.linguaflow.common.error.ApiException NO_ACTIVE_LANGUAGE before onboarding
 	 */
 	public VocabularyItem create(UUID userId, NewVocabularyItem request) {
+		return create(userId, request, DuplicateRule.SAME_WORD);
+	}
+
+	/** Like {@link #create(UUID, NewVocabularyItem)}, with the given duplicate rule. */
+	public VocabularyItem create(UUID userId, NewVocabularyItem request, DuplicateRule rule) {
 		String language = activeLanguages.requireActive(userId);
 		String lemma = cleanLemma(request.lemma());
 		String normalized = LemmaNormalizer.normalize(language, lemma);
@@ -74,7 +97,7 @@ public class VocabularyService {
 		checkStatus(status);
 
 		DuplicateKey key = new DuplicateKey(userId, language, normalized, request.partOfSpeech());
-		rejectDuplicate(key, lemma, null);
+		rejectDuplicate(key, lemma, null, rule);
 
 		VocabularyItem item = new VocabularyItem(userId, language, lemma, normalized);
 		item.setPartOfSpeech(request.partOfSpeech());
@@ -132,7 +155,7 @@ public class VocabularyService {
 				checkStatus(changes.status());
 			}
 			if (changes.lemma() != null || changes.partOfSpeech() != null) {
-				rejectDuplicate(key[0], lemma, item.getId());
+				rejectDuplicate(key[0], lemma, item.getId(), DuplicateRule.SAME_WORD);
 			}
 
 			if (changes.lemma() != null) {
@@ -198,13 +221,15 @@ public class VocabularyService {
 		}
 	}
 
-	private void rejectDuplicate(DuplicateKey key, String lemma, UUID self) {
-		items
-			.findDuplicateId(key.userId(), key.languageCode(), key.normalizedLemma(), key.partOfSpeech())
-			.filter(existing -> !existing.equals(self))
-			.ifPresent(existing -> {
-				throw new DuplicateVocabularyItemException(lemma, existing);
-			});
+	private void rejectDuplicate(DuplicateKey key, String lemma, UUID self, DuplicateRule rule) {
+		List<UUID> matches = rule == DuplicateRule.EXACT
+				? items.findDuplicateId(key.userId(), key.languageCode(), key.normalizedLemma(), key.partOfSpeech())
+					.stream()
+					.toList()
+				: items.findSameWordIds(key.userId(), key.languageCode(), key.normalizedLemma(), key.partOfSpeech());
+		matches.stream().filter(existing -> !existing.equals(self)).findFirst().ifPresent(existing -> {
+			throw new DuplicateVocabularyItemException(lemma, existing);
+		});
 	}
 
 	/**

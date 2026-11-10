@@ -359,7 +359,7 @@ export interface paths {
         put?: never;
         /**
          * Add a word
-         * @description Added to the active language. A word you already have (same lemma ignoring article, case and ß/ss, and same part of speech) is rejected with 409 and its existingId.
+         * @description Added to the active language. A word you already have (same lemma ignoring article, case and ß/ss, and the same part of speech or none on either side) is rejected with 409 and its existingId.
          */
         post: operations["create"];
         delete?: never;

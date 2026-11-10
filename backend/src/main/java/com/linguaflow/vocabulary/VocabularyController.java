@@ -92,7 +92,8 @@ class VocabularyController {
 	@PostMapping
 	@Operation(summary = "Add a word",
 			description = "Added to the active language. A word you already have (same lemma ignoring article, "
-					+ "case and ß/ss, and same part of speech) is rejected with 409 and its existingId.")
+					+ "case and ß/ss, and the same part of speech or none on either side) is rejected with 409 and "
+					+ "its existingId.")
 	@ApiResponse(responseCode = "201", description = "Word added")
 	@ApiResponse(responseCode = "409",
 			description = "Already in your vocabulary (code VOCABULARY_DUPLICATE, see existingId), or no active "

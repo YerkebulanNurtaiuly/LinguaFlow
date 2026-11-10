@@ -135,6 +135,16 @@ class VocabularyApiTests {
 		}
 
 		@Test
+		void aWordWithoutTypeIsADuplicateOfTheTypedWord() throws Exception {
+			UUID dog = addWord(anna, "der Hund", "\"partOfSpeech\":\"NOUN\"");
+
+			add(anna, "{\"lemma\":\"Hund\"}").andExpect(status().isConflict())
+				.andExpect(jsonPath("$.existingId").value(dog.toString()));
+			// Another part of speech is another word
+			add(anna, "{\"lemma\":\"hund\",\"partOfSpeech\":\"OTHER\"}").andExpect(status().isCreated());
+		}
+
+		@Test
 		void validatesTheBody() throws Exception {
 			add(anna, "{\"lemma\":\"  \"}").andExpect(status().isBadRequest())
 				.andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
