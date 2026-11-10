@@ -13,6 +13,7 @@ import com.linguaflow.vocabulary.VocabularyCommands.NewExample;
 import com.linguaflow.vocabulary.VocabularyCommands.NewVocabularyItem;
 import com.linguaflow.vocabulary.VocabularyCommands.VocabularyItemChanges;
 import org.hibernate.Hibernate;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -69,9 +70,12 @@ public class VocabularyService {
 
 	private final TransactionTemplate transactions;
 
+	private final ApplicationEventPublisher events;
+
 	VocabularyService(VocabularyItemRepository items, ActiveLanguageService activeLanguages, TagService tags,
-			PlatformTransactionManager transactionManager) {
+			PlatformTransactionManager transactionManager, ApplicationEventPublisher events) {
 		this.items = items;
+		this.events = events;
 		this.tags = tags;
 		this.activeLanguages = activeLanguages;
 		this.transactions = new TransactionTemplate(transactionManager);
@@ -111,10 +115,13 @@ public class VocabularyService {
 			NewExample example = request.examples().get(i);
 			item.addExample(cleanExample(example.sentence(), i), blankToNull(example.translation()), false);
 		}
-		return saveRejectingDuplicates(() -> transactions.execute(tx -> {
+		VocabularyItem created = saveRejectingDuplicates(() -> transactions.execute(tx -> {
 			item.replaceTags(tags.resolveForWord(userId, language, request.tagIds()));
 			return items.saveAndFlush(item);
 		}), () -> key, () -> lemma);
+		// After the commit, so listeners see the word (e.g. the active study session, SES-01)
+		events.publishEvent(new VocabularyItemCreated(userId, language, created.getId()));
+		return created;
 	}
 
 	/** The user's word, or 404 if it doesn't exist or belongs to someone else. */

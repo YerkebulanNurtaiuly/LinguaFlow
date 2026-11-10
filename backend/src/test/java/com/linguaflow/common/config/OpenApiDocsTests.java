@@ -86,6 +86,33 @@ class OpenApiDocsTests {
 				.isEqualTo(actualTree);
 		}
 
+		/**
+		 * An operation that declares only error @ApiResponses loses springdoc's default 200,
+		 * and the generated frontend types then have no response body for it.
+		 */
+		@Test
+		void everyOperationDocumentsASuccessResponse() throws Exception {
+			JsonNode spec = json.readTree(mvc.perform(get("/v3/api-docs/all"))
+				.andReturn()
+				.getResponse()
+				.getContentAsString(StandardCharsets.UTF_8));
+			java.util.List<String> missing = new java.util.ArrayList<>();
+			for (var path : spec.get("paths").properties()) {
+				for (var operation : path.getValue().properties()) {
+					boolean success = operation.getValue()
+						.path("responses")
+						.propertyNames()
+						.stream()
+						.anyMatch(code -> code.startsWith("2"));
+					if (!success) {
+						missing.add(operation.getKey().toUpperCase() + " " + path.getKey());
+					}
+				}
+			}
+			assertThat(missing).as("operations without a 2xx response; add @ApiResponse(responseCode = \"200\")")
+				.isEmpty();
+		}
+
 		private void writeSnapshot(JsonNode tree) throws IOException {
 			Files.writeString(SNAPSHOT, json.writerWithDefaultPrettyPrinter().writeValueAsString(tree) + "\n");
 		}

@@ -200,7 +200,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 8: Study Sessions (`SES`)
 
-- [ ] **SES-01 — Study session API** (M) — _deps: VOC-02, GRM-01_
+- [x] **SES-01 — Study session API** (M) — _deps: VOC-02, GRM-01_
   A study session = one lesson (e.g. "Lesson 5 – 2026-11-09"). `POST/GET/PATCH/DELETE /api/study-sessions`; attach/detach vocabulary and grammar topics. New material added while a session is "active" is attached automatically.
   _Done when:_ "Current Lesson" practice can query material by session.
 

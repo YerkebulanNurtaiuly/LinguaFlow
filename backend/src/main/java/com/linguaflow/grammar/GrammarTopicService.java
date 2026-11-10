@@ -10,6 +10,7 @@ import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.common.error.InvalidFieldException;
 import com.linguaflow.common.error.NotFoundException;
 import com.linguaflow.user.ActiveLanguageService;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -79,9 +80,12 @@ public class GrammarTopicService {
 
 	private final Clock clock;
 
+	private final ApplicationEventPublisher events;
+
 	GrammarTopicService(GrammarTopicRepository topics, ActiveLanguageService activeLanguages,
-			PlatformTransactionManager transactionManager, Clock clock) {
+			PlatformTransactionManager transactionManager, Clock clock, ApplicationEventPublisher events) {
 		this.topics = topics;
+		this.events = events;
 		this.activeLanguages = activeLanguages;
 		this.transactions = new TransactionTemplate(transactionManager);
 		this.clock = clock;
@@ -104,7 +108,10 @@ public class GrammarTopicService {
 		topic.setPersonalNotes(cleanNotes(request.personalNotes()));
 		topic.setCefrLevel(request.cefrLevel());
 		topic.setCatalogTopicId(request.catalogTopicId());
-		return saveRejectingDuplicates(() -> topics.saveAndFlush(topic), userId, () -> language, title);
+		GrammarTopic created = saveRejectingDuplicates(() -> topics.saveAndFlush(topic), userId, () -> language, title);
+		// After the commit, so listeners see the topic (e.g. the active study session, SES-01)
+		events.publishEvent(new GrammarTopicCreated(userId, language, created.getId()));
+		return created;
 	}
 
 	/** The user's topic, or 404 if it doesn't exist or belongs to someone else. */

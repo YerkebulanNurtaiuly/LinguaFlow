@@ -144,8 +144,10 @@ class GrammarTopicController {
 					required = false) @Size(max = 200) String query,
 			@RequestParam(required = false) List<CefrLevel> cefrLevel,
 			@RequestParam(required = false) List<KnowledgeStatus> status,
+			@Parameter(description = "Only topics of this study session") @RequestParam(required = false)
+			UUID sessionId,
 			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
-		var page = topics.list(userId, new GrammarTopicFilter(query, toSet(cefrLevel), toSet(status)),
+		var page = topics.list(userId, new GrammarTopicFilter(query, toSet(cefrLevel), toSet(status), sessionId),
 				toEntitySort(pageable));
 		return PageResponse.from(new PageImpl<>(page.getContent(), pageable, page.getTotalElements()),
 				TopicResponse::from);

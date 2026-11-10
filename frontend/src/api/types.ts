@@ -82,3 +82,12 @@ export type GrammarCatalogEntry = Schemas['GrammarCatalogEntry']
 export type AddCatalogTopicRequest = Schemas['AddCatalogTopicRequest']
 export type CreateGrammarTopicRequest = Schemas['CreateGrammarTopicRequest']
 export type UpdateGrammarTopicRequest = Schemas['UpdateGrammarTopicRequest']
+
+// Study sessions
+export type StudySession = Schemas['StudySession']
+export type StudySessionPage = Schemas['PageResponseStudySession']
+export type StudySessionMaterial = Schemas['StudySessionMaterial']
+export type CreateStudySessionRequest = Schemas['CreateStudySessionRequest']
+export type UpdateStudySessionRequest = Schemas['UpdateStudySessionRequest']
+export type AttachVocabularyRequest = Schemas['AttachVocabularyRequest']
+export type AttachGrammarRequest = Schemas['AttachGrammarRequest']

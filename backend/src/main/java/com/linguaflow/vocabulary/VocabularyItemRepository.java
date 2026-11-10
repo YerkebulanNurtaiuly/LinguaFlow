@@ -44,6 +44,14 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 	List<UUID> findSameWordIds(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("normalizedLemma") String normalizedLemma, @Param("partOfSpeech") PartOfSpeech partOfSpeech);
 
+	/** Which of these IDs are the user's words in this language (for attaching to a study session). */
+	@Query("""
+			select v.id from VocabularyItem v
+			where v.userId = :userId and v.languageCode = :languageCode and v.id in :ids
+			""")
+	List<UUID> findOwnedIds(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("ids") Collection<UUID> ids);
+
 	/** The user's words in this language with any of these normalized lemmas, oldest first (VOC-04). */
 	@Query("""
 			select new com.linguaflow.vocabulary.ExistingLemma(v.id, v.normalizedLemma, v.partOfSpeech)
