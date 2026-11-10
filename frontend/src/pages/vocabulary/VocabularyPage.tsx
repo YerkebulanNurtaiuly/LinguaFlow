@@ -2,6 +2,7 @@ import {
   BookOpen,
   ChevronLeft,
   ChevronRight,
+  ListPlus,
   Plus,
   SearchX,
 } from 'lucide-react'
@@ -10,6 +11,7 @@ import { useSearchParams } from 'react-router'
 import { describeError } from '@/api/errors'
 import {
   Button,
+  ButtonLink,
   ConfirmDialog,
   EmptyState,
   LoadError,
@@ -105,10 +107,16 @@ export function VocabularyPage() {
               : 'Your words with translations, levels and tags.'}
           </p>
         </div>
-        <Button onClick={() => setModal({ mode: 'add' })}>
-          <Plus className="size-4" aria-hidden="true" />
-          Add word
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <ButtonLink to="/vocabulary/add" variant="secondary">
+            <ListPlus className="size-4" aria-hidden="true" />
+            Add many
+          </ButtonLink>
+          <Button onClick={() => setModal({ mode: 'add' })}>
+            <Plus className="size-4" aria-hidden="true" />
+            Add word
+          </Button>
+        </div>
       </div>
 
       <VocabularyFilterBar

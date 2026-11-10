@@ -15,6 +15,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { BulkAddPage } from '@/pages/vocabulary/BulkAddPage'
 import { VocabularyPage } from '@/pages/vocabulary/VocabularyPage'
 
 const title = (value: string): RouteHandle => ({ title: value })
@@ -92,6 +93,11 @@ export const routes: RouteObject[] = [
                           />
                         ),
                       })),
+                      {
+                        path: '/vocabulary/add',
+                        handle: title('Add many words'),
+                        element: <BulkAddPage />,
+                      },
                       // Dev-only component showcase; not in production builds
                       ...(import.meta.env.DEV
                         ? [

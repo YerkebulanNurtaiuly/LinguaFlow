@@ -72,6 +72,9 @@ class VocabularyItemSearchImpl implements VocabularyItemSearch {
 		if (!filter.statuses().isEmpty()) {
 			where.add(item.get("status").in(filter.statuses()));
 		}
+		if (!filter.aiStatuses().isEmpty()) {
+			where.add(item.get("aiStatus").in(filter.aiStatuses()));
+		}
 		if (filter.tagId() != null) {
 			Subquery<UUID> tagged = query.subquery(UUID.class);
 			Root<VocabularyItem> sameItem = tagged.correlate(item);

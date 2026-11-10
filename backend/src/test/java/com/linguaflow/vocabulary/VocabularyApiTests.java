@@ -246,6 +246,17 @@ class VocabularyApiTests {
 		}
 
 		@Test
+		void filtersByAiStatus() throws Exception {
+			UUID ready = addWord(anna, "der Hund", "");
+			addWord(anna, "die Katze", "");
+			jdbc.update("update vocabulary_items set ai_status = 'READY' where id = ?", ready);
+
+			list(anna, "?aiStatus=PENDING_AI").andExpect(jsonPath("$.totalElements").value(1))
+				.andExpect(jsonPath("$.content[0].lemma").value("die Katze"));
+			list(anna, "?aiStatus=READY&aiStatus=AI_FAILED").andExpect(jsonPath("$.totalElements").value(1));
+		}
+
+		@Test
 		void filtersByTagAndStudySession() throws Exception {
 			UUID dog = addWord(anna, "der Hund", "");
 			UUID cat = addWord(anna, "die Katze", "");

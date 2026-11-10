@@ -2593,6 +2593,8 @@ export interface operations {
                 sessionId?: string;
                 /** @description Only words with this tag */
                 tagId?: string;
+                /** @description Only words in these AI enrichment states, e.g. PENDING_AI */
+                aiStatus?: ("PENDING_AI" | "READY" | "AI_FAILED")[];
                 pageable: components["schemas"]["Pageable"];
             };
             header?: never;

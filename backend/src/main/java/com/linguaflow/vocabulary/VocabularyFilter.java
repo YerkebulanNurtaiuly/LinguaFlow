@@ -13,15 +13,23 @@ import com.linguaflow.common.domain.KnowledgeStatus;
  * Straße") or in the translation (case-insensitive)
  * @param sessionId only words linked to this study session
  * @param tagId only words carrying this tag
+ * @param aiStatuses only words in one of these AI enrichment states, e.g. PENDING_AI to
+ * see what AI is still working on (FE-VOC-03)
  */
 public record VocabularyFilter(String query, Set<PartOfSpeech> partsOfSpeech, Set<CefrLevel> cefrLevels,
-		Set<KnowledgeStatus> statuses, UUID sessionId, UUID tagId) {
+		Set<KnowledgeStatus> statuses, UUID sessionId, UUID tagId, Set<AiStatus> aiStatuses) {
 
 	public VocabularyFilter {
 		query = query == null || query.isBlank() ? null : query.strip();
 		partsOfSpeech = partsOfSpeech == null ? Set.of() : Set.copyOf(partsOfSpeech);
 		cefrLevels = cefrLevels == null ? Set.of() : Set.copyOf(cefrLevels);
 		statuses = statuses == null ? Set.of() : Set.copyOf(statuses);
+		aiStatuses = aiStatuses == null ? Set.of() : Set.copyOf(aiStatuses);
+	}
+
+	public VocabularyFilter(String query, Set<PartOfSpeech> partsOfSpeech, Set<CefrLevel> cefrLevels,
+			Set<KnowledgeStatus> statuses, UUID sessionId, UUID tagId) {
+		this(query, partsOfSpeech, cefrLevels, statuses, sessionId, tagId, Set.of());
 	}
 
 	public static VocabularyFilter none() {

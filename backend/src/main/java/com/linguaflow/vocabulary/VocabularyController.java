@@ -74,9 +74,11 @@ class VocabularyController {
 			@Parameter(description = "Only words of this study session") @RequestParam(required = false)
 			UUID sessionId,
 			@Parameter(description = "Only words with this tag") @RequestParam(required = false) UUID tagId,
+			@Parameter(description = "Only words in these AI enrichment states, e.g. PENDING_AI")
+			@RequestParam(required = false) List<AiStatus> aiStatus,
 			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 		VocabularyFilter filter = new VocabularyFilter(query, toSet(partOfSpeech), toSet(cefrLevel), toSet(status),
-				sessionId, tagId);
+				sessionId, tagId, toSet(aiStatus));
 		var page = vocabulary.list(userId, filter, toEntitySort(pageable));
 		// Report the page with the sort names the client used
 		return PageResponse.from(new PageImpl<>(page.getContent(), pageable, page.getTotalElements()),

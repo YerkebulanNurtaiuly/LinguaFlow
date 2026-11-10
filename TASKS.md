@@ -174,7 +174,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-VOC-02 — Add / edit word form** (M) — _deps: FE-VOC-01_
   Single-word form with optional manual fields; edit modal showing AI-generated fields and examples; duplicate warning linking to existing word.
 
-- [ ] **FE-VOC-03 — Bulk add screen** (M) — _deps: FE-VOC-01, VOC-04_
+- [x] **FE-VOC-03 — Bulk add screen** (M) — _deps: FE-VOC-01, VOC-04_
   Paste area → preview table (duplicate/invalid rows highlighted, toggle include) → confirm → progress indicator while AI processes.
 
 ### Epic 7: Grammar (`GRM`)

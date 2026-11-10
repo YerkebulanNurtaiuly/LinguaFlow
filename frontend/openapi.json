@@ -1970,6 +1970,18 @@
             "format" : "uuid"
           }
         }, {
+          "description" : "Only words in these AI enrichment states, e.g. PENDING_AI",
+          "in" : "query",
+          "name" : "aiStatus",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "PENDING_AI", "READY", "AI_FAILED" ]
+            }
+          }
+        }, {
           "in" : "query",
           "name" : "pageable",
           "required" : true,
