@@ -6,11 +6,12 @@ import { BackendStatus } from '@/components/layout/BackendStatus'
 import { Logo } from '@/components/layout/Logo'
 import { MOBILE_NAV_ID, MobileNav } from '@/components/layout/MobileNav'
 import { NavLinks } from '@/components/layout/NavLinks'
+import { UserMenu } from '@/components/layout/UserMenu'
 import { ThemeToggle } from '@/components/ui'
 
 /**
  * Shell for the logged-in part of the app: sidebar on large screens, top bar with a
- * slide-over menu on small ones. Route protection (redirect to /login) arrives in FE-03.
+ * slide-over menu on small ones. Only rendered for logged-in users (see ProtectedRoute).
  */
 export function AppLayout() {
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
@@ -27,6 +28,7 @@ export function AppLayout() {
         <nav aria-label="Main" className="flex-1">
           <NavLinks />
         </nav>
+        <UserMenu className="mb-4 border-t border-border px-3 pt-4" />
         <div className="flex items-center justify-between gap-2 px-3">
           <BackendStatus />
           <ThemeToggle />

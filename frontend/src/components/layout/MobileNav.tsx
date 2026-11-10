@@ -1,6 +1,7 @@
 import { X } from 'lucide-react'
 import { useEffect, useRef } from 'react'
 import { NavLinks } from './NavLinks'
+import { UserMenu } from './UserMenu'
 
 interface MobileNavProps {
   open: boolean
@@ -51,9 +52,10 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
             <span className="sr-only">Close navigation</span>
           </button>
         </div>
-        <nav aria-label="Main">
+        <nav aria-label="Main" className="flex-1">
           <NavLinks onNavigate={onClose} />
         </nav>
+        <UserMenu className="border-t border-border px-3 pt-4" />
       </div>
     </div>
   )

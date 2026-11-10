@@ -3,6 +3,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { createBrowserRouter, RouterProvider } from 'react-router'
 import { routes } from '@/app/routes'
+import { AuthProvider } from '@/auth/AuthProvider'
 import { ThemeProvider, ToastProvider } from '@/components/ui'
 import { queryClient } from '@/lib/queryClient'
 import './index.css'
@@ -14,7 +15,9 @@ createRoot(document.getElementById('root')!).render(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
-          <RouterProvider router={router} />
+          <AuthProvider>
+            <RouterProvider router={router} />
+          </AuthProvider>
         </ToastProvider>
       </QueryClientProvider>
     </ThemeProvider>

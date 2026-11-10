@@ -123,7 +123,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-02 — Design system components** (M) — _deps: FE-01_
   Tailwind theme tokens (light/dark), Button, Input, Select, Textarea, Badge (CEFR/status), Card, Modal, Toast, Table, Tabs, EmptyState, Skeleton, ConfirmDialog. Accessible (keyboard, ARIA).
 
-- [ ] **FE-03 — API layer & auth state** (M) — _deps: FE-01, INF-09, AUTH-03_
+- [x] **FE-03 — API layer & auth state** (M) — _deps: FE-01, INF-09, AUTH-03_
   HTTP client with access-token injection, silent refresh on 401 with request queueing, logout on refresh failure. Auth context/store, `ProtectedRoute`.
 
 - [ ] **FE-04 — Login & registration pages** (S) — _deps: FE-03_

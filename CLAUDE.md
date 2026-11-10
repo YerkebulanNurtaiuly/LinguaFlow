@@ -177,14 +177,24 @@ The stack:
 Conventions:
 - **Imports:** `@/` points to `src/`.
 - **TypeScript:** pinned to `~6.0` because `typescript-eslint` doesn't support 6.1+ or TS 7 yet. Strict mode and `noUncheckedIndexedAccess` are on.
-- **HTTP:** API calls go through `src/lib/api.ts`, an Axios instance with base URL `VITE_API_BASE_URL`, default `/api`. Validate responses with Zod schemas.
+- **HTTP:** API calls go through `src/lib/api.ts`, an Axios instance with base URL `VITE_API_BASE_URL`, default `/api`, and `withCredentials`. Validate responses with Zod schemas.
+- **Auth state (FE-03):** code lives in `src/auth/`.
+  - **Access token:** held in memory only by `tokenStore`, never in `localStorage`. On startup `AuthProvider` restores the session by calling `/auth/refresh` with the `lf_refresh` cookie.
+  - **Client behaviour:** `api` adds `Authorization: Bearer …`. On a 401 it calls `refreshAccessToken()` once and retries the request once. Parallel 401s wait for the same refresh.
+  - **Single-flight refresh:** `refreshAccessToken()` is shared by all callers and serialised across tabs with the Web Locks API. The backend treats a reused refresh token as theft, so never call `/auth/refresh` any other way.
+  - **Ending the session:** a refresh rejected with 401 clears the token, which logs the user out. Network or 5xx errors during refresh keep the session. When the token is cleared, `AuthProvider` drops the whole query cache.
+  - **Auth endpoints:** pass `skipAuthRefresh: true` on calls to them (login, logout, refresh), because their 401 means wrong credentials, not an expired token. Use the functions in `auth/authApi.ts`.
+  - **In components:** `useAuth()` returns `{ status: 'loading' | 'authenticated' | 'anonymous', user, login, logout }`. `user` is the `/users/me` profile under the query key `CURRENT_USER_QUERY_KEY`; after a profile change, update that cache entry.
+  - **Route guard:** `ProtectedRoute` wraps `AppLayout`. Anonymous visitors go to `/login` with `state.from` (type `LoginRedirectState`) holding the page they wanted.
+  - **Password change:** it returns new tokens. Put the new access token in `tokenStore.set(...)`.
 - **Routes:** all routes are defined in `src/app/routes.tsx`.
   - `AuthLayout` (a centered card, no navigation) wraps `/login` and `/register`.
   - `AppLayout` wraps the sections from `src/app/navigation.ts` (`NAV_ITEMS`: path, label, lucide icon, description). `AppLayout` has a sidebar at `lg` and up, and a top bar with a `MobileNav` drawer below that.
   - `/` redirects to `/dashboard`, and `*` shows `NotFoundPage`.
   - Every route sets `handle: { title }`; `RouteTitle` turns it into `document.title` ("Vocabulary · LinguaFlow").
   - To build a section, replace its `PlaceholderPage` element in `routes.tsx`. Add new sections to `NAV_ITEMS`.
-  - Tests render routes with `renderRoute(path)` from `src/test/renderWithProviders.tsx`, which uses a memory router and a fresh QueryClient. `src/app/routes.test.tsx` covers the shell.
+  - Tests render routes with `renderRoute(path, { session, user })` from `src/test/renderWithProviders.tsx`, which uses a memory router, a fresh QueryClient and `AuthProvider`. It starts logged in as `testUser` by default; pass `session: 'anonymous'` to start without a session. It returns `{ router, queryClient }`. `src/app/routes.test.tsx` covers the shell and `src/auth/auth.test.tsx` the session flows.
+  - **No network in tests:** `src/test/setup.ts` installs `fakeAdapter` on `api`. Answer requests with `fakeApi.on(method, url, reply | handler)` and inspect them with `fakeApi.requests(url)`. An unregistered request fails the test. `/auth/refresh` answers 401 unless the test registers a handler. `fakeApi.fallback` is for helpers' defaults, which a test's own `on` overrides.
 - **Design system (FE-02):** building blocks live in `src/components/ui` and are imported from `@/components/ui`. They are Button, Field with Input, Select and Textarea, Badge/CefrBadge/StatusBadge, Card, Table, Tabs, Modal, ConfirmDialog, Toast (`useToast`), EmptyState, Skeleton/SkeletonText, Spinner and ThemeToggle. Build pages from these rather than raw elements.
   - **Colours:** use only the semantic tokens from `src/index.css` (`bg-canvas`, `bg-surface`, `bg-surface-muted`, `text-fg`, `text-fg-muted`, `text-fg-subtle`, `border-border`, `bg-primary`, `bg-danger`, `bg-{success,warning,info,danger}-soft` and so on). **Never use raw palette classes** like `bg-slate-50`. Light and dark mode both come from the tokens.
   - **Theme:** `ThemeProvider` stores `system`, `light` or `dark` in `localStorage` under `lf-theme` and sets `<html data-theme>`. A script in `index.html` applies the stored theme before first paint.
