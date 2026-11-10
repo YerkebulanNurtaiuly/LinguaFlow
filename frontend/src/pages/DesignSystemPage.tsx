@@ -13,7 +13,9 @@ import {
   EmptyState,
   Field,
   Input,
+  LoadError,
   Modal,
+  PageSkeleton,
   Select,
   SkeletonText,
   StatusBadge,
@@ -171,7 +173,22 @@ export function DesignSystemPage() {
           {
             id: 'loading',
             label: 'Loading',
-            content: <SkeletonText lines={4} />,
+            content: (
+              <div className="space-y-6">
+                <SkeletonText lines={3} />
+                <PageSkeleton label="Loading example" cards={1} />
+              </div>
+            ),
+          },
+          {
+            id: 'load-error',
+            label: 'Load error',
+            content: (
+              <LoadError
+                title="Couldn't load your vocabulary"
+                onRetry={() => toast({ title: 'Retrying…' })}
+              />
+            ),
           },
         ]}
       />

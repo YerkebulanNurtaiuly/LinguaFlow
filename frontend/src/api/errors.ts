@@ -46,6 +46,27 @@ export function getRetryAfterSeconds(error: unknown): number | undefined {
     : undefined
 }
 
+export const NETWORK_ERROR_MESSAGE =
+  "Can't reach LinguaFlow right now. Check your connection and try again."
+
+/**
+ * The user-facing explanation for any failed request: no connection, a server-side
+ * failure (never the raw 5xx detail), or the problem's own detail.
+ */
+export function describeError(error: unknown): string {
+  if (isNetworkError(error)) return NETWORK_ERROR_MESSAGE
+  const status = isAxiosError(error) ? error.response?.status : undefined
+  if (status !== undefined && status >= 500) {
+    return 'Something went wrong on our side. Please try again in a moment.'
+  }
+  return getErrorMessage(error)
+}
+
+/** HTTP status of a failed request, if it got a response. */
+export function getStatus(error: unknown): number | undefined {
+  return isAxiosError(error) ? error.response?.status : undefined
+}
+
 /** A message that is safe to show to the user. */
 export function getErrorMessage(
   error: unknown,

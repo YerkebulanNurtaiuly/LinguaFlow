@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { getErrorMessage } from '@/api/errors'
+import { describeError } from '@/api/errors'
 import { changePassword } from '@/account/accountApi'
 import { Alert, Button, Field, Input, useToast } from '@/components/ui'
 import { applyServerFieldErrors } from '@/lib/formErrors'
@@ -48,7 +48,7 @@ export function PasswordSection({ email }: { email: string }) {
           { currentPassword: 'Current password', newPassword: 'New password' },
         )
       ) {
-        setFormError(getErrorMessage(error))
+        setFormError(describeError(error))
       }
     }
   })

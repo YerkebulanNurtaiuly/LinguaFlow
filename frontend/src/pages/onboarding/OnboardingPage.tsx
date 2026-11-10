@@ -1,15 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { Navigate, useLocation } from 'react-router'
-import { getErrorMessage, hasErrorCode, isNetworkError } from '@/api/errors'
+import { describeError, hasErrorCode } from '@/api/errors'
 import { useAuth } from '@/auth/authContext'
 import { redirectTarget } from '@/auth/redirect'
 import {
   Alert,
   Button,
+  LoadError,
+  PageSkeleton,
   type RadioCardOption,
   RadioCards,
-  Spinner,
   useToast,
 } from '@/components/ui'
 import {
@@ -65,7 +66,7 @@ export function OnboardingPage() {
   const myLanguages = useMyLanguages()
   const location = useLocation()
 
-  if (myLanguages.isPending) return <CenteredSpinner />
+  if (myLanguages.isPending) return <WizardSkeleton />
   if (myLanguages.data && myLanguages.data.length > 0) {
     return <Navigate to={redirectTarget(location.state)} replace />
   }
@@ -109,6 +110,8 @@ function Wizard() {
       : preferredExplanation?.code
 
   const finish = useMutation({
+    // Shown in the form instead of a toast
+    meta: { errorToast: false },
     mutationFn: async () => {
       if (!chosenTarget || !chosenExplanation) return
       const selfAssessedLevel = level === 'unsure' ? undefined : level
@@ -141,21 +144,17 @@ function Wizard() {
     },
   })
 
-  if (languages.isPending) return <CenteredSpinner />
+  if (languages.isPending) return <WizardSkeleton />
   if (languages.isError || targets.length === 0) {
     return (
-      <div className="space-y-4">
-        <Alert variant="danger" title="Couldn't load the available languages">
-          Check your connection and try again.
-        </Alert>
-        <Button
-          variant="secondary"
-          loading={languages.isFetching}
-          onClick={() => void languages.refetch()}
-        >
-          Try again
-        </Button>
-      </div>
+      <LoadError
+        title="Couldn't load the available languages"
+        description={
+          languages.isError ? describeError(languages.error) : undefined
+        }
+        retrying={languages.isFetching}
+        onRetry={() => void languages.refetch()}
+      />
     )
   }
 
@@ -217,11 +216,7 @@ function Wizard() {
       break
   }
 
-  const errorMessage = finish.isError
-    ? isNetworkError(finish.error)
-      ? "Can't reach LinguaFlow right now. Check your connection and try again."
-      : getErrorMessage(finish.error)
-    : undefined
+  const errorMessage = finish.isError ? describeError(finish.error) : undefined
 
   return (
     <form
@@ -293,11 +288,6 @@ function Wizard() {
   )
 }
 
-function CenteredSpinner() {
-  return (
-    <div role="status" className="flex justify-center py-10 text-fg-muted">
-      <Spinner className="size-5" />
-      <span className="sr-only">Loading…</span>
-    </div>
-  )
+function WizardSkeleton() {
+  return <PageSkeleton label="Loading" withHeader cards={1} />
 }

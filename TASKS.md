@@ -135,7 +135,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-06 — Settings page** (S) — _deps: FE-05, USR-03_
   Profile, password change, language & learning settings, account deletion.
 
-- [ ] **FE-07 — Global error/loading handling** (S) — _deps: FE-02_
+- [x] **FE-07 — Global error/loading handling** (S) — _deps: FE-02_
   Error boundary, query error toasts, consistent loading skeletons.
 
 ---

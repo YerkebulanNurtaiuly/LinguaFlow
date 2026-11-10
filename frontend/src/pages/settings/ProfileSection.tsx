@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import { getErrorMessage } from '@/api/errors'
+import { describeError } from '@/api/errors'
 import { updateProfile } from '@/account/accountApi'
 import type { CurrentUser } from '@/auth/authApi'
 import { CURRENT_USER_QUERY_KEY } from '@/auth/authContext'
@@ -75,7 +75,7 @@ export function ProfileSection({
           },
         )
       ) {
-        setFormError(getErrorMessage(error))
+        setFormError(describeError(error))
       }
     }
   })

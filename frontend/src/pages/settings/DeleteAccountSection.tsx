@@ -1,7 +1,7 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { getErrorMessage } from '@/api/errors'
+import { describeError } from '@/api/errors'
 import { deleteAccount } from '@/account/accountApi'
 import { Alert, Button, Field, Input, Modal, useToast } from '@/components/ui'
 import { applyServerFieldErrors } from '@/lib/formErrors'
@@ -47,7 +47,7 @@ export function DeleteAccountSection() {
           password: 'Password',
         })
       ) {
-        setFormError(getErrorMessage(error))
+        setFormError(describeError(error))
       }
     }
   })

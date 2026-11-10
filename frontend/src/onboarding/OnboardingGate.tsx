@@ -1,7 +1,8 @@
 import { Navigate, Outlet, useLocation } from 'react-router'
 import type { AuthPageState } from '@/auth/redirect'
 import { FullPageLoader } from '@/components/layout/FullPageLoader'
-import { Alert, Button } from '@/components/ui'
+import { describeError } from '@/api/errors'
+import { LoadError } from '@/components/ui'
 import { useMyLanguages } from '@/languages/queries'
 
 /**
@@ -17,19 +18,13 @@ export function OnboardingGate() {
   if (languages.isError) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-canvas px-4">
-        <div className="w-full max-w-sm space-y-4">
-          <Alert variant="danger" title="Couldn't load your profile">
-            Check your connection and try again.
-          </Alert>
-          <Button
-            variant="secondary"
-            className="w-full"
-            loading={languages.isFetching}
-            onClick={() => void languages.refetch()}
-          >
-            Try again
-          </Button>
-        </div>
+        <LoadError
+          className="w-full max-w-sm"
+          title="Couldn't load your profile"
+          description={describeError(languages.error)}
+          retrying={languages.isFetching}
+          onRetry={() => void languages.refetch()}
+        />
       </div>
     )
   }

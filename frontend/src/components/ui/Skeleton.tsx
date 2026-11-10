@@ -1,8 +1,8 @@
 import { cn } from '@/lib/cn'
 
 /**
- * Loading placeholder. Hidden from assistive tech: the loading region itself should set
- * aria-busy="true" (see LoadingRegion).
+ * Loading placeholder. Hidden from assistive tech: the surrounding region announces
+ * the loading state (see PageSkeleton and SkeletonText).
  */
 export function Skeleton({ className }: { className?: string }) {
   return (

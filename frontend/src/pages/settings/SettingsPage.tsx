@@ -1,5 +1,6 @@
+import { describeError } from '@/api/errors'
 import { useAuth } from '@/auth/authContext'
-import { Alert, Button, SkeletonText } from '@/components/ui'
+import { LoadError, PageSkeleton } from '@/components/ui'
 import { useLanguages, useMyLanguages } from '@/languages/queries'
 import { DeleteAccountSection } from './DeleteAccountSection'
 import { LanguageSettingsSection } from './LanguageSettingsSection'
@@ -25,25 +26,17 @@ export function SettingsPage() {
       </div>
 
       {failed ? (
-        <div className="space-y-3">
-          <Alert variant="danger" title="Couldn't load your settings">
-            Check your connection and try again.
-          </Alert>
-          <Button
-            variant="secondary"
-            onClick={() => {
-              void catalog.refetch()
-              void myLanguages.refetch()
-            }}
-          >
-            Try again
-          </Button>
-        </div>
+        <LoadError
+          title="Couldn't load your settings"
+          description={describeError(catalog.error ?? myLanguages.error)}
+          retrying={catalog.isFetching || myLanguages.isFetching}
+          onRetry={() => {
+            if (catalog.isError) void catalog.refetch()
+            if (myLanguages.isError) void myLanguages.refetch()
+          }}
+        />
       ) : !ready ? (
-        <div role="status" aria-label="Loading settings" className="space-y-6">
-          <SkeletonText lines={4} />
-          <SkeletonText lines={6} />
-        </div>
+        <PageSkeleton label="Loading settings" cards={3} />
       ) : (
         <>
           <ProfileSection user={user} catalog={catalog.data} />

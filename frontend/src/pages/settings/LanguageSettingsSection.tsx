@@ -2,7 +2,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { getErrorMessage, getFieldErrors } from '@/api/errors'
+import { describeError, getFieldErrors } from '@/api/errors'
 import {
   Alert,
   Badge,
@@ -120,7 +120,7 @@ export function LanguageSettingsSection({
           applied = true
         }
       }
-      if (!applied) setFormError(getErrorMessage(error))
+      if (!applied) setFormError(describeError(error))
     }
   })
 
@@ -132,7 +132,7 @@ export function LanguageSettingsSection({
       await queryClient.invalidateQueries({ queryKey: MY_LANGUAGES_QUERY_KEY })
       toast({ title: `Now learning ${name}`, variant: 'success' })
     } catch (error) {
-      toast({ title: getErrorMessage(error), variant: 'error' })
+      toast({ title: describeError(error), variant: 'error' })
     } finally {
       setActivating(false)
     }
@@ -147,7 +147,7 @@ export function LanguageSettingsSection({
       await queryClient.invalidateQueries({ queryKey: MY_LANGUAGES_QUERY_KEY })
     } catch (error) {
       setConfirmRemove(false)
-      toast({ title: getErrorMessage(error), variant: 'error' })
+      toast({ title: describeError(error), variant: 'error' })
     }
   }
 

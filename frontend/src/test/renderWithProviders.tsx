@@ -1,15 +1,17 @@
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { QueryClientProvider } from '@tanstack/react-query'
 import { render, screen } from '@testing-library/react'
 import { createMemoryRouter, RouterProvider } from 'react-router'
 import { routes } from '@/app/routes'
 import { AuthProvider } from '@/auth/AuthProvider'
 import type { CurrentUser } from '@/auth/authApi'
 import { tokenStore } from '@/auth/tokenStore'
+import { ErrorToasts } from '@/components/layout/ErrorToasts'
 import { ThemeProvider, ToastProvider } from '@/components/ui'
 import type {
   AvailableLanguage,
   LearnedLanguage,
 } from '@/languages/languagesApi'
+import { createQueryClient } from '@/lib/queryClient'
 import { fakeApi } from './fakeApi'
 
 export const TEST_ACCESS_TOKEN = 'test-access-token'
@@ -89,7 +91,7 @@ export function renderRoute(
     data: languages,
   })
   fakeApi.fallback('GET', '/languages', { status: 200, data: testCatalog })
-  const queryClient = new QueryClient({
+  const queryClient = createQueryClient({
     defaultOptions: { queries: { retry: false } },
   })
   const router = createMemoryRouter(routes, { initialEntries: [path] })
@@ -97,6 +99,7 @@ export function renderRoute(
     <ThemeProvider>
       <QueryClientProvider client={queryClient}>
         <ToastProvider>
+          <ErrorToasts />
           <AuthProvider>
             <RouterProvider router={router} />
           </AuthProvider>

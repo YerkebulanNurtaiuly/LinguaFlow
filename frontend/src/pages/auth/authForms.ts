@@ -1,9 +1,10 @@
 import { z } from 'zod'
 import {
-  getErrorMessage,
+  describeError,
   getRetryAfterSeconds,
   hasErrorCode,
   isNetworkError,
+  NETWORK_ERROR_MESSAGE,
 } from '@/api/errors'
 import type { LoginRequest, RegistrationRequest } from '@/api/types'
 
@@ -54,7 +55,7 @@ function waitTime(seconds: number): string {
 /** Form-level message for a failed login or registration request. */
 export function authErrorMessage(error: unknown): string {
   if (isNetworkError(error)) {
-    return "Can't reach LinguaFlow right now. Check your connection and try again."
+    return NETWORK_ERROR_MESSAGE
   }
   if (hasErrorCode(error, 'INVALID_CREDENTIALS')) {
     return 'Wrong email or password.'
@@ -68,5 +69,5 @@ export function authErrorMessage(error: unknown): string {
       ? `Too many attempts. Try again in ${waitTime(seconds)}.`
       : 'Too many attempts. Try again later.'
   }
-  return getErrorMessage(error)
+  return describeError(error)
 }
