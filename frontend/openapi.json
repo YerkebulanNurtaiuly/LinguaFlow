@@ -2348,6 +2348,242 @@
         "tags" : [ "Vocabulary" ]
       }
     },
+    "/api/vocabulary/export" : {
+      "get" : {
+        "description" : "Words of the active language, oldest first, with the same filters as the list. Columns: lemma, translation, partOfSpeech, gender, plural, cefrLevel, status, notes, tags (names separated by |). UTF-8 with a byte order mark, so spreadsheets detect the encoding.",
+        "operationId" : "export",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Text in the lemma or the translation",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "partOfSpeech",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NOUN", "VERB", "ADJECTIVE", "ADVERB", "PRONOUN", "PREPOSITION", "CONJUNCTION", "ARTICLE", "NUMERAL", "INTERJECTION", "PHRASE", "OTHER" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "cefrLevel",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "sessionId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "tagId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "text/csv" : {
+                "schema" : {
+                  "type" : "string"
+                }
+              }
+            },
+            "description" : "The CSV file"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "No active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Export vocabulary as CSV",
+        "tags" : [ "Vocabulary" ]
+      }
+    },
+    "/api/vocabulary/import" : {
+      "post" : {
+        "description" : "A UTF-8 CSV file (comma or semicolon) with a header row naming any of the export's columns; lemma is required. Adds each row to the active language on its own and reports it. Words you already have (same lemma and part of speech) are skipped; tags are matched by name and created when missing; MASTERED is imported as LEARNED. At most 2000 rows and 2 MB.",
+        "operationId" : "importCsv",
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "string",
+                "format" : "uuid"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VocabularyImportResult"
+                }
+              }
+            },
+            "description" : "One result per data row, in file order"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "No active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Import vocabulary from CSV",
+        "tags" : [ "Vocabulary" ]
+      }
+    },
     "/api/vocabulary/{id}" : {
       "delete" : {
         "description" : "Also deletes its examples, flashcards and progress.",
@@ -3516,6 +3752,65 @@
           }
         },
         "required" : [ "sentence" ]
+      },
+      "VocabularyImportResult" : {
+        "type" : "object",
+        "properties" : {
+          "createdCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "createdTagCount" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Tags the file named that you didn't have yet"
+          },
+          "duplicateCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "invalidCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "rows" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/VocabularyImportRow"
+            }
+          }
+        }
+      },
+      "VocabularyImportRow" : {
+        "type" : "object",
+        "properties" : {
+          "existingId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "DUPLICATE: the word you already have"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "CREATED: the new word's ID"
+          },
+          "lemma" : {
+            "type" : "string"
+          },
+          "line" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "1-based line in the file"
+          },
+          "message" : {
+            "type" : "string",
+            "description" : "Why the row is DUPLICATE or INVALID, or what was changed on import"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "CREATED", "DUPLICATE", "INVALID" ]
+          }
+        }
       },
       "VocabularyItem" : {
         "type" : "object",

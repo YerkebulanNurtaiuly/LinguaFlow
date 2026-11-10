@@ -408,6 +408,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/vocabulary/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Export vocabulary as CSV
+         * @description Words of the active language, oldest first, with the same filters as the list. Columns: lemma, translation, partOfSpeech, gender, plural, cefrLevel, status, notes, tags (names separated by |). UTF-8 with a byte order mark, so spreadsheets detect the encoding.
+         */
+        get: operations["export"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/vocabulary/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Import vocabulary from CSV
+         * @description A UTF-8 CSV file (comma or semicolon) with a header row naming any of the export's columns; lemma is required. Adds each row to the active language on its own and reports it. Words you already have (same lemma and part of speech) are skipped; tags are matched by name and created when missing; MASTERED is imported as LEARNED. At most 2000 rows and 2 MB.
+         */
+        post: operations["importCsv"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/vocabulary/{id}": {
         parameters: {
             query?: never;
@@ -866,6 +906,42 @@ export interface components {
             sentence: string;
             /** @example The dog barks. */
             translation?: string;
+        };
+        VocabularyImportResult: {
+            /** Format: int32 */
+            createdCount?: number;
+            /**
+             * Format: int32
+             * @description Tags the file named that you didn't have yet
+             */
+            createdTagCount?: number;
+            /** Format: int32 */
+            duplicateCount?: number;
+            /** Format: int32 */
+            invalidCount?: number;
+            rows?: components["schemas"]["VocabularyImportRow"][];
+        };
+        VocabularyImportRow: {
+            /**
+             * Format: uuid
+             * @description DUPLICATE: the word you already have
+             */
+            existingId?: string;
+            /**
+             * Format: uuid
+             * @description CREATED: the new word's ID
+             */
+            id?: string;
+            lemma?: string;
+            /**
+             * Format: int32
+             * @description 1-based line in the file
+             */
+            line?: number;
+            /** @description Why the row is DUPLICATE or INVALID, or what was changed on import */
+            message?: string;
+            /** @enum {string} */
+            status?: "CREATED" | "DUPLICATE" | "INVALID";
         };
         VocabularyItem: {
             /** @description Fields whose current value came from AI */
@@ -2772,6 +2848,167 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BulkVocabularyResult"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    export: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description Text in the lemma or the translation */
+                q?: string;
+                partOfSpeech?: ("NOUN" | "VERB" | "ADJECTIVE" | "ADVERB" | "PRONOUN" | "PREPOSITION" | "CONJUNCTION" | "ARTICLE" | "NUMERAL" | "INTERJECTION" | "PHRASE" | "OTHER")[];
+                cefrLevel?: ("A1" | "A2" | "B1" | "B2" | "C1" | "C2")[];
+                status?: ("NEW" | "LEARNING" | "LEARNED" | "MASTERED")[];
+                sessionId?: string;
+                tagId?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The CSV file */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/csv": string;
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    importCsv: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": string;
+            };
+        };
+        responses: {
+            /** @description One result per data row, in file order */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyImportResult"];
                 };
             };
             /** @description Invalid request */

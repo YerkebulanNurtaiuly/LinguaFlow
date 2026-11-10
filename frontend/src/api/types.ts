@@ -68,3 +68,7 @@ export type BulkVocabularyConfirmRequest =
   Schemas['BulkVocabularyConfirmRequest']
 export type BulkVocabularyResult = Schemas['BulkVocabularyResult']
 export type BulkVocabularyItemResult = Schemas['BulkVocabularyItemResult']
+
+// Vocabulary import / export
+export type VocabularyImportResult = Schemas['VocabularyImportResult']
+export type VocabularyImportRow = Schemas['VocabularyImportRow']

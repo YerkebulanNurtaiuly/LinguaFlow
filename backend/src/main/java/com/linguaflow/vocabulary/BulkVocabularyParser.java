@@ -193,7 +193,7 @@ public final class BulkVocabularyParser {
 		return new ParsedLine(lineNumber, text, lemma, translation, partOfSpeech, cefrLevel, notes, null);
 	}
 
-	private static String clean(String value) {
+	static String clean(String value) {
 		if (value == null) {
 			return null;
 		}
@@ -201,7 +201,7 @@ public final class BulkVocabularyParser {
 		return cleaned.isEmpty() ? null : cleaned;
 	}
 
-	private static <E extends Enum<E>> E parseEnum(Class<E> type, String raw) {
+	static <E extends Enum<E>> E parseEnum(Class<E> type, String raw) {
 		String key = raw.strip().replace(' ', '_').replace('-', '_').toUpperCase(Locale.ROOT);
 		for (E value : type.getEnumConstants()) {
 			if (value.name().equals(key)) {
@@ -230,7 +230,7 @@ public final class BulkVocabularyParser {
 		return hasLemma ? columns : null;
 	}
 
-	private static char detectDelimiter(String text) {
+	static char detectDelimiter(String text) {
 		int end = text.indexOf('\n');
 		String firstLine = end < 0 ? text : text.substring(0, end);
 		long semicolons = firstLine.chars().filter(c -> c == ';').count();
@@ -238,11 +238,11 @@ public final class BulkVocabularyParser {
 		return semicolons > 0 && semicolons >= commas ? ';' : ',';
 	}
 
-	private record Record(int line, String raw, List<String> cells) {
+	record Record(int line, String raw, List<String> cells) {
 	}
 
 	/** RFC 4180 reader: quoted cells may hold delimiters, newlines and doubled quotes. */
-	private static List<Record> readCsv(String text, char delimiter) {
+	static List<Record> readCsv(String text, char delimiter) {
 		List<Record> records = new ArrayList<>();
 		List<String> cells = new ArrayList<>();
 		StringBuilder cell = new StringBuilder();

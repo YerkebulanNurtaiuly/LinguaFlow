@@ -165,7 +165,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [ ] **VOC-06 — Re-generate / edit AI data** (S) — _deps: VOC-05_
   `POST /api/vocabulary/{id}/regenerate`; manual edits on all fields.
 
-- [ ] **VOC-07 — Import / export** (S) — _deps: VOC-02_
+- [x] **VOC-07 — Import / export** (S) — _deps: VOC-02_
   CSV export and import of vocabulary.
 
 - [ ] **FE-VOC-01 — Vocabulary list page** (M) — _deps: FE-02, VOC-02_

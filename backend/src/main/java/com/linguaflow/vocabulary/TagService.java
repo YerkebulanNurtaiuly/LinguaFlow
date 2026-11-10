@@ -117,6 +117,32 @@ public class TagService {
 		return new LinkedHashSet<>(found);
 	}
 
+	/**
+	 * IDs of the tags with these names in the language, creating the missing ones; keys are
+	 * the lower-cased names. Names must already be cleaned ({@link #cleanName}).
+	 */
+	Map<String, UUID> findOrCreate(UUID userId, String languageCode, Collection<String> names) {
+		Map<String, UUID> ids = new java.util.HashMap<>();
+		for (String name : names) {
+			String key = name.toLowerCase(java.util.Locale.ROOT);
+			if (ids.containsKey(key)) {
+				continue;
+			}
+			UUID id = tags.findIdByName(userId, languageCode, name).orElseGet(() -> {
+				try {
+					return saveRejectingTaken(() -> tags.saveAndFlush(new Tag(userId, languageCode, name)), userId,
+							() -> languageCode, name)
+						.getId();
+				}
+				catch (TagNameTakenException ex) {
+					return ex.existingId();
+				}
+			});
+			ids.put(key, id);
+		}
+		return ids;
+	}
+
 	/** Same checks as {@link #resolveForWord}, for validating up front (bulk input, VOC-04). */
 	@Transactional(readOnly = true)
 	public void checkUsable(UUID userId, String languageCode, Collection<UUID> ids) {
@@ -130,6 +156,10 @@ public class TagService {
 		}
 		if (cleaned.length() > MAX_NAME_LENGTH) {
 			throw new InvalidFieldException("name", "must be at most " + MAX_NAME_LENGTH + " characters");
+		}
+		if (cleaned.contains(VocabularyCsv.TAG_SEPARATOR)) {
+			// "|" separates tags in the CSV export (VOC-07)
+			throw new InvalidFieldException("name", "must not contain |");
 		}
 		return cleaned;
 	}

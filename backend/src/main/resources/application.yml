@@ -18,6 +18,11 @@ spring:
       ddl-auto: validate
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      # Vocabulary CSV import (VOC-07): 2000 rows fit comfortably
+      max-file-size: 2MB
+      max-request-size: 3MB
   data:
     web:
       pageable:
