@@ -32,13 +32,15 @@ final class VocabularyDtos {
 			PartOfSpeech partOfSpeech, @Schema(example = "dog") @Size(max = 500) String translation, Gender gender,
 			@Schema(example = "die Hunde") @Size(max = 200) String plural, CefrLevel cefrLevel,
 			@Schema(description = "Defaults to LEARNING; MASTERED is earned, not set") KnowledgeStatus status,
-			@Size(max = 2000) String notes, @Size(max = 10) List<@Valid @NotNull ExampleRequest> examples) {
+			@Size(max = 2000) String notes, @Size(max = 10) List<@Valid @NotNull ExampleRequest> examples,
+			@Schema(description = "IDs of your tags in the same language") @Size(max = TagService.MAX_TAGS_PER_WORD)
+			List<@NotNull UUID> tagIds) {
 
 		NewVocabularyItem toCommand() {
 			List<NewExample> newExamples = examples == null ? List.of()
 					: examples.stream().map(e -> new NewExample(e.sentence(), e.translation())).toList();
 			return new NewVocabularyItem(lemma, partOfSpeech, translation, gender, plural, cefrLevel, status, notes,
-					newExamples);
+					newExamples, tagIds);
 		}
 
 	}
@@ -56,11 +58,13 @@ final class VocabularyDtos {
 			PartOfSpeech partOfSpeech, @Size(max = 500) String translation, Gender gender,
 			@Size(max = 200) String plural, CefrLevel cefrLevel,
 			@Schema(description = "MASTERED can't be set; it is earned through practice") KnowledgeStatus status,
-			@Size(max = 2000) String notes) {
+			@Size(max = 2000) String notes,
+			@Schema(description = "Replaces the word's tags; an empty list removes them all")
+			@Size(max = TagService.MAX_TAGS_PER_WORD) List<@NotNull UUID> tagIds) {
 
 		VocabularyItemChanges toCommand() {
 			return new VocabularyItemChanges(lemma, partOfSpeech, translation, gender, plural, cefrLevel, status,
-					notes);
+					notes, tagIds);
 		}
 
 	}

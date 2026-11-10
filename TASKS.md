@@ -151,7 +151,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `POST/GET/PATCH/DELETE /api/vocabulary`, `GET /api/vocabulary/{id}`. List supports pagination, search (lemma/translation), filters (part of speech, CEFR, status, session, tag), sort.
   _Done when:_ duplicates return 409 with the existing item's ID.
 
-- [ ] **VOC-03 — Tags / organization** (S) — _deps: VOC-02_
+- [x] **VOC-03 — Tags / organization** (S) — _deps: VOC-02_
   User-defined tags (many-to-many) for grouping words (e.g. "Food", "Chapter 3").
 
 - [ ] **VOC-04 — Bulk vocabulary input** (M) — _deps: VOC-02_

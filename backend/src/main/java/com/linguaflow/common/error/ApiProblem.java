@@ -27,5 +27,5 @@ public record ApiProblem(
 				description = "ID of the request; quote it when reporting problems") String correlationId,
 		@Schema(requiredMode = Schema.RequiredMode.REQUIRED) Instant timestamp,
 		@Schema(description = "Present for VALIDATION_FAILED: one entry per invalid field") List<FieldError> errors,
-		@Schema(description = "Present for VOCABULARY_DUPLICATE: ID of the item that already exists") UUID existingId) {
+		@Schema(description = "Present for VOCABULARY_DUPLICATE and TAG_NAME_TAKEN: ID of the item or tag that already exists") UUID existingId) {
 }

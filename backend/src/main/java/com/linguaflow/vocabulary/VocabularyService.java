@@ -31,6 +31,7 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <li>MASTERED can't be set by the learner; it is earned (PRG-02).</li>
  * <li>Gender only applies to nouns.</li>
  * <li>A field the learner edits no longer counts as AI-generated (VOC-05).</li>
+ * <li>Tags (VOC-03) must be the user's own, in the word's language.</li>
  * </ul>
  * Returned items have their examples and tags loaded, so they can be mapped outside a
  * transaction (open-in-view is off).
@@ -46,11 +47,14 @@ public class VocabularyService {
 
 	private final ActiveLanguageService activeLanguages;
 
+	private final TagService tags;
+
 	private final TransactionTemplate transactions;
 
-	VocabularyService(VocabularyItemRepository items, ActiveLanguageService activeLanguages,
+	VocabularyService(VocabularyItemRepository items, ActiveLanguageService activeLanguages, TagService tags,
 			PlatformTransactionManager transactionManager) {
 		this.items = items;
+		this.tags = tags;
 		this.activeLanguages = activeLanguages;
 		this.transactions = new TransactionTemplate(transactionManager);
 	}
@@ -84,7 +88,10 @@ public class VocabularyService {
 			NewExample example = request.examples().get(i);
 			item.addExample(cleanExample(example.sentence(), i), blankToNull(example.translation()), false);
 		}
-		return saveRejectingDuplicates(() -> items.saveAndFlush(item), () -> key, () -> lemma);
+		return saveRejectingDuplicates(() -> transactions.execute(tx -> {
+			item.replaceTags(tags.resolveForWord(userId, language, request.tagIds()));
+			return items.saveAndFlush(item);
+		}), () -> key, () -> lemma);
 	}
 
 	/** The user's word, or 404 if it doesn't exist or belongs to someone else. */
@@ -146,6 +153,9 @@ public class VocabularyService {
 			}
 			if (changes.notes() != null) {
 				item.setNotes(blankToNull(changes.notes()));
+			}
+			if (changes.tagIds() != null) {
+				item.replaceTags(tags.resolveForWord(userId, item.getLanguageCode(), changes.tagIds()));
 			}
 			return loaded(items.saveAndFlush(item));
 		}), () -> key[0], () -> lemmaHolder[0]);

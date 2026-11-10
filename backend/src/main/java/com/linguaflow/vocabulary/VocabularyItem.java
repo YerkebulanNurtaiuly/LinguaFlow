@@ -1,6 +1,7 @@
 package com.linguaflow.vocabulary;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -172,6 +173,12 @@ public class VocabularyItem extends AuditableEntity implements OwnedEntity {
 
 	public void removeTag(Tag tag) {
 		tags.remove(tag);
+	}
+
+	/** Replaces all tags; the caller makes sure they belong to the same user and language. */
+	public void replaceTags(Collection<Tag> newTags) {
+		tags.clear();
+		tags.addAll(newTags);
 	}
 
 }
