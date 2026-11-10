@@ -217,6 +217,67 @@ class GrammarTopicApiTests {
 	}
 
 	@Nested
+	class StatusLifecycle {
+
+		private ResultActions setStatus(UUID id, String json) throws Exception {
+			return send(anna, patch("/api/grammar-topics/{id}", id), json);
+		}
+
+		@Test
+		void masteryByHandNeedsConfirmation() throws Exception {
+			UUID id = topic(anna, "{\"title\":\"Dativ\",\"status\":\"LEARNED\"}");
+
+			setStatus(id, "{\"status\":\"MASTERED\"}").andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("status"))
+				.andExpect(jsonPath("$.errors[0].message").value(containsString("confirmMastered")));
+			setStatus(id, "{\"status\":\"MASTERED\",\"confirmMastered\":false}").andExpect(status().isBadRequest());
+
+			setStatus(id, "{\"status\":\"MASTERED\",\"confirmMastered\":true}").andExpect(status().isOk())
+				.andExpect(jsonPath("$.status").value("MASTERED"));
+		}
+
+		@Test
+		void aStartedTopicCannotGoBackToNew() throws Exception {
+			UUID id = topic(anna, "{\"title\":\"Dativ\",\"status\":\"LEARNING\"}");
+			setStatus(id, "{\"status\":\"NEW\"}").andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("status"));
+		}
+
+		@Test
+		void aRejectedStatusLeavesTheOtherChangesUnsaved() throws Exception {
+			UUID id = topic(anna, "{\"title\":\"Dativ\"}");
+			setStatus(id, "{\"description\":\"changed\",\"status\":\"MASTERED\"}").andExpect(status().isBadRequest());
+			mvc.perform(as(anna, get("/api/grammar-topics/{id}", id)))
+				.andExpect(jsonPath("$.description").value(nullValue()))
+				.andExpect(jsonPath("$.version").value(0));
+		}
+
+		@Test
+		void listsTheStatusHistoryOldestFirst() throws Exception {
+			UUID id = topic(anna, "{\"title\":\"Dativ\"}");
+			setStatus(id, "{\"status\":\"LEARNING\"}").andExpect(status().isOk());
+			setStatus(id, "{\"status\":\"MASTERED\",\"confirmMastered\":true}").andExpect(status().isOk());
+			setStatus(id, "{\"status\":\"MASTERED\",\"confirmMastered\":true}").andExpect(status().isOk());
+
+			mvc.perform(as(anna, get("/api/grammar-topics/{id}/status-history", id)))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$[*].toStatus", contains("NEW", "LEARNING", "MASTERED")))
+				.andExpect(jsonPath("$[*].reason", contains("CREATED", "MANUAL", "MANUAL")))
+				.andExpect(jsonPath("$[0].fromStatus").value(nullValue()))
+				.andExpect(jsonPath("$[2].fromStatus").value("LEARNING"))
+				.andExpect(jsonPath("$[2].changedAt").isNotEmpty());
+		}
+
+		@Test
+		void onlyTheOwnerSeesTheHistory() throws Exception {
+			UUID id = topic(anna, "{\"title\":\"Dativ\"}");
+			OwnershipAssertions.assertOnlyOwnerCanAccess(mvc, HttpMethod.GET,
+					"/api/grammar-topics/{id}/status-history", id, anna.accessToken(), ben.accessToken());
+		}
+
+	}
+
+	@Nested
 	class ReadUpdateDelete {
 
 		@Test

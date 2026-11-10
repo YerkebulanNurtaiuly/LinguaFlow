@@ -81,10 +81,13 @@ class GrammarTopicController {
 			@Pattern(regexp = "(?s).*\\S.*", message = "must not be blank") String title,
 			@Size(max = GrammarTopicService.MAX_DESCRIPTION_LENGTH) String description,
 			@Size(max = GrammarTopicService.MAX_NOTES_LENGTH) String personalNotes, CefrLevel cefrLevel,
-			@Schema(description = "MASTERED can't be set; it is earned through practice") KnowledgeStatus status) {
+			@Schema(description = "LEARNING or LEARNED; MASTERED only with confirmMastered (it is normally "
+					+ "earned through practice); NEW can't be chosen again") KnowledgeStatus status,
+			@Schema(description = "Set to true to mark the topic MASTERED by hand") Boolean confirmMastered) {
 
 		GrammarTopicChanges toCommand() {
-			return new GrammarTopicChanges(title, description, personalNotes, cefrLevel, status);
+			return new GrammarTopicChanges(title, description, personalNotes, cefrLevel, status,
+					Boolean.TRUE.equals(confirmMastered));
 		}
 
 	}
@@ -95,6 +98,19 @@ class GrammarTopicController {
 		static ExplanationResponse from(GrammarExplanation explanation) {
 			return explanation == null ? null
 					: new ExplanationResponse(explanation.summary(), explanation.rules(), explanation.examples());
+		}
+
+	}
+
+	@Schema(name = "GrammarTopicStatusChange")
+	record StatusChangeResponse(@Schema(description = "Null for the first entry") KnowledgeStatus fromStatus,
+			KnowledgeStatus toStatus,
+			@Schema(description = "CREATED, MANUAL (by you), MASTERY_RULE or DEMOTION_RULE (by your progress)")
+			StatusChangeReason reason, Instant changedAt) {
+
+		static StatusChangeResponse from(GrammarTopicStatusChange change) {
+			return new StatusChangeResponse(change.getFromStatus(), change.getToStatus(), change.getReason(),
+					change.getChangedAt());
 		}
 
 	}
@@ -157,8 +173,15 @@ class GrammarTopicController {
 			.body(TopicResponse.from(topic));
 	}
 
+	@GetMapping("/{id}/status-history")
+	@Operation(summary = "Status history of a grammar topic", description = "Every status change, oldest first.")
+	List<StatusChangeResponse> history(@CurrentUserId UUID userId, @PathVariable UUID id) {
+		return topics.history(userId, id).stream().map(StatusChangeResponse::from).toList();
+	}
+
 	@PatchMapping("/{id}")
-	@Operation(summary = "Edit a grammar topic", description = "Partial update; status changes are recorded.")
+	@Operation(summary = "Edit a grammar topic",
+			description = "Partial update. Status changes are recorded in the status history.")
 	@ApiResponse(responseCode = "200", description = "Topic updated")
 	@ApiResponse(responseCode = "409",
 			description = "The new title clashes with another topic (code GRAMMAR_TOPIC_DUPLICATE, see "

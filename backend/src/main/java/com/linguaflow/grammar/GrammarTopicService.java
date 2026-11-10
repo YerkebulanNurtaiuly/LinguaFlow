@@ -1,6 +1,7 @@
 package com.linguaflow.grammar;
 
 import java.time.Clock;
+import java.util.List;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -23,8 +24,10 @@ import org.springframework.transaction.support.TransactionTemplate;
  * <ul>
  * <li>Titles are unique per language after {@link TitleNormalizer normalization}; a
  * duplicate is 409 with the existing ID, also when two requests race.</li>
- * <li>MASTERED can't be set by the learner; it is earned (GRM-02, PRG-02). Every status
- * change is recorded in the topic's history.</li>
+ * <li>Status (GRM-02): a topic starts as NEW, LEARNING or LEARNED, never MASTERED. Later
+ * the learner may choose LEARNING or LEARNED, and MASTERED only with explicit
+ * confirmation; otherwise mastery is granted by progress rules (PRG-02). The rules live
+ * in {@link GrammarTopic}. Every change is recorded in the topic's history.</li>
  * </ul>
  */
 @Service
@@ -46,9 +49,18 @@ public class GrammarTopicService {
 
 	}
 
-	/** A partial update: null leaves a field unchanged, "" clears description or notes. */
+	/**
+	 * A partial update: null leaves a field unchanged, "" clears description or notes.
+	 * {@code confirmMastered} must be true to set MASTERED by hand.
+	 */
 	public record GrammarTopicChanges(String title, String description, String personalNotes, CefrLevel cefrLevel,
-			KnowledgeStatus status) {
+			KnowledgeStatus status, boolean confirmMastered) {
+
+		public GrammarTopicChanges(String title, String description, String personalNotes, CefrLevel cefrLevel,
+				KnowledgeStatus status) {
+			this(title, description, personalNotes, cefrLevel, status, false);
+		}
+
 	}
 
 	private final GrammarTopicRepository topics;
@@ -120,11 +132,21 @@ public class GrammarTopicService {
 				topic.setCefrLevel(changes.cefrLevel());
 			}
 			if (changes.status() != null) {
-				checkStatus(changes.status());
-				topic.changeStatus(changes.status(), StatusChangeReason.MANUAL, clock.instant());
+				try {
+					topic.changeStatusByUser(changes.status(), changes.confirmMastered(), clock.instant());
+				}
+				catch (IllegalArgumentException ex) {
+					throw new InvalidFieldException("status", ex.getMessage());
+				}
 			}
 			return topics.saveAndFlush(topic);
 		}), userId, () -> language[0], title);
+	}
+
+	/** The topic's status changes, oldest first; 404 if it isn't the user's. */
+	@Transactional(readOnly = true)
+	public List<GrammarTopicStatusChange> history(UUID userId, UUID id) {
+		return List.copyOf(topics.requireOwned(id, userId).getStatusHistory());
 	}
 
 	/** Deletes the topic with its history; exercises about it stay. */

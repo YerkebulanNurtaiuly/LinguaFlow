@@ -182,7 +182,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **GRM-01 — Grammar topic CRUD API** (M) — _deps: DB-03, AUTH-05_
   `POST/GET/PATCH/DELETE /api/grammar-topics`. Fields: title, description, personal notes (Markdown), CEFR level, status. Filters by CEFR and status; duplicate title check per user-language.
 
-- [ ] **GRM-02 — Knowledge status lifecycle** (S) — _deps: GRM-01_
+- [x] **GRM-02 — Knowledge status lifecycle** (S) — _deps: GRM-01_
   Status `NEW → LEARNING → LEARNED → MASTERED`. Manual change allowed for `LEARNING/LEARNED`; `MASTERED` granted automatically by PRG rules (or manually with confirmation). Store status history.
   _Done when:_ adding a topic never auto-marks it mastered (design principle 6).
 

@@ -236,9 +236,29 @@ export interface paths {
         head?: never;
         /**
          * Edit a grammar topic
-         * @description Partial update; status changes are recorded.
+         * @description Partial update. Status changes are recorded in the status history.
          */
         patch: operations["update_3"];
+        trace?: never;
+    };
+    "/api/grammar-topics/{id}/status-history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Status history of a grammar topic
+         * @description Every status change, oldest first.
+         */
+        get: operations["history"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/languages": {
@@ -779,6 +799,22 @@ export interface components {
              */
             version?: number;
         };
+        GrammarTopicStatusChange: {
+            /** Format: date-time */
+            changedAt?: string;
+            /**
+             * @description Null for the first entry
+             * @enum {string}
+             */
+            fromStatus?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            /**
+             * @description CREATED, MANUAL (by you), MASTERY_RULE or DEMOTION_RULE (by your progress)
+             * @enum {string}
+             */
+            reason?: "CREATED" | "MANUAL" | "MASTERY_RULE" | "DEMOTION_RULE";
+            /** @enum {string} */
+            toStatus?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+        };
         LanguageResponse: {
             /** @example de */
             code?: string;
@@ -936,10 +972,12 @@ export interface components {
         UpdateGrammarTopicRequest: {
             /** @enum {string} */
             cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @description Set to true to mark the topic MASTERED by hand */
+            confirmMastered?: boolean;
             description?: string;
             personalNotes?: string;
             /**
-             * @description MASTERED can't be set; it is earned through practice
+             * @description LEARNING or LEARNED; MASTERED only with confirmMastered (it is normally earned through practice); NEW can't be chosen again
              * @enum {string}
              */
             status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
@@ -2132,6 +2170,75 @@ export interface operations {
             };
             /** @description The new title clashes with another topic (code GRAMMAR_TOPIC_DUPLICATE, see existingId), or the topic was changed meanwhile (code CONFLICT) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    history: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description OK */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrammarTopicStatusChange"][];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

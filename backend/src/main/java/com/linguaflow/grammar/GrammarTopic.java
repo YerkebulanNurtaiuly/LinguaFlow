@@ -87,7 +87,8 @@ public class GrammarTopic extends AuditableEntity implements OwnedEntity {
 	private long version;
 
 	@OneToMany(mappedBy = "topic", cascade = CascadeType.ALL, orphanRemoval = true)
-	@OrderBy("changedAt")
+	// IDs are UUIDv7, so they break ties between changes made in the same instant
+	@OrderBy("changedAt, id")
 	private List<GrammarTopicStatusChange> statusHistory = new ArrayList<>();
 
 	public GrammarTopic(UUID userId, String languageCode, String title, String normalizedTitle,
@@ -107,11 +108,48 @@ public class GrammarTopic extends AuditableEntity implements OwnedEntity {
 		this.normalizedTitle = Objects.requireNonNull(normalizedTitle);
 	}
 
-	/** Changes the status and records it; a change to the current status is a no-op. */
-	public void changeStatus(KnowledgeStatus newStatus, StatusChangeReason reason, Instant now) {
+	/**
+	 * The learner moves the topic (GRM-02). LEARNING and LEARNED can be chosen freely, in
+	 * any direction. MASTERED is normally earned (PRG-02), so the learner can only claim it
+	 * explicitly ({@code masteryConfirmed}). NEW only describes a topic not started yet, so
+	 * it can't be chosen again. Choosing the current status changes nothing.
+	 * @throws IllegalArgumentException with a message fragment when the change isn't allowed
+	 */
+	public void changeStatusByUser(KnowledgeStatus newStatus, boolean masteryConfirmed, Instant now) {
+		Objects.requireNonNull(newStatus);
 		if (newStatus == status) {
 			return;
 		}
+		if (newStatus == KnowledgeStatus.NEW) {
+			throw new IllegalArgumentException("can't be set back to NEW once the topic has been started");
+		}
+		if (newStatus == KnowledgeStatus.MASTERED && !masteryConfirmed) {
+			throw new IllegalArgumentException(
+					"can only be set to MASTERED with confirmMastered; mastery is normally earned through practice");
+		}
+		record(newStatus, StatusChangeReason.MANUAL, now);
+	}
+
+	/**
+	 * A progress rule moves the topic (PRG-02): MASTERY_RULE grants MASTERED, DEMOTION_RULE
+	 * takes a topic back to LEARNING or LEARNED. Choosing the current status changes nothing.
+	 */
+	public void changeStatusByRule(KnowledgeStatus newStatus, StatusChangeReason reason, Instant now) {
+		Objects.requireNonNull(newStatus);
+		boolean allowed = switch (reason) {
+			case MASTERY_RULE -> newStatus == KnowledgeStatus.MASTERED;
+			case DEMOTION_RULE -> newStatus == KnowledgeStatus.LEARNING || newStatus == KnowledgeStatus.LEARNED;
+			case CREATED, MANUAL -> false;
+		};
+		if (!allowed) {
+			throw new IllegalArgumentException(reason + " can't move a topic to " + newStatus);
+		}
+		if (newStatus != status) {
+			record(newStatus, reason, now);
+		}
+	}
+
+	private void record(KnowledgeStatus newStatus, StatusChangeReason reason, Instant now) {
 		statusHistory.add(new GrammarTopicStatusChange(this, status, newStatus, reason, now));
 		this.status = newStatus;
 	}

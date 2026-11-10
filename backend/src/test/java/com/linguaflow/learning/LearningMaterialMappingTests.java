@@ -122,8 +122,8 @@ class LearningMaterialMappingTests {
 		topic.setCefrLevel(CefrLevel.A2);
 		topic.setAiExplanation(new GrammarExplanation("Indirect object case",
 				List.of("mit, nach, bei, ... take the dative"), List.of("Ich helfe dem Mann.")), NOW);
-		topic.changeStatus(KnowledgeStatus.LEARNED, StatusChangeReason.MANUAL, NOW.plusSeconds(60));
-		topic.changeStatus(KnowledgeStatus.LEARNED, StatusChangeReason.MANUAL, NOW.plusSeconds(120));
+		topic.changeStatusByUser(KnowledgeStatus.LEARNED, false, NOW.plusSeconds(60));
+		topic.changeStatusByUser(KnowledgeStatus.LEARNED, false, NOW.plusSeconds(120));
 
 		UUID id = em.persistFlushFind(topic).getId();
 		em.clear();
