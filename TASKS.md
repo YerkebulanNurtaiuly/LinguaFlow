@@ -215,7 +215,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AI-01 — Provider abstraction** (M) — _deps: INF-05_
   `LlmClient` interface (`complete(prompt, schema, options)`), one implementation for the chosen provider (e.g. Claude API), plus a deterministic `FakeLlmClient` for tests/dev. Config: model, timeouts, max tokens, temperature per use-case.
 
-- [ ] **AI-02 — Structured output & validation** (M) — _deps: AI-01_
+- [x] **AI-02 — Structured output & validation** (M) — _deps: AI-01_
   Request JSON output matching a schema; parse into Java records; validate (Bean Validation + domain checks such as article ∈ {der, die, das}); retry once with error feedback on invalid output.
 
 - [ ] **AI-03 — Prompt templates library** (M) — _deps: AI-02_

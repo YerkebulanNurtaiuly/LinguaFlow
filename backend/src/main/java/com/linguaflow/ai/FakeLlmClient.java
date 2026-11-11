@@ -93,6 +93,14 @@ public class FakeLlmClient implements LlmClient {
 	/** The smallest value that fits {@code schema}; deterministic for the same schema. */
 	@SuppressWarnings("unchecked")
 	static Object sample(Map<String, Object> schema, String name) {
+		if (schema.get("anyOf") instanceof List<?> branches) {
+			// A nullable object or array: answer with the first non-null branch
+			return branches.stream()
+				.filter(branch -> branch instanceof Map<?, ?> map && !"null".equals(map.get("type")))
+				.findFirst()
+				.map(branch -> sample((Map<String, Object>) branch, name))
+				.orElse(null);
+		}
 		Object enumValues = schema.get("enum");
 		if (enumValues instanceof List<?> values && !values.isEmpty()) {
 			return values.getFirst();

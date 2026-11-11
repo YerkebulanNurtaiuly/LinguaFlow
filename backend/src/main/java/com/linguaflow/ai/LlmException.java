@@ -23,7 +23,9 @@ public class LlmException extends RuntimeException {
 		/** The model declined to answer, also after the fallback. */
 		REFUSED(false),
 		/** The answer hit the output limit and is incomplete. */
-		TRUNCATED(false);
+		TRUNCATED(false),
+		/** The answer didn't fit the expected structure or rules, also after one retry (AI-02). */
+		INVALID_OUTPUT(false);
 
 		private final boolean retryable;
 
