@@ -97,7 +97,7 @@ final class VocabularyDtos {
 			Instant updatedAt, @Schema(description = "Increases with every change") long version) {
 
 		static ItemResponse from(VocabularyItem item) {
-			return new ItemResponse(item.getId(), item.getLemma(), article(item), item.getPartOfSpeech(),
+			return new ItemResponse(item.getId(), item.getLemma(), item.article(), item.getPartOfSpeech(),
 					item.getTranslation(), item.getGender(), item.getPlural(), Map.copyOf(item.getExtra()),
 					item.getCefrLevel(), item.getStatus(), item.getAiStatus(), List.copyOf(item.getAiGeneratedFields()),
 					item.getNotes(), item.getExamples().stream().map(ExampleResponse::from).toList(),
@@ -107,17 +107,6 @@ final class VocabularyDtos {
 						.map(TagResponse::from)
 						.toList(),
 					item.getCreatedAt(), item.getUpdatedAt(), item.getVersion());
-		}
-
-		private static String article(VocabularyItem item) {
-			if (!"de".equals(item.getLanguageCode()) || item.getGender() == null) {
-				return null;
-			}
-			return switch (item.getGender()) {
-				case MASCULINE -> "der";
-				case FEMININE -> "die";
-				case NEUTER -> "das";
-			};
 		}
 
 	}

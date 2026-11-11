@@ -7,6 +7,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import com.linguaflow.common.domain.CefrLevel;
+import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.domain.ExerciseType;
 import com.linguaflow.common.persistence.AuditableEntity;
 import jakarta.persistence.Column;
@@ -63,6 +64,12 @@ public class UserLanguage extends AuditableEntity {
 	@Column(name = "practice_session_length", nullable = false)
 	private int practiceSessionLength = 20;
 
+	/** Card direction names (FC-01); kept as strings in the entity, typed in {@link #settings()}. */
+	@JdbcTypeCode(SqlTypes.ARRAY)
+	@Column(name = "card_directions", nullable = false)
+	private List<String> cardDirections = new ArrayList<>(
+			List.of(CardDirection.TARGET_TO_NATIVE.name(), CardDirection.NATIVE_TO_TARGET.name()));
+
 	public UserLanguage(UUID userId, String languageCode, String explanationLanguageCode) {
 		this.id = new Key(userId, languageCode);
 		this.explanationLanguageCode = Objects.requireNonNull(explanationLanguageCode);
@@ -78,12 +85,18 @@ public class UserLanguage extends AuditableEntity {
 
 	public LearningSettings settings() {
 		return new LearningSettings(dailyReviewGoal, newCardsPerDay,
-				preferredExerciseTypes.stream().map(ExerciseType::valueOf).toList(), practiceSessionLength);
+				preferredExerciseTypes.stream().map(ExerciseType::valueOf).toList(), practiceSessionLength,
+				cardDirections.stream().map(CardDirection::valueOf).toList());
 	}
 
 	/** Applies the non-null values; ranges are validated by the request and the DB checks. */
 	void updateSettings(Integer dailyReviewGoal, Integer newCardsPerDay, List<ExerciseType> preferredExerciseTypes,
-			Integer practiceSessionLength) {
+			Integer practiceSessionLength, List<CardDirection> cardDirections) {
+		if (cardDirections != null) {
+			// Distinct, in the enum's order; the request rejects an empty list
+			this.cardDirections = new ArrayList<>(
+					cardDirections.stream().distinct().sorted().map(CardDirection::name).toList());
+		}
 		if (dailyReviewGoal != null) {
 			this.dailyReviewGoal = dailyReviewGoal;
 		}

@@ -239,7 +239,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 10: Flashcard Generation (`FC`)
 
-- [ ] **FC-01 — Flashcard model & generation** (M) — _deps: VOC-05, DB-04_
+- [x] **FC-01 — Flashcard model & generation** (M) — _deps: VOC-05, DB-04_
   Auto-create flashcards when a vocabulary item becomes `READY`. Card directions: DE→native, native→DE (configurable). Front/back content built deterministically from vocabulary data (article, plural, examples). Regenerate when the word is edited.
 
 - [ ] **FC-02 — Flashcard API** (S) — _deps: FC-01_

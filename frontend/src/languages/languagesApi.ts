@@ -9,6 +9,10 @@ import { api } from '@/lib/api'
 
 export const CEFR_LEVELS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 
+/** Which way a flashcard asks: the learned word, or its meaning. */
+export const CARD_DIRECTIONS = ['TARGET_TO_NATIVE', 'NATIVE_TO_TARGET'] as const
+export type CardDirection = (typeof CARD_DIRECTIONS)[number]
+
 export const EXERCISE_TYPES = [
   'FILL_BLANK',
   'MULTIPLE_CHOICE',
@@ -41,6 +45,10 @@ const userLanguageSchema = z.object({
     newCardsPerDay: z.number(),
     practiceSessionLength: z.number(),
     preferredExerciseTypes: z.array(z.enum(EXERCISE_TYPES)),
+    // Flashcard directions to review (FC-01)
+    cardDirections: z
+      .array(z.enum(CARD_DIRECTIONS))
+      .default([...CARD_DIRECTIONS]),
   }),
 }) satisfies z.ZodType<UserLanguage>
 

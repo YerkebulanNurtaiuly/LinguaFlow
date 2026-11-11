@@ -1349,6 +1349,8 @@ export interface components {
             supportedAsTarget?: boolean;
         };
         LearningSettings: {
+            /** @description Flashcard directions to review (FC-01); cards exist for both, this picks which are asked */
+            cardDirections?: ("TARGET_TO_NATIVE" | "NATIVE_TO_TARGET")[];
             /**
              * Format: int32
              * @description Target number of reviews per day
@@ -1488,6 +1490,8 @@ export interface components {
             token: string;
         };
         SettingsUpdate: {
+            /** @description Flashcard directions to review; at least one */
+            cardDirections?: ("TARGET_TO_NATIVE" | "NATIVE_TO_TARGET")[];
             /**
              * Format: int32
              * @example 50

@@ -88,7 +88,7 @@ public class UserLanguageService {
 		if (request.settings() != null) {
 			var settings = request.settings();
 			language.updateSettings(settings.dailyReviewGoal(), settings.newCardsPerDay(),
-					settings.preferredExerciseTypes(), settings.practiceSessionLength());
+					settings.preferredExerciseTypes(), settings.practiceSessionLength(), settings.cardDirections());
 		}
 		if (Boolean.FALSE.equals(request.active())) {
 			throw new InvalidFieldException("active", "activate another language instead");

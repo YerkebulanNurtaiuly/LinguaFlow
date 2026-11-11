@@ -6326,6 +6326,14 @@
       "LearningSettings" : {
         "type" : "object",
         "properties" : {
+          "cardDirections" : {
+            "type" : "array",
+            "description" : "Flashcard directions to review (FC-01); cards exist for both, this picks which are asked",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "TARGET_TO_NATIVE", "NATIVE_TO_TARGET" ]
+            }
+          },
           "dailyReviewGoal" : {
             "type" : "integer",
             "format" : "int32",
@@ -6647,6 +6655,16 @@
       "SettingsUpdate" : {
         "type" : "object",
         "properties" : {
+          "cardDirections" : {
+            "type" : "array",
+            "description" : "Flashcard directions to review; at least one",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "TARGET_TO_NATIVE", "NATIVE_TO_TARGET" ]
+            },
+            "maxItems" : 2,
+            "minItems" : 1
+          },
           "dailyReviewGoal" : {
             "type" : "integer",
             "format" : "int32",

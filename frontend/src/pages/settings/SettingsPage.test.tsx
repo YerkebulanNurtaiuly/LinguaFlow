@@ -226,8 +226,46 @@ describe('settings page', () => {
           newCardsPerDay: 20,
           practiceSessionLength: 20,
           preferredExerciseTypes: ['TRANSLATION'],
+          cardDirections: ['TARGET_TO_NATIVE', 'NATIVE_TO_TARGET'],
         },
       })
+    })
+
+    it('chooses which flashcard directions to review, at least one', async () => {
+      fakeApi.on('PATCH', '/users/me/languages/de', {
+        status: 200,
+        data: {
+          ...testLearnedLanguage,
+          settings: {
+            ...testLearnedLanguage.settings,
+            cardDirections: ['TARGET_TO_NATIVE'],
+          },
+        },
+      })
+      await openSettings()
+      const german = within(section('German'))
+      const toGerman = german.getByLabelText('English → German')
+      const fromGerman = german.getByLabelText('German → English')
+      expect(toGerman).toBeChecked()
+      expect(fromGerman).toBeChecked()
+
+      await userEvent.click(toGerman)
+      await userEvent.click(fromGerman)
+      const save = german.getByRole('button', { name: 'Save German settings' })
+      await userEvent.click(save)
+      expect(
+        await german.findByText('Choose at least one direction to review.'),
+      ).toBeInTheDocument()
+
+      await userEvent.click(fromGerman)
+      await userEvent.click(save)
+      expect(
+        await screen.findByText('German settings saved'),
+      ).toBeInTheDocument()
+      expect(
+        (sentBody('PATCH', '/users/me/languages/de') as { settings: object })
+          .settings,
+      ).toMatchObject({ cardDirections: ['TARGET_TO_NATIVE'] })
     })
 
     it('rejects out-of-range numbers before saving', async () => {

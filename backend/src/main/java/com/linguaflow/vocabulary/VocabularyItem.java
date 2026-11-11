@@ -34,6 +34,7 @@ import lombok.Setter;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.annotations.UuidGenerator;
+import org.jspecify.annotations.Nullable;
 import org.hibernate.type.SqlTypes;
 
 /**
@@ -166,6 +167,18 @@ public class VocabularyItem extends AuditableEntity implements OwnedEntity {
 		VocabularyExample example = new VocabularyExample(this, sentence, translation, (short) next, aiGenerated);
 		examples.add(example);
 		return example;
+	}
+
+	/** The definite article of a German noun, from its gender (null for other words or languages). */
+	public @Nullable String article() {
+		if (!"de".equals(languageCode) || gender == null) {
+			return null;
+		}
+		return switch (gender) {
+			case MASCULINE -> "der";
+			case FEMININE -> "die";
+			case NEUTER -> "das";
+		};
 	}
 
 	/**

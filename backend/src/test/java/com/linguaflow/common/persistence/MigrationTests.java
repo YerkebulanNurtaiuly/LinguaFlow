@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.UUID;
 
 import com.linguaflow.TestcontainersConfiguration;
+import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.domain.ExerciseType;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
@@ -269,6 +270,44 @@ class MigrationTests {
 			assertThat(check).as("exercises_type_ck").contains("'" + type.name() + "'");
 		}
 		assertThat(check.split("'", -1).length / 2).as("number of values").isEqualTo(ExerciseType.values().length);
+	}
+
+	@Test
+	void cardDirectionEnumMatchesTheDatabaseChecks() {
+		for (String constraint : List.of("flashcards_direction_ck", "user_languages_card_directions_ck")) {
+			String check = jdbc.queryForObject(
+					"select pg_get_constraintdef(oid) from pg_constraint where conname = ?", String.class, constraint);
+			for (CardDirection direction : CardDirection.values()) {
+				assertThat(check).as(constraint).contains("'" + direction.name() + "'");
+			}
+		}
+	}
+
+	// ---- V6: card directions -------------------------------------------------------------------
+
+	@Test
+	void learnersReviewBothCardDirectionsByDefault() {
+		UUID user = learner("cards.de");
+		assertThat(jdbc.queryForObject(
+				"select array_to_string(card_directions, ',') from user_languages where user_id = ?", String.class, user))
+			.isEqualTo("TARGET_TO_NATIVE,NATIVE_TO_TARGET");
+	}
+
+	@Test
+	void atLeastOneKnownCardDirectionIsRequired() {
+		UUID user = learner("nocards.de");
+		assertThatThrownBy(() -> jdbc.update("update user_languages set card_directions = '{}' where user_id = ?", user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("user_languages_card_directions_ck");
+	}
+
+	@Test
+	void unknownCardDirectionsAreRejected() {
+		UUID user = learner("badcards.de");
+		assertThatThrownBy(
+				() -> jdbc.update("update user_languages set card_directions = '{SIDEWAYS}' where user_id = ?", user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("user_languages_card_directions_ck");
 	}
 
 	@Test

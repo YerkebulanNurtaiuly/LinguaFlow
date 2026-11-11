@@ -1,6 +1,10 @@
 import { z } from 'zod'
 import type { ExerciseType } from '@/api/types'
-import { CEFR_LEVELS, EXERCISE_TYPES } from '@/languages/languagesApi'
+import {
+  CARD_DIRECTIONS,
+  CEFR_LEVELS,
+  EXERCISE_TYPES,
+} from '@/languages/languagesApi'
 import { newPasswordSchema } from '@/pages/auth/authForms'
 
 export const profileSchema = z.object({
@@ -52,6 +56,9 @@ export const learningSettingsSchema = z.object({
   newCardsPerDay: wholeNumber(0, 500),
   practiceSessionLength: wholeNumber(5, 200),
   preferredExerciseTypes: z.array(z.enum(EXERCISE_TYPES)),
+  cardDirections: z
+    .array(z.enum(CARD_DIRECTIONS))
+    .min(1, 'Choose at least one direction to review.'),
 })
 export type LearningSettingsValues = z.infer<typeof learningSettingsSchema>
 

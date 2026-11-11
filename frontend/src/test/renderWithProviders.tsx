@@ -56,6 +56,7 @@ export const testLearnedLanguage: LearnedLanguage = {
     newCardsPerDay: 20,
     practiceSessionLength: 20,
     preferredExerciseTypes: [],
+    cardDirections: ['TARGET_TO_NATIVE', 'NATIVE_TO_TARGET'],
   },
 }
 

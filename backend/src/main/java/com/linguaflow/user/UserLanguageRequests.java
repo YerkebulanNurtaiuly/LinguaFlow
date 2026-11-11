@@ -3,6 +3,7 @@ package com.linguaflow.user;
 import java.util.List;
 
 import com.linguaflow.common.domain.CefrLevel;
+import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.domain.ExerciseType;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -39,7 +40,9 @@ final class UserLanguageRequests {
 			@Schema(example = "20") @Min(0) @Max(500) Integer newCardsPerDay,
 			@Schema(description = "Empty list = no preference; duplicates are ignored") @Size(max = 20)
 			List<@NotNull ExerciseType> preferredExerciseTypes,
-			@Schema(example = "20") @Min(5) @Max(200) Integer practiceSessionLength) {
+			@Schema(example = "20") @Min(5) @Max(200) Integer practiceSessionLength,
+			@Schema(description = "Flashcard directions to review; at least one") @Size(min = 1, max = 2)
+			List<@NotNull CardDirection> cardDirections) {
 	}
 
 }

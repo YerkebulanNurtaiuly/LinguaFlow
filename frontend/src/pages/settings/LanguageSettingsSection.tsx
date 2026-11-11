@@ -15,6 +15,7 @@ import {
 } from '@/components/ui'
 import {
   type AvailableLanguage,
+  CARD_DIRECTIONS,
   CEFR_LEVELS,
   EXERCISE_TYPES,
   type LearnedLanguage,
@@ -36,6 +37,7 @@ const SERVER_FIELDS: [string, keyof LearningSettingsValues][] = [
   ['settings.newCardsPerDay', 'newCardsPerDay'],
   ['settings.practiceSessionLength', 'practiceSessionLength'],
   ['settings.preferredExerciseTypes', 'preferredExerciseTypes'],
+  ['settings.cardDirections', 'cardDirections'],
 ]
 
 const valuesOf = (language: LearnedLanguage): LearningSettingsValues => ({
@@ -45,6 +47,7 @@ const valuesOf = (language: LearnedLanguage): LearningSettingsValues => ({
   newCardsPerDay: language.settings.newCardsPerDay,
   practiceSessionLength: language.settings.practiceSessionLength,
   preferredExerciseTypes: language.settings.preferredExerciseTypes,
+  cardDirections: language.settings.cardDirections,
 })
 
 interface LanguageSettingsSectionProps {
@@ -69,6 +72,9 @@ export function LanguageSettingsSection({
   const name =
     catalog.find((l) => l.code === language.languageCode)?.name ??
     language.languageCode
+  const explanationName =
+    catalog.find((l) => l.code === language.explanationLanguageCode)?.name ??
+    language.explanationLanguageCode
   const explanationOptions = catalog
     .filter((l) => l.supportedAsExplanation && l.code !== language.languageCode)
     .map((l) => ({ value: l.code, label: l.name }))
@@ -100,6 +106,7 @@ export function LanguageSettingsSection({
           newCardsPerDay: values.newCardsPerDay,
           practiceSessionLength: values.practiceSessionLength,
           preferredExerciseTypes: values.preferredExerciseTypes,
+          cardDirections: values.cardDirections,
         },
       })
       storeUpdated(updated)
@@ -250,6 +257,37 @@ export function LanguageSettingsSection({
               </label>
             ))}
           </div>
+        </fieldset>
+
+        <fieldset>
+          <legend className="text-sm font-medium text-fg">Flashcards</legend>
+          <p className="mt-1 text-xs text-fg-subtle">
+            Which way your cards ask. Cards exist both ways, so switching keeps
+            your progress.
+          </p>
+          <div className="mt-3 grid gap-2 sm:grid-cols-2">
+            {CARD_DIRECTIONS.map((direction) => (
+              <label
+                key={direction}
+                className="flex items-center gap-2 text-sm text-fg"
+              >
+                <input
+                  type="checkbox"
+                  value={direction}
+                  className="size-4 accent-primary"
+                  {...register('cardDirections')}
+                />
+                {direction === 'TARGET_TO_NATIVE'
+                  ? `${name} → ${explanationName}`
+                  : `${explanationName} → ${name}`}
+              </label>
+            ))}
+          </div>
+          {errors.cardDirections?.message && (
+            <p className="mt-2 text-xs font-medium text-danger">
+              {errors.cardDirections.message}
+            </p>
+          )}
         </fieldset>
 
         <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border pt-4">

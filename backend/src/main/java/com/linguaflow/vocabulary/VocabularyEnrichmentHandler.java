@@ -29,6 +29,7 @@ import com.linguaflow.vocabulary.EnrichmentRules.Input;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -79,8 +80,12 @@ class VocabularyEnrichmentHandler implements AiJobHandler {
 
 	private final TransactionTemplate tx;
 
+	private final ApplicationEventPublisher events;
+
 	VocabularyEnrichmentHandler(VocabularyItemRepository items, StructuredLlm llm, PromptLibrary prompts,
-			AiCache cache, UserLanguageService userLanguages, PlatformTransactionManager transactions) {
+			AiCache cache, UserLanguageService userLanguages, PlatformTransactionManager transactions,
+			ApplicationEventPublisher events) {
+		this.events = events;
 		this.items = items;
 		this.llm = llm;
 		this.prompts = prompts;
@@ -146,6 +151,8 @@ class VocabularyEnrichmentHandler implements AiJobHandler {
 				Word answer = answers.get(word);
 				if (answer != null && merge(word, answer)) {
 					ready++;
+					// After the merge's commit, so listeners see the READY word (e.g. flashcards, FC-01)
+					events.publishEvent(new VocabularyItemReady(userId, word.languageCode(), word.id()));
 				}
 				else if (answer == null) {
 					markFailed(List.of(word.id()));
