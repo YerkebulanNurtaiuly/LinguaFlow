@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.UUID;
 
+import com.linguaflow.ai.AiCaller;
 import com.linguaflow.common.persistence.AuditableEntity;
 import com.linguaflow.common.persistence.OwnedEntity;
 import jakarta.persistence.Column;
@@ -120,6 +121,24 @@ public class AiJob extends AuditableEntity implements OwnedEntity {
 		this.nextRunAt = nextRunAt;
 		lastError = cut(error);
 		unlock();
+	}
+
+	/**
+	 * The user is out of AI allowance: wait until {@code resetsAt}. The attempt doesn't
+	 * count, so a big batch resumes the next day instead of being dead-lettered.
+	 */
+	void postpone(Instant resetsAt, String reason) {
+		requireStatus(AiJobStatus.RUNNING);
+		status = AiJobStatus.QUEUED;
+		attempts = Math.max(0, attempts - 1);
+		nextRunAt = resetsAt;
+		lastError = cut(reason);
+		unlock();
+	}
+
+	/** For the LLM call log and quota: this job, on behalf of its user. */
+	public AiCaller caller() {
+		return new AiCaller(userId, id);
 	}
 
 	/** A failure retrying can't fix. */

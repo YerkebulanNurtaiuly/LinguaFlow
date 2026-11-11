@@ -55,7 +55,7 @@ public class FakeLlmClient implements LlmClient {
 				: jsonSchema != null ? JSON.writeValueAsString(sample(jsonSchema, "value"))
 						: "[fake " + options.useCase().configKey() + "] " + firstLine(prompt.user());
 		return new LlmResponse(text, "fake-" + options.model(), tokens(prompt.system()) + tokens(prompt.user()),
-				tokens(text), 0, Duration.ZERO);
+				tokens(text), 0, 0, Duration.ZERO);
 	}
 
 	@Override

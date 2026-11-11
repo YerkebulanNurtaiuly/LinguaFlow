@@ -225,7 +225,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `@Async` executor or DB-backed job table (`ai_jobs`) with status, retries with exponential backoff, and dead-letter state. Batch vocabulary into chunks (e.g. 20 words per call).
   _Done when:_ bulk add of 100 words completes without blocking the request and survives a restart.
 
-- [ ] **AI-05 — Resilience, limits, and cost tracking** (M) — _deps: AI-04_
+- [x] **AI-05 — Resilience, limits, and cost tracking** (M) — _deps: AI-04_
   Resilience4j circuit breaker + timeouts; per-user daily AI quota; log every call in `ai_requests` (use-case, tokens, latency, cost estimate, success). Admin endpoint for usage summary.
 
 - [ ] **AI-06 — Caching** (S) — _deps: AI-04_

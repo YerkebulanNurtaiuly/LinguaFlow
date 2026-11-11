@@ -25,7 +25,9 @@ public class LlmException extends RuntimeException {
 		/** The answer hit the output limit and is incomplete. */
 		TRUNCATED(false),
 		/** The answer didn't fit the expected structure or rules, also after one retry (AI-02). */
-		INVALID_OUTPUT(false);
+		INVALID_OUTPUT(false),
+		/** The user reached the daily AI limit (AI-05); queued jobs wait for the reset. */
+		QUOTA_EXCEEDED(false);
 
 		private final boolean retryable;
 

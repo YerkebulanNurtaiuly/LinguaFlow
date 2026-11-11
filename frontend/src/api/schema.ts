@@ -38,6 +38,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/ai-usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * AI usage summary (admin)
+         * @description LLM calls, failures, tokens and estimated cost across all users, by use case, model and UTC day, plus the users with the highest cost. Covers at most 366 days.
+         */
+        get: operations["summary"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/usage": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * My AI usage today
+         * @description Calls and tokens used today (UTC) against the daily limits. When the allowance is used up, new AI work such as enriching words waits until resetsAt.
+         */
+        get: operations["mine"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/auth/login": {
         parameters: {
             query?: never;
@@ -795,13 +835,60 @@ export interface components {
             /** @enum {string} */
             selfAssessedLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
         };
+        AiUsageByDay: {
+            /** Format: date */
+            day?: string;
+            totals?: components["schemas"]["AiUsageTotals"];
+        };
+        AiUsageByModel: {
+            model?: string;
+            totals?: components["schemas"]["AiUsageTotals"];
+        };
+        AiUsageByUseCase: {
+            totals?: components["schemas"]["AiUsageTotals"];
+            useCase?: string;
+        };
+        /** @description AI usage across all users for a range of UTC days */
+        AiUsageSummary: {
+            /** @description Only days with calls, oldest first */
+            byDay?: components["schemas"]["AiUsageByDay"][];
+            byModel?: components["schemas"]["AiUsageByModel"][];
+            byUseCase?: components["schemas"]["AiUsageByUseCase"][];
+            /** Format: date */
+            from?: string;
+            /** Format: date */
+            to?: string;
+            /** @description Up to 10 users by estimated cost */
+            topUsers?: components["schemas"]["AiUsageTopUser"][];
+            totals?: components["schemas"]["AiUsageTotals"];
+        };
+        AiUsageTopUser: {
+            costUsd?: number;
+            /** Format: int64 */
+            requests?: number;
+            /** Format: uuid */
+            userId?: string;
+        };
+        /** @description LLM calls and their estimated cost */
+        AiUsageTotals: {
+            /** @description Estimated cost in USD; calls to models without a price count as 0 */
+            costUsd?: number;
+            /** Format: int64 */
+            failures?: number;
+            /** Format: int64 */
+            inputTokens?: number;
+            /** Format: int64 */
+            outputTokens?: number;
+            /** Format: int64 */
+            requests?: number;
+        };
         /** @description RFC 7807 problem details returned for every error */
         ApiProblem: {
             /**
              * @description Stable machine-readable error code
              * @enum {string}
              */
-            code: "VALIDATION_FAILED" | "MALFORMED_REQUEST" | "BAD_REQUEST" | "INVALID_TOKEN" | "UNAUTHORIZED" | "INVALID_CREDENTIALS" | "INVALID_REFRESH_TOKEN" | "FORBIDDEN" | "ACCOUNT_DISABLED" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "CONFLICT" | "EMAIL_TAKEN" | "NO_ACTIVE_LANGUAGE" | "VOCABULARY_DUPLICATE" | "TAG_NAME_TAKEN" | "GRAMMAR_TOPIC_DUPLICATE" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "TOO_MANY_REQUESTS" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE";
+            code: "VALIDATION_FAILED" | "MALFORMED_REQUEST" | "BAD_REQUEST" | "INVALID_TOKEN" | "UNAUTHORIZED" | "INVALID_CREDENTIALS" | "INVALID_REFRESH_TOKEN" | "FORBIDDEN" | "ACCOUNT_DISABLED" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "CONFLICT" | "EMAIL_TAKEN" | "NO_ACTIVE_LANGUAGE" | "VOCABULARY_DUPLICATE" | "TAG_NAME_TAKEN" | "GRAMMAR_TOPIC_DUPLICATE" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "TOO_MANY_REQUESTS" | "AI_QUOTA_EXCEEDED" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE" | "AI_UNAVAILABLE";
             /** @description ID of the request; quote it when reporting problems */
             correlationId: string;
             /** @example One or more fields are invalid */
@@ -1125,6 +1212,23 @@ export interface components {
             email: string;
             /** @example demo-password-123 */
             password: string;
+        };
+        /** @description The caller's AI usage today (UTC) and the daily limits */
+        MyAiUsage: {
+            /** @description Whether today's allowance is used up; new AI work waits until resetsAt */
+            exceeded?: boolean;
+            /** @description Whether the limits apply */
+            limited?: boolean;
+            /** Format: int32 */
+            requestLimit?: number;
+            /** Format: int64 */
+            requestsToday?: number;
+            /** Format: date-time */
+            resetsAt?: string;
+            /** Format: int64 */
+            tokenLimit?: number;
+            /** Format: int64 */
+            tokensToday?: number;
         };
         PageResponseGrammarTopic: {
             content?: components["schemas"]["GrammarTopic"][];
@@ -1571,6 +1675,143 @@ export interface operations {
                     "application/json": Record<string, never>;
                     "application/vnd.spring-boot.actuator.v2+json": Record<string, never>;
                     "application/vnd.spring-boot.actuator.v3+json": Record<string, never>;
+                };
+            };
+        };
+    };
+    summary: {
+        parameters: {
+            query?: {
+                /** @description First UTC day, inclusive (default: 29 days before to) */
+                from?: string | null;
+                /** @description Last UTC day, inclusive (default: today) */
+                to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiUsageSummary"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    mine: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Today's usage */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyAiUsage"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
                 };
             };
         };

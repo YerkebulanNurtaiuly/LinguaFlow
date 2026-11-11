@@ -23,6 +23,7 @@ import java.util.stream.IntStream;
 
 import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.ai.LlmException;
+import com.linguaflow.ai.usage.AiQuotaExceededException;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import com.linguaflow.common.config.LinguaFlowProperties.Ai.Jobs;
 import com.linguaflow.testsupport.MutableClock;
@@ -119,7 +120,7 @@ class AiJobWorkerTests {
 
 	private static LinguaFlowProperties properties(Jobs settings) {
 		LinguaFlowProperties properties = mock(LinguaFlowProperties.class);
-		when(properties.ai()).thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, settings));
+		when(properties.ai()).thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, settings, null, null, null));
 		return properties;
 	}
 
@@ -367,6 +368,40 @@ class AiJobWorkerTests {
 		assertThat(enriched.keySet()).containsExactlyInAnyOrderElementsOf(words.stream().map(UUID::toString).toList());
 		waitUntil(() -> jdbc.queryForObject("select count(*) from ai_jobs where status = 'SUCCEEDED'",
 				Integer.class) == 5, Duration.ofSeconds(5));
+	}
+
+	@Test
+	void aJobThatHitsTheDailyLimitWaitsForTheResetWithoutUsingAnAttempt() {
+		Instant resetsAt = clock.instant().plus(Duration.ofHours(5));
+		AtomicInteger calls = new AtomicInteger();
+		handler.behaviour = job -> {
+			if (calls.incrementAndGet() == 1) {
+				throw new AiQuotaExceededException("Daily AI limit reached", resetsAt);
+			}
+			return Map.of();
+		};
+		AiJob job = enqueue();
+		AiJobWorker worker = worker();
+
+		worker.runDueJobs();
+		AiJob waiting = reload(job);
+		assertThat(waiting.getStatus()).isEqualTo(AiJobStatus.QUEUED);
+		assertThat(waiting.getAttempts()).isZero();
+		assertThat(waiting.getNextRunAt()).isEqualTo(resetsAt);
+		assertThat(waiting.getLastError()).isEqualTo("Daily AI limit reached");
+		assertThat(handler.gaveUp).isEmpty();
+
+		clock.set(resetsAt);
+		worker.runDueJobs();
+		assertThat(reload(job).getStatus()).isEqualTo(AiJobStatus.SUCCEEDED);
+		assertThat(reload(job).getAttempts()).isEqualTo(1);
+	}
+
+	@Test
+	void aJobCallsOnBehalfOfItsUser() {
+		UUID user = UUID.randomUUID();
+		AiJob job = new AiJob(AiJobType.VOCABULARY_ENRICHMENT, user, Map.of(), 3, clock.instant());
+		assertThat(job.caller().userId()).isEqualTo(user);
 	}
 
 	@Test

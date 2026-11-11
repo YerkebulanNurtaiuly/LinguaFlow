@@ -93,3 +93,8 @@ export type CreateStudySessionRequest = Schemas['CreateStudySessionRequest']
 export type UpdateStudySessionRequest = Schemas['UpdateStudySessionRequest']
 export type AttachVocabularyRequest = Schemas['AttachVocabularyRequest']
 export type AttachGrammarRequest = Schemas['AttachGrammarRequest']
+
+// AI usage (AI-05)
+export type MyAiUsage = Schemas['MyAiUsage']
+export type AiUsageSummary = Schemas['AiUsageSummary']
+export type AiUsageTotals = Schemas['AiUsageTotals']

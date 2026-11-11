@@ -18,6 +18,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import com.linguaflow.ai.LlmException;
+import com.linguaflow.ai.usage.AiQuotaExceededException;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import org.jspecify.annotations.Nullable;
 import org.slf4j.Logger;
@@ -232,6 +233,11 @@ public class AiJobWorker implements SmartLifecycle {
 			record(job, held -> held.succeed(result));
 			log.info("AI job {} ({}) succeeded on attempt {} in {} ms", job.getId(), job.getType(), job.getAttempts(),
 					Duration.ofNanos(System.nanoTime() - started).toMillis());
+		}
+		catch (AiQuotaExceededException ex) {
+			record(job, held -> held.postpone(ex.resetsAt(), ex.getMessage()));
+			log.info("AI job {} ({}) waits for the user's daily AI limit to reset at {}", job.getId(), job.getType(),
+					ex.resetsAt());
 		}
 		catch (LlmException ex) {
 			failed(job, handler, ex.kind().retryable(), ex.kind() + ": " + ex.getMessage());

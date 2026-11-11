@@ -71,12 +71,13 @@ class StructuredLlmTests {
 	void setUp() {
 		AiSettings settings = mock(AiSettings.class);
 		when(settings.options(any())).thenReturn(OPTIONS);
-		llm = new StructuredLlm(fake, settings, Validation.buildDefaultValidatorFactory().getValidator());
+		llm = new StructuredLlm(TestGateways.unlimited(fake), settings,
+				Validation.buildDefaultValidatorFactory().getValidator());
 		fake.respondTo(AiUseCase.VOCABULARY_ENRICHMENT, prompt -> answers.isEmpty() ? VALID : answers.poll());
 	}
 
 	private StructuredResponse<Enrichment> enrich() {
-		return llm.complete(AiUseCase.VOCABULARY_ENRICHMENT, PROMPT, Enrichment.class, ARTICLE);
+		return llm.complete(AiCaller.system(), AiUseCase.VOCABULARY_ENRICHMENT, PROMPT, Enrichment.class, ARTICLE);
 	}
 
 	@Test

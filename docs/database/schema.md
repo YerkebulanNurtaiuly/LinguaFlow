@@ -390,7 +390,7 @@ These tables are **derived**: they're rebuilt from `flashcard_reviews` and `exer
 **IX** `(status, next_run_at) WHERE status IN ('QUEUED','RUNNING')`. **IX** `(user_id, created_at)` for the status endpoint (AI-08).
 
 #### `ai_requests`: one row per LLM call, append-only (AI-05)
-`id` PK; `user_id` FK → users **CASCADE**; `job_id` FK → ai_jobs **SET NULL**; `use_case`; `model`; `prompt_version`; `input_tokens`, `output_tokens` int; `latency_ms` int; `cost_estimate_usd numeric(10,6)`; `success boolean`; `error_code text`; `created_at`.
+`id` PK; `user_id` FK → users **CASCADE**; `job_id` FK → ai_jobs **SET NULL**; `use_case`; `model`; `prompt_version`; `input_tokens`, `output_tokens` int (`input_tokens` counts every input token, cached or not; both are null for a failed call); `latency_ms` int; `cost_estimate_usd numeric(10,6)`; `success boolean`; `error_code text`; `created_at`.
 - **IX** `(user_id, created_at)` for the daily quota.
 - **IX** `(created_at)` for the admin summary.
 

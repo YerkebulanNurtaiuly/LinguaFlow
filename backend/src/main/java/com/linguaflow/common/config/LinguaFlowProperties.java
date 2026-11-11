@@ -1,5 +1,6 @@
 package com.linguaflow.common.config;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -25,7 +26,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 
 	public LinguaFlowProperties {
 		if (ai == null) {
-			ai = new Ai(null, null, null, null, null, null);
+			ai = new Ai(null, null, null, null, null, null, null, null, null);
 		}
 		if (app == null) {
 			app = new App(null);
@@ -132,9 +133,14 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 	 * @param baseUrl the API endpoint; always set explicitly, so an {@code ANTHROPIC_BASE_URL}
 	 * in the environment can't redirect calls
 	 * @param jobs the background job queue (AI-04)
+	 * @param quota the per-user daily AI limits (AI-05)
+	 * @param circuitBreaker when to stop calling a failing provider for a while (AI-05)
+	 * @param pricing USD per million tokens by model ID, for cost estimates; added to and
+	 * overriding the built-in prices (AI-05)
 	 */
 	public record Ai(String apiKey, Provider provider, String model, Map<String, UseCase> useCases,
-			String baseUrl, @Valid Jobs jobs) {
+			String baseUrl, @Valid Jobs jobs, @Valid Quota quota, @Valid Breaker circuitBreaker,
+			Map<String, @Valid Price> pricing) {
 
 		public static final String DEFAULT_MODEL = "claude-opus-5-5";
 
@@ -180,6 +186,48 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 
 		}
 
+		/**
+		 * Per-user daily AI limits (AI-05), counted over the UTC day from {@code ai_requests}.
+		 * System calls (no user) are not limited.
+		 * @param enabled whether the limits apply
+		 * @param dailyRequests LLM calls per user per day; 20 words count as one call
+		 * @param dailyTokens input plus output tokens per user per day
+		 */
+		public record Quota(Boolean enabled, @Min(1) Integer dailyRequests, @Min(1) Long dailyTokens) {
+
+			public Quota {
+				enabled = (enabled == null) ? Boolean.TRUE : enabled;
+				dailyRequests = (dailyRequests == null) ? 300 : dailyRequests;
+				dailyTokens = (dailyTokens == null) ? 1_500_000L : dailyTokens;
+			}
+
+		}
+
+		/**
+		 * The circuit breaker around the provider (AI-05). Only timeouts, overload and
+		 * network errors count as failures.
+		 * @param failureRateThreshold percentage of failed calls that opens the circuit
+		 * @param windowSize how many recent calls the rate is computed over
+		 * @param minimumCalls calls needed before the rate is judged
+		 * @param openFor how long calls are refused once open, before a few test calls
+		 */
+		public record Breaker(@Min(1) @Max(100) Integer failureRateThreshold, @Min(1) Integer windowSize,
+				@Min(1) Integer minimumCalls, Duration openFor) {
+
+			public Breaker {
+				failureRateThreshold = (failureRateThreshold == null) ? 50 : failureRateThreshold;
+				windowSize = (windowSize == null) ? 20 : windowSize;
+				minimumCalls = (minimumCalls == null) ? 10 : minimumCalls;
+				openFor = (openFor == null) ? Duration.ofSeconds(60) : openFor;
+			}
+
+		}
+
+		/** USD per million tokens of each kind, as on the provider's pricing page. */
+		public record Price(@NotNull BigDecimal input, @NotNull BigDecimal cacheWrite, @NotNull BigDecimal cacheRead,
+				@NotNull BigDecimal output) {
+		}
+
 		public Ai {
 			apiKey = (apiKey == null) ? "" : apiKey.strip();
 			provider = (provider == null) ? Provider.AUTO : provider;
@@ -187,6 +235,9 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 			useCases = (useCases == null) ? Map.of() : Map.copyOf(useCases);
 			baseUrl = (baseUrl == null || baseUrl.isBlank()) ? DEFAULT_BASE_URL : baseUrl.strip();
 			jobs = (jobs == null) ? new Jobs(null, null, null, null, null, null, null, null) : jobs;
+			quota = (quota == null) ? new Quota(null, null, null) : quota;
+			circuitBreaker = (circuitBreaker == null) ? new Breaker(null, null, null, null) : circuitBreaker;
+			pricing = (pricing == null) ? Map.of() : Map.copyOf(pricing);
 			if (provider == Provider.ANTHROPIC && apiKey.isEmpty()) {
 				throw new IllegalArgumentException(
 						"linguaflow.ai.provider is anthropic but no API key is set (env AI_API_KEY)");
@@ -206,7 +257,8 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		@Override
 		public String toString() {
 			return "Ai[apiKey=" + (hasApiKey() ? "***" : "") + ", provider=" + provider + ", model=" + model
-					+ ", useCases=" + useCases + ", baseUrl=" + baseUrl + ", jobs=" + jobs + "]";
+					+ ", useCases=" + useCases + ", baseUrl=" + baseUrl + ", jobs=" + jobs + ", quota=" + quota + ", circuitBreaker=" + circuitBreaker
+					+ ", pricing=" + pricing + "]";
 		}
 
 	}

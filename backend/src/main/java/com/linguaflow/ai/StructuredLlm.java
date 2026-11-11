@@ -1,5 +1,6 @@
 package com.linguaflow.ai;
 
+import java.lang.reflect.Method;
 import java.lang.reflect.RecordComponent;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -56,7 +57,10 @@ public class StructuredLlm {
 		.enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS)
 		.build();
 
-	private final LlmClient client;
+	/** The {@code prompt_version} logged for prompts not built from a template. */
+	static final String CUSTOM_PROMPT = "custom";
+
+	private final AiGateway gateway;
 
 	private final AiSettings settings;
 
@@ -64,34 +68,40 @@ public class StructuredLlm {
 
 	private final Map<Class<?>, Map<String, Object>> schemas = new ConcurrentHashMap<>();
 
-	public StructuredLlm(LlmClient client, AiSettings settings, Validator validator) {
-		this.client = client;
+	public StructuredLlm(AiGateway gateway, AiSettings settings, Validator validator) {
+		this.gateway = gateway;
 		this.settings = settings;
 		this.validator = validator;
 	}
 
-	public <T> StructuredResponse<T> complete(AiUseCase useCase, LlmPrompt prompt, Class<T> type) {
-		return complete(useCase, prompt, type, OutputCheck.none());
-	}
-
-	/** A prompt from the {@link com.linguaflow.ai.prompt.PromptLibrary} (AI-03), with its use case. */
-	public <T> StructuredResponse<T> complete(RenderedPrompt prompt, Class<T> type, OutputCheck<? super T> check) {
-		return complete(prompt.useCase(), prompt.prompt(), type, check);
-	}
-
 	/**
+	 * A prompt from the {@link com.linguaflow.ai.prompt.PromptLibrary} (AI-03), with its use
+	 * case and version tag.
+	 * @param caller whose quota and usage log the calls count against (AI-05)
 	 * @throws InvalidLlmOutputException when the answer is still invalid after one retry
-	 * @throws LlmException when the provider gives no answer
+	 * @throws LlmException when the provider gives no answer, the circuit is open or the
+	 * quota is used up
 	 */
-	public <T> StructuredResponse<T> complete(AiUseCase useCase, LlmPrompt prompt, Class<T> type,
+	public <T> StructuredResponse<T> complete(AiCaller caller, RenderedPrompt prompt, Class<T> type,
 			OutputCheck<? super T> check) {
+		return complete(caller, prompt.useCase(), prompt.versionTag(), prompt.prompt(), type, check);
+	}
+
+	/** A hand-built prompt; logged with the prompt version {@code custom}. */
+	public <T> StructuredResponse<T> complete(AiCaller caller, AiUseCase useCase, LlmPrompt prompt, Class<T> type,
+			OutputCheck<? super T> check) {
+		return complete(caller, useCase, CUSTOM_PROMPT, prompt, type, check);
+	}
+
+	private <T> StructuredResponse<T> complete(AiCaller caller, AiUseCase useCase, String promptVersion,
+			LlmPrompt prompt, Class<T> type, OutputCheck<? super T> check) {
 		Map<String, Object> schema = schemas.computeIfAbsent(type, JsonSchemas::forRecord);
 		LlmOptions options = settings.options(useCase);
 		List<LlmResponse> calls = new ArrayList<>();
 		LlmPrompt current = prompt;
 		List<String> problems = List.of();
 		for (int attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-			LlmResponse response = client.complete(current, schema, options);
+			LlmResponse response = gateway.complete(caller, promptVersion, current, schema, options);
 			calls.add(response);
 			OutputProblems found = new OutputProblems();
 			T value = parse(response.text(), type, found);
@@ -185,7 +195,10 @@ public class StructuredLlm {
 			String where = path.isEmpty() ? component.getName() : path + "." + component.getName();
 			Object field;
 			try {
-				field = component.getAccessor().invoke(value);
+				// Answer records are often package-private in their feature module
+				Method accessor = component.getAccessor();
+				accessor.trySetAccessible();
+				field = accessor.invoke(value);
 			}
 			catch (ReflectiveOperationException ex) {
 				throw new IllegalStateException("Can't read " + where, ex);

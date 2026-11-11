@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.stream.Stream;
 
 import com.linguaflow.common.logging.CorrelationIdFilter;
-import com.linguaflow.common.ratelimit.RateLimitExceededException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,7 +48,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		ProblemDetail body = problem(ex.code(), ex.getMessage());
 		ex.properties().forEach(body::setProperty);
 		HttpHeaders headers = new HttpHeaders();
-		if (ex instanceof RateLimitExceededException limited) {
+		if (ex instanceof RetryLaterException limited) {
 			headers.set(HttpHeaders.RETRY_AFTER, Long.toString(limited.retryAfterSeconds()));
 		}
 		return handleExceptionInternal(ex, body, headers, ex.code().status(), request);

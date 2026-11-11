@@ -107,7 +107,8 @@ public class AnthropicLlmClient implements LlmClient, AutoCloseable {
 			.map(block -> block.text())
 			.collect(Collectors.joining());
 		return new LlmResponse(text, message.model().asString(), message.usage().inputTokens(),
-				message.usage().outputTokens(), message.usage().cacheReadInputTokens().orElse(0L), latency);
+				message.usage().outputTokens(), message.usage().cacheReadInputTokens().orElse(0L),
+				message.usage().cacheCreationInputTokens().orElse(0L), latency);
 	}
 
 	@Override

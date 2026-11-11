@@ -31,6 +31,9 @@
     "description" : "Registration, login and session tokens",
     "name" : "Auth"
   }, {
+    "description" : "Daily AI limits and what AI calls cost",
+    "name" : "AI usage"
+  }, {
     "description" : "Monitor and interact",
     "externalDocs" : {
       "description" : "Spring Boot Actuator Web API Documentation",
@@ -122,6 +125,174 @@
         },
         "summary" : "Actuator web endpoint 'health'",
         "tags" : [ "Actuator" ]
+      }
+    },
+    "/api/admin/ai-usage" : {
+      "get" : {
+        "description" : "LLM calls, failures, tokens and estimated cost across all users, by use case, model and UTC day, plus the users with the highest cost. Covers at most 366 days.",
+        "operationId" : "summary",
+        "parameters" : [ {
+          "description" : "First UTC day, inclusive (default: 29 days before to)",
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        }, {
+          "description" : "Last UTC day, inclusive (default: today)",
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "type" : [ "string", "null" ],
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiUsageSummary"
+                }
+              }
+            },
+            "description" : "The summary"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "AI usage summary (admin)",
+        "tags" : [ "AI usage" ]
+      }
+    },
+    "/api/ai/usage" : {
+      "get" : {
+        "description" : "Calls and tokens used today (UTC) against the daily limits. When the allowance is used up, new AI work such as enriching words waits until resetsAt.",
+        "operationId" : "mine",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MyAiUsage"
+                }
+              }
+            },
+            "description" : "Today's usage"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "My AI usage today",
+        "tags" : [ "AI usage" ]
       }
     },
     "/api/auth/login" : {
@@ -4818,13 +4989,132 @@
         },
         "required" : [ "explanationLanguageCode", "languageCode" ]
       },
+      "AiUsageByDay" : {
+        "type" : "object",
+        "properties" : {
+          "day" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "totals" : {
+            "$ref" : "#/components/schemas/AiUsageTotals"
+          }
+        }
+      },
+      "AiUsageByModel" : {
+        "type" : "object",
+        "properties" : {
+          "model" : {
+            "type" : "string"
+          },
+          "totals" : {
+            "$ref" : "#/components/schemas/AiUsageTotals"
+          }
+        }
+      },
+      "AiUsageByUseCase" : {
+        "type" : "object",
+        "properties" : {
+          "totals" : {
+            "$ref" : "#/components/schemas/AiUsageTotals"
+          },
+          "useCase" : {
+            "type" : "string"
+          }
+        }
+      },
+      "AiUsageSummary" : {
+        "type" : "object",
+        "description" : "AI usage across all users for a range of UTC days",
+        "properties" : {
+          "byDay" : {
+            "type" : "array",
+            "description" : "Only days with calls, oldest first",
+            "items" : {
+              "$ref" : "#/components/schemas/AiUsageByDay"
+            }
+          },
+          "byModel" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AiUsageByModel"
+            }
+          },
+          "byUseCase" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AiUsageByUseCase"
+            }
+          },
+          "from" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "to" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "topUsers" : {
+            "type" : "array",
+            "description" : "Up to 10 users by estimated cost",
+            "items" : {
+              "$ref" : "#/components/schemas/AiUsageTopUser"
+            }
+          },
+          "totals" : {
+            "$ref" : "#/components/schemas/AiUsageTotals"
+          }
+        }
+      },
+      "AiUsageTopUser" : {
+        "type" : "object",
+        "properties" : {
+          "costUsd" : {
+            "type" : "number"
+          },
+          "requests" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "userId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "AiUsageTotals" : {
+        "type" : "object",
+        "description" : "LLM calls and their estimated cost",
+        "properties" : {
+          "costUsd" : {
+            "type" : "number",
+            "description" : "Estimated cost in USD; calls to models without a price count as 0"
+          },
+          "failures" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "inputTokens" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "outputTokens" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "requests" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "ApiProblem" : {
         "description" : "RFC 7807 problem details returned for every error",
         "properties" : {
           "code" : {
             "type" : "string",
             "description" : "Stable machine-readable error code",
-            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "VOCABULARY_DUPLICATE", "TAG_NAME_TAKEN", "GRAMMAR_TOPIC_DUPLICATE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE" ]
+            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "VOCABULARY_DUPLICATE", "TAG_NAME_TAKEN", "GRAMMAR_TOPIC_DUPLICATE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "AI_QUOTA_EXCEEDED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE", "AI_UNAVAILABLE" ]
           },
           "correlationId" : {
             "type" : "string",
@@ -5482,6 +5772,40 @@
           }
         },
         "required" : [ "email", "password" ]
+      },
+      "MyAiUsage" : {
+        "type" : "object",
+        "description" : "The caller's AI usage today (UTC) and the daily limits",
+        "properties" : {
+          "exceeded" : {
+            "type" : "boolean",
+            "description" : "Whether today's allowance is used up; new AI work waits until resetsAt"
+          },
+          "limited" : {
+            "type" : "boolean",
+            "description" : "Whether the limits apply"
+          },
+          "requestLimit" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "requestsToday" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "resetsAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "tokenLimit" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "tokensToday" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
       },
       "PageResponseGrammarTopic" : {
         "type" : "object",

@@ -30,8 +30,10 @@ public enum ErrorCode {
 	PAYLOAD_TOO_LARGE(HttpStatus.CONTENT_TOO_LARGE, "Payload too large"),
 	UNSUPPORTED_MEDIA_TYPE(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported media type"),
 	TOO_MANY_REQUESTS(HttpStatus.TOO_MANY_REQUESTS, "Too many requests"),
+	AI_QUOTA_EXCEEDED(HttpStatus.TOO_MANY_REQUESTS, "Daily AI limit reached"),
 	INTERNAL_ERROR(HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error"),
-	SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Service unavailable");
+	SERVICE_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "Service unavailable"),
+	AI_UNAVAILABLE(HttpStatus.SERVICE_UNAVAILABLE, "AI unavailable");
 
 	private final HttpStatus status;
 

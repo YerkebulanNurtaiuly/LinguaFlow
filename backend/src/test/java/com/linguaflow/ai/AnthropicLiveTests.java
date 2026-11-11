@@ -92,12 +92,12 @@ class AnthropicLiveTests {
 			.baseUrl(LinguaFlowProperties.Ai.DEFAULT_BASE_URL)
 			.maxRetries(1)
 			.build(), Clock.systemUTC())) {
-			StructuredLlm llm = new StructuredLlm(client, settings,
+			StructuredLlm llm = new StructuredLlm(TestGateways.unlimited(client), settings,
 					Validation.buildDefaultValidatorFactory().getValidator());
-			StructuredResponse<Enrichment> response = llm.complete(AiUseCase.VOCABULARY_ENRICHMENT,
+			StructuredResponse<Enrichment> response = llm.complete(AiCaller.system(), AiUseCase.VOCABULARY_ENRICHMENT,
 					new LlmPrompt("You describe German nouns for English-speaking learners. Give one example.",
 							"Hund"),
-					Enrichment.class);
+					Enrichment.class, OutputCheck.none());
 
 			System.out.printf("Live structured call: %d attempt(s), %d input, %d output tokens, value=%s%n",
 					response.attempts(), response.inputTokens(), response.outputTokens(), response.value());
@@ -129,10 +129,10 @@ class AnthropicLiveTests {
 			.baseUrl(LinguaFlowProperties.Ai.DEFAULT_BASE_URL)
 			.maxRetries(1)
 			.build(), Clock.systemUTC())) {
-			StructuredLlm llm = new StructuredLlm(client, settings,
+			StructuredLlm llm = new StructuredLlm(TestGateways.unlimited(client), settings,
 					Validation.buildDefaultValidatorFactory().getValidator());
 
-			StructuredResponse<Enrichment> word = llm.complete(
+			StructuredResponse<Enrichment> word = llm.complete(AiCaller.system(),
 					library.render(PromptTemplate.VOCABULARY_ENRICHMENT,
 							PromptVariables.forLanguages("de", "en")
 								.set(PromptVar.WORD, "Hund")
@@ -143,7 +143,7 @@ class AnthropicLiveTests {
 			assertThat(word.value().translation().toLowerCase()).contains("dog");
 			assertThat(word.value().gender()).isEqualTo(Gender.MASCULINE);
 
-			StructuredResponse<ExerciseSet> exercises = llm.complete(
+			StructuredResponse<ExerciseSet> exercises = llm.complete(AiCaller.system(),
 					library.render(PromptTemplate.exercise(ExerciseType.FILL_BLANK),
 							PromptVariables.forLanguages("de", "en")
 								.set(PromptVar.COUNT, 3)
