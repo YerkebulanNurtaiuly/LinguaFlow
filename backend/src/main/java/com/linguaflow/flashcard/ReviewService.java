@@ -7,10 +7,15 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumMap;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.UUID;
 
 import com.linguaflow.flashcard.FlashcardService.CardView;
@@ -129,6 +134,109 @@ public class ReviewService {
 		return new Queue(items, dueCount, newCount, today, reviews.countReviewedSince(userId, language, startOfToday),
 				settings.dailyReviewGoal(), introduced, settings.newCardsPerDay(),
 				cards.findNextLearningDue(userId, language, directions, now, tomorrow));
+	}
+
+	/**
+	 * Review statistics for the active language (SRS-03), on the learner's calendar.
+	 * @param dueToday cards due before today ends, overdue and later learning steps included
+	 * @param newAvailable new cards still available today, within the daily limit
+	 * @param currentStreak days in a row with a review, ending today, or yesterday while
+	 * today has no review yet
+	 * @param forecast cards falling due on each of the next 7 days, today (with overdue
+	 * cards) first
+	 */
+	public record Stats(LocalDate today, long dueToday, long newAvailable, long reviewedToday, int dailyReviewGoal,
+			int currentStreak, int longestStreak, Retention retention, List<ForecastDay> forecast) {
+	}
+
+	/**
+	 * How often review cards were remembered (not AGAIN) over the last {@code days} days,
+	 * learning and relearning steps left out; {@code rate} is null without any review.
+	 */
+	public record Retention(int days, long reviews, long remembered, @Nullable Double rate) {
+	}
+
+	public record ForecastDay(LocalDate date, long due) {
+	}
+
+	/** Days of reviews retention is measured over. */
+	public static final int RETENTION_DAYS = 30;
+
+	/** Days the forecast covers, today included. */
+	public static final int FORECAST_DAYS = 7;
+
+	@Transactional(readOnly = true)
+	public Stats stats(UUID userId) {
+		String language = activeLanguages.requireActive(userId);
+		LearningSettings settings = userLanguages.settingsFor(userId, language);
+		ZoneId zone = zoneOf(userId);
+		LocalDate today = SrsScheduler.today(now(), zone);
+		Instant startOfToday = today.atStartOfDay(zone).toInstant();
+		var directions = settings.cardDirections();
+
+		long[] perDay = new long[FORECAST_DAYS];
+		Instant forecastEnd = today.plusDays(FORECAST_DAYS).atStartOfDay(zone).toInstant();
+		for (Instant due : cards.findDueDatesBefore(userId, language, directions, forecastEnd)) {
+			LocalDate day = LocalDate.ofInstant(due, zone);
+			perDay[day.isBefore(today) ? 0 : (int) (day.toEpochDay() - today.toEpochDay())]++;
+		}
+		List<ForecastDay> forecast = new ArrayList<>();
+		for (int i = 0; i < FORECAST_DAYS; i++) {
+			forecast.add(new ForecastDay(today.plusDays(i), perDay[i]));
+		}
+
+		long introduced = reviews.countIntroducedSince(userId, language, startOfToday);
+		long newLeft = Math.max(0, settings.newCardsPerDay() - introduced);
+		long newAvailable = newLeft == 0 ? 0
+				: Math.min(newLeft, cards.countNew(userId, language, directions, startOfToday));
+
+		List<LocalDate> days = reviews.findReviewDays(userId, language, postgresZone(zone))
+			.stream()
+			.map(LocalDate::parse)
+			.toList();
+		Instant retentionStart = today.minusDays(RETENTION_DAYS - 1).atStartOfDay(zone).toInstant();
+		long reviewed = reviews.countInStateSince(userId, language, SrsState.State.REVIEW, retentionStart,
+				EnumSet.allOf(ReviewGrade.class));
+		long remembered = reviews.countInStateSince(userId, language, SrsState.State.REVIEW, retentionStart,
+				EnumSet.complementOf(EnumSet.of(ReviewGrade.AGAIN)));
+		Double rate = reviewed == 0 ? null : Math.round(remembered * 1000.0 / reviewed) / 1000.0;
+
+		return new Stats(today, perDay[0], newAvailable, reviews.countReviewedSince(userId, language, startOfToday),
+				settings.dailyReviewGoal(), currentStreak(days, today), longestStreak(days),
+				new Retention(RETENTION_DAYS, reviewed, remembered, rate), forecast);
+	}
+
+	/** Days in a row with a review up to today, or up to yesterday while today has none yet. */
+	static int currentStreak(Collection<LocalDate> reviewDays, LocalDate today) {
+		Set<LocalDate> days = new HashSet<>(reviewDays);
+		LocalDate day = days.contains(today) ? today : today.minusDays(1);
+		int streak = 0;
+		while (days.contains(day)) {
+			streak++;
+			day = day.minusDays(1);
+		}
+		return streak;
+	}
+
+	/** The longest run of consecutive review days. */
+	static int longestStreak(Collection<LocalDate> reviewDays) {
+		int longest = 0;
+		int run = 0;
+		LocalDate previous = null;
+		for (LocalDate day : new TreeSet<>(reviewDays)) {
+			run = previous != null && previous.plusDays(1).equals(day) ? run + 1 : 1;
+			longest = Math.max(longest, run);
+			previous = day;
+		}
+		return longest;
+	}
+
+	/**
+	 * The zone's name for PostgreSQL. Profiles hold IANA names or "UTC" (USR-01), which it
+	 * knows; the only offset {@link #zoneOf} returns is the UTC fallback, Java's "Z".
+	 */
+	private static String postgresZone(ZoneId zone) {
+		return zone instanceof ZoneOffset ? "UTC" : zone.getId();
 	}
 
 	/**

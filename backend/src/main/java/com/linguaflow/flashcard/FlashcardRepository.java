@@ -109,6 +109,13 @@ public interface FlashcardRepository extends OwnedRepository<Flashcard> {
 	long countNew(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("directions") Collection<CardDirection> directions, @Param("today") Instant today);
 
+	/** Due dates before {@code end} of reviewable cards past NEW: the forecast (SRS-03). */
+	@Query("select s.dueAt " + REVIEWABLE_FROM + """
+
+			  and s.state <> com.linguaflow.flashcard.SrsState.State.NEW and s.dueAt < :end""")
+	List<Instant> findDueDatesBefore(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("directions") Collection<CardDirection> directions, @Param("end") Instant end);
+
 	/** When the next learning step comes due later today, if any. */
 	@Query("select min(s.dueAt) " + REVIEWABLE_FROM + """
 

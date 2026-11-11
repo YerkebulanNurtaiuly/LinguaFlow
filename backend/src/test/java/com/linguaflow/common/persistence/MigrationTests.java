@@ -327,6 +327,31 @@ class MigrationTests {
 			.hasMessageContaining("user_languages_card_directions_ck");
 	}
 
+	// ---- V7: the state a card was graded in ----------------------------------------------------
+
+	@Test
+	void reviewStateBeforeMatchesTheSrsStates() {
+		String states = jdbc.queryForObject(
+				"select pg_get_constraintdef(oid) from pg_constraint where conname = 'flashcard_reviews_state_before_ck'",
+				String.class);
+		for (SrsState.State state : SrsState.State.values()) {
+			assertThat(states).contains("'" + state.name() + "'");
+		}
+	}
+
+	@Test
+	void reviewStateBeforeIsRequired() {
+		UUID user = learner("statebefore@example.de");
+		UUID card = insertFlashcard(user, insertVocabulary(user, "bett", "NOUN"));
+		assertThatThrownBy(() -> jdbc.update(
+				"insert into flashcard_reviews (id, flashcard_id, user_id, review_token, grade, reviewed_at, "
+						+ "interval_before, interval_after, ease_before, ease_after) "
+						+ "values (?, ?, ?, ?, 'GOOD', now(), 0, 1, 2.5, 2.5)",
+				UUID.randomUUID(), card, user, UUID.randomUUID()))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("state_before");
+	}
+
 	@Test
 	void flashcardMustBelongToTheOwnerOfItsWord() {
 		UUID owner = learner("owner@example.de");
@@ -467,8 +492,8 @@ class MigrationTests {
 
 	private void insertReview(UUID user, UUID card, UUID token) {
 		jdbc.update("insert into flashcard_reviews (id, flashcard_id, user_id, review_token, grade, reviewed_at, "
-				+ "interval_before, interval_after, ease_before, ease_after) "
-				+ "values (?, ?, ?, ?, 'GOOD', now(), 0, 1, 2.5, 2.5)", UUID.randomUUID(), card, user, token);
+				+ "interval_before, interval_after, ease_before, ease_after, state_before) "
+				+ "values (?, ?, ?, ?, 'GOOD', now(), 0, 1, 2.5, 2.5, 'NEW')", UUID.randomUUID(), card, user, token);
 	}
 
 	private UUID insertPracticeSession(UUID user) {

@@ -2705,6 +2705,85 @@
         "tags" : [ "Reviews" ]
       }
     },
+    "/api/reviews/stats" : {
+      "get" : {
+        "description" : "For the active language, on your calendar: due today, reviewed today, streaks, retention over the last 30 days and a 7-day forecast.",
+        "operationId" : "stats",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ReviewStats"
+                }
+              }
+            },
+            "description" : "The statistics"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Review statistics",
+        "tags" : [ "Reviews" ]
+      }
+    },
     "/api/study-sessions" : {
       "get" : {
         "description" : "Sessions of the active language, most recent lesson first. Sortable by studiedOn, createdAt, updatedAt, title.",
@@ -6776,6 +6855,11 @@
           "reviewedAt" : {
             "type" : "string",
             "format" : "date-time"
+          },
+          "stateBefore" : {
+            "type" : "string",
+            "description" : "The card's state when it was graded",
+            "enum" : [ "NEW", "LEARNING", "REVIEW", "RELEARNING" ]
           }
         }
       },
@@ -7356,6 +7440,19 @@
         },
         "required" : [ "newPassword", "token" ]
       },
+      "ReviewForecastDay" : {
+        "type" : "object",
+        "properties" : {
+          "date" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "due" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
       "ReviewGradePreview" : {
         "type" : "object",
         "description" : "The card's next state if given this grade now",
@@ -7471,6 +7568,83 @@
           },
           "review" : {
             "$ref" : "#/components/schemas/FlashcardReview"
+          }
+        }
+      },
+      "ReviewRetention" : {
+        "type" : "object",
+        "description" : "How often cards in review were remembered (any grade but AGAIN); learning steps don't count",
+        "properties" : {
+          "days" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The period, in days up to today",
+            "example" : 30
+          },
+          "rate" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "remembered / reviews, 0–1; null without reviews",
+            "example" : 0.875
+          },
+          "remembered" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "reviews" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "ReviewStats" : {
+        "type" : "object",
+        "properties" : {
+          "currentStreak" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Days in a row with a review, ending today, or yesterday while today has none yet"
+          },
+          "dailyReviewGoal" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Your daily review goal"
+          },
+          "dueToday" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Cards due before today ends, overdue ones and later learning steps included"
+          },
+          "forecast" : {
+            "type" : "array",
+            "description" : "Cards falling due on each of the next 7 days; today's count includes overdue cards",
+            "items" : {
+              "$ref" : "#/components/schemas/ReviewForecastDay"
+            }
+          },
+          "longestStreak" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "The longest run of days with a review"
+          },
+          "newAvailable" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "New cards still available today, within your daily limit"
+          },
+          "retention" : {
+            "$ref" : "#/components/schemas/ReviewRetention"
+          },
+          "reviewedToday" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Reviews recorded today"
+          },
+          "today" : {
+            "type" : "string",
+            "format" : "date",
+            "description" : "Your today, in your time zone",
+            "example" : "2026-11-11"
           }
         }
       },

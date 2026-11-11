@@ -329,6 +329,80 @@ class ReviewApiTests {
 		grade(anna, hund, "GOOD", UUID.randomUUID()).andExpect(status().isCreated());
 	}
 
+	/** A review at noon on Anna's local day {@code date} (Almaty, UTC+5). */
+	private void reviewOn(UUID cardId, String date, String grade, String stateBefore) {
+		Instant noon = java.time.LocalDate.parse(date).atTime(12, 0).atZone(java.time.ZoneId.of("Asia/Almaty")).toInstant();
+		jdbc.update("""
+				insert into flashcard_reviews (id, flashcard_id, user_id, review_token, grade, reviewed_at,
+				    state_before, interval_before, interval_after, ease_before, ease_after)
+				values (?, ?, (select user_id from flashcards where id = ?), ?, ?, ?, ?, 3, 7, 2.5, 2.5)""",
+				UUID.randomUUID(), cardId, cardId, UUID.randomUUID(), grade, Timestamp.from(noon), stateBefore);
+	}
+
+	@Test
+	void reportsDueCountsStreaksRetentionAndAForecast() throws Exception {
+		jdbc.update("update user_languages set card_directions = '{TARGET_TO_NATIVE}' where user_id = ?", anna.id());
+		UUID overdue = t2n(word(anna, "Haus", "house"));
+		UUID tomorrowCard = t2n(word(anna, "Baum", "tree"));
+		UUID inSixDays = t2n(word(anna, "Brot", "bread"));
+		UUID inSevenDays = t2n(word(anna, "Tisch", "table"));
+		UUID learning = t2n(word(anna, "Stuhl", "chair"));
+		word(anna, "Hund", "dog");
+		schedule(overdue, "REVIEW", START_OF_TODAY.minus(Duration.ofDays(2)), "2.50", 0);
+		schedule(tomorrowCard, "REVIEW", START_OF_TODAY.plus(Duration.ofDays(1)), "2.50", 0);
+		schedule(inSixDays, "REVIEW", START_OF_TODAY.plus(Duration.ofDays(6)), "2.50", 0);
+		schedule(inSevenDays, "REVIEW", START_OF_TODAY.plus(Duration.ofDays(7)), "2.50", 0);
+		schedule(learning, "LEARNING", T0.plus(Duration.ofMinutes(5)), "2.50", 0);
+
+		// Three days in a row up to today; a longer run of four earlier this month
+		reviewOn(overdue, "2026-11-11", "GOOD", "REVIEW");
+		reviewOn(overdue, "2026-11-10", "AGAIN", "REVIEW");
+		reviewOn(overdue, "2026-11-09", "EASY", "REVIEW");
+		reviewOn(overdue, "2026-11-01", "HARD", "REVIEW");
+		for (String day : List.of("2026-11-02", "2026-11-03", "2026-11-04")) {
+			// Learning steps don't count for retention
+			reviewOn(overdue, day, "AGAIN", "LEARNING");
+		}
+		// Outside the 30 days retention looks at
+		reviewOn(overdue, "2026-10-02", "AGAIN", "REVIEW");
+		// Ben's reviews are his own
+		reviewOn(t2n(word(ben, "Maus", "mouse")), "2026-11-08", "AGAIN", "REVIEW");
+
+		send(anna, get("/api/reviews/stats")).andExpect(status().isOk())
+			.andExpect(jsonPath("$.today").value("2026-11-11"))
+			.andExpect(jsonPath("$.dueToday").value(2))
+			.andExpect(jsonPath("$.newAvailable").value(1))
+			.andExpect(jsonPath("$.reviewedToday").value(1))
+			.andExpect(jsonPath("$.dailyReviewGoal").value(50))
+			.andExpect(jsonPath("$.currentStreak").value(3))
+			.andExpect(jsonPath("$.longestStreak").value(4))
+			.andExpect(jsonPath("$.retention.days").value(30))
+			.andExpect(jsonPath("$.retention.reviews").value(4))
+			.andExpect(jsonPath("$.retention.remembered").value(3))
+			.andExpect(jsonPath("$.retention.rate").value(0.75))
+			.andExpect(jsonPath("$.forecast[*].date",
+					contains("2026-11-11", "2026-11-12", "2026-11-13", "2026-11-14", "2026-11-15", "2026-11-16",
+							"2026-11-17")))
+			.andExpect(jsonPath("$.forecast[*].due", contains(2, 1, 0, 0, 0, 0, 1)));
+
+		send(ben, get("/api/reviews/stats")).andExpect(jsonPath("$.reviewedToday").value(0))
+			.andExpect(jsonPath("$.currentStreak").value(0))
+			.andExpect(jsonPath("$.longestStreak").value(1))
+			.andExpect(jsonPath("$.retention.reviews").value(1))
+			.andExpect(jsonPath("$.retention.rate").value(0.0));
+	}
+
+	@Test
+	void gradingRecordsTheStateTheCardWasIn() throws Exception {
+		UUID hund = t2n(word(anna, "Hund", "dog"));
+		grade(anna, hund, "GOOD", UUID.randomUUID()).andExpect(jsonPath("$.review.stateBefore").value("NEW"));
+		clock.advance(Duration.ofMinutes(10));
+		grade(anna, hund, "GOOD", UUID.randomUUID()).andExpect(jsonPath("$.review.stateBefore").value("LEARNING"));
+		send(anna, get("/api/reviews/stats")).andExpect(jsonPath("$.retention.reviews").value(0))
+			.andExpect(jsonPath("$.retention.rate").doesNotExist())
+			.andExpect(jsonPath("$.currentStreak").value(1));
+	}
+
 	@Test
 	void checksItsInput() throws Exception {
 		send(anna, get("/api/reviews/due").param("limit", "0")).andExpect(status().isBadRequest())

@@ -519,6 +519,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reviews/stats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Review statistics
+         * @description For the active language, on your calendar: due today, reviewed today, streaks, retention over the last 30 days and a 7-day forecast.
+         */
+        get: operations["stats"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/study-sessions": {
         parameters: {
             query?: never;
@@ -1393,6 +1413,11 @@ export interface components {
             intervalBefore?: number;
             /** Format: date-time */
             reviewedAt?: string;
+            /**
+             * @description The card's state when it was graded
+             * @enum {string}
+             */
+            stateBefore?: "NEW" | "LEARNING" | "REVIEW" | "RELEARNING";
         };
         /** @description Spaced-repetition state */
         FlashcardSrs: {
@@ -1659,6 +1684,12 @@ export interface components {
             /** @description Token from the reset link */
             token: string;
         };
+        ReviewForecastDay: {
+            /** Format: date */
+            date?: string;
+            /** Format: int64 */
+            due?: number;
+        };
         /** @description The card's next state if given this grade now */
         ReviewGradePreview: {
             /**
@@ -1736,6 +1767,66 @@ export interface components {
             /** @description True when this review token was already recorded; nothing changed */
             replayed?: boolean;
             review?: components["schemas"]["FlashcardReview"];
+        };
+        /** @description How often cards in review were remembered (any grade but AGAIN); learning steps don't count */
+        ReviewRetention: {
+            /**
+             * Format: int32
+             * @description The period, in days up to today
+             * @example 30
+             */
+            days?: number;
+            /**
+             * Format: double
+             * @description remembered / reviews, 0–1; null without reviews
+             * @example 0.875
+             */
+            rate?: number;
+            /** Format: int64 */
+            remembered?: number;
+            /** Format: int64 */
+            reviews?: number;
+        };
+        ReviewStats: {
+            /**
+             * Format: int32
+             * @description Days in a row with a review, ending today, or yesterday while today has none yet
+             */
+            currentStreak?: number;
+            /**
+             * Format: int32
+             * @description Your daily review goal
+             */
+            dailyReviewGoal?: number;
+            /**
+             * Format: int64
+             * @description Cards due before today ends, overdue ones and later learning steps included
+             */
+            dueToday?: number;
+            /** @description Cards falling due on each of the next 7 days; today's count includes overdue cards */
+            forecast?: components["schemas"]["ReviewForecastDay"][];
+            /**
+             * Format: int32
+             * @description The longest run of days with a review
+             */
+            longestStreak?: number;
+            /**
+             * Format: int64
+             * @description New cards still available today, within your daily limit
+             */
+            newAvailable?: number;
+            retention?: components["schemas"]["ReviewRetention"];
+            /**
+             * Format: int64
+             * @description Reviews recorded today
+             */
+            reviewedToday?: number;
+            /**
+             * Format: date
+             * @description Your today, in your time zone
+             * @example 2026-11-11
+             */
+            today?: string;
         };
         SettingsUpdate: {
             /** @description Flashcard directions to review; at least one */
@@ -4148,6 +4239,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ReviewQueue"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    stats: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The statistics */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewStats"];
                 };
             };
             /** @description Invalid request */

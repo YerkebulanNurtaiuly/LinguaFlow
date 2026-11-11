@@ -259,7 +259,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `GET /api/reviews/due?limit=` returns due cards + new cards respecting daily limits; ordering: overdue first, then weak, then new. `POST /api/reviews` records a grade, updates `srs_state`, writes `flashcard_reviews`.
   _Done when:_ review submission is idempotent per (card, review token).
 
-- [ ] **SRS-03 — Review statistics** (S) — _deps: SRS-02_
+- [x] **SRS-03 — Review statistics** (S) — _deps: SRS-02_
   Due today, reviewed today, streak, retention rate, forecast for next 7 days.
 
 - [ ] **FE-FC-01 — Flashcard review UI** (L) — _deps: SRS-02, FE-02_

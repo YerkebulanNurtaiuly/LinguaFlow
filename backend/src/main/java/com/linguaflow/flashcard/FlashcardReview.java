@@ -58,6 +58,11 @@ public class FlashcardReview implements OwnedEntity {
 	@Column(name = "duration_ms", updatable = false)
 	private @Nullable Integer durationMs;
 
+	/** The card's state when it was graded; retention (SRS-03) counts REVIEW only. */
+	@Enumerated(EnumType.STRING)
+	@Column(name = "state_before", nullable = false, updatable = false)
+	private SrsState.State stateBefore;
+
 	@Column(name = "interval_before", nullable = false, updatable = false)
 	private int intervalBefore;
 
@@ -78,6 +83,7 @@ public class FlashcardReview implements OwnedEntity {
 		this.grade = Objects.requireNonNull(grade);
 		this.reviewedAt = Objects.requireNonNull(reviewedAt);
 		this.durationMs = durationMs;
+		this.stateBefore = before.state();
 		this.intervalBefore = before.intervalDays();
 		this.intervalAfter = after.intervalDays();
 		this.easeBefore = before.ease();

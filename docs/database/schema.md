@@ -275,6 +275,7 @@ The front and back of a card are **not stored**. They are built from the vocabul
 | grade | text not null | CK `AGAIN, HARD, GOOD, EASY` |
 | reviewed_at | timestamptz not null | |
 | duration_ms | int | |
+| state_before | text not null | CK `NEW, LEARNING, REVIEW, RELEARNING` (V7, SRS-03): the card's state when graded. Retention counts only REVIEW, leaving out learning and relearning steps. Reviews from before V7 were filled in from `interval_before` (0 → LEARNING, else REVIEW) |
 | interval_before, interval_after | int not null | Days |
 | ease_before, ease_after | numeric(4,2) not null | |
 
@@ -426,6 +427,7 @@ This table is shared between users. It may only hold **language data**, such as 
 | `V4__user_action_tokens.sql` | AUTH-07 | `user_action_tokens` |
 | `V5__grammar_catalog_seed.sql` | GRM-03 | Seed rows for the German topic catalog (52 topics, A1–C1; IDs are `md5('grammar-catalog:de:<slug>')::uuid`) |
 | `V6__card_directions.sql` | FC-01 | `user_languages.card_directions` |
+| `V7__review_state_before.sql` | SRS-03 | `flashcard_reviews.state_before` |
 | `R__dev_seed.sql` | DB-05 | Demo data, dev profile only |
 
 Applied migrations are never edited. Every change is a new `V<n>__…` file.
