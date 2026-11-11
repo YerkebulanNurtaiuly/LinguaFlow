@@ -19,15 +19,15 @@ import { renderApp } from '@/test/renderWithProviders'
 
 vi.mock('@/lib/health', () => ({ fetchHealth: vi.fn() }))
 
-// Lets a test make the Study sessions placeholder crash while rendering
-const crash = vi.hoisted(() => ({ sessions: false }))
+// Lets a test make the Progress placeholder crash while rendering
+const crash = vi.hoisted(() => ({ progress: false }))
 vi.mock('@/pages/PlaceholderPage', async (importOriginal) => {
   const original =
     await importOriginal<typeof import('@/pages/PlaceholderPage')>()
   return {
     PlaceholderPage: (props: { title: string; description: string }) => {
-      if (crash.sessions && props.title === 'Study sessions') {
-        throw new Error('Sessions exploded')
+      if (crash.progress && props.title === 'Progress') {
+        throw new Error('Progress exploded')
       }
       return <original.PlaceholderPage {...props} />
     },
@@ -55,13 +55,13 @@ describe('error boundaries', () => {
   })
 
   afterEach(() => {
-    crash.sessions = false
+    crash.progress = false
     vi.mocked(console.error).mockRestore()
   })
 
   it('shows a crashing section inside the shell, so navigation keeps working', async () => {
-    crash.sessions = true
-    await renderApp('/sessions')
+    crash.progress = true
+    await renderApp('/progress')
 
     expect(
       screen.getByRole('heading', { name: 'Something went wrong' }),
@@ -75,23 +75,23 @@ describe('error boundaries', () => {
   })
 
   it('renders the section again on Try again', async () => {
-    crash.sessions = true
-    await renderApp('/sessions')
+    crash.progress = true
+    await renderApp('/progress')
     await screen.findByRole('heading', { name: 'Something went wrong' })
 
-    crash.sessions = false
+    crash.progress = false
     await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
 
     expect(
-      await screen.findByRole('heading', { level: 1, name: 'Study sessions' }),
+      await screen.findByRole('heading', { level: 1, name: 'Progress' }),
     ).toBeInTheDocument()
   })
 
   it('shows technical details only in development', async () => {
-    crash.sessions = true
-    await renderApp('/sessions')
+    crash.progress = true
+    await renderApp('/progress')
 
-    expect(screen.getByText(/Sessions exploded/)).toBeInTheDocument()
+    expect(screen.getByText(/Progress exploded/)).toBeInTheDocument()
   })
 
   it('catches errors outside a section with a full-page fallback', async () => {

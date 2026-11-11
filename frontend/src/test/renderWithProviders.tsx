@@ -102,6 +102,16 @@ export function renderRoute(
     data: { content: [], page: 0, size: 100, totalElements: 0, totalPages: 0 },
   })
   fakeApi.fallback('GET', '/grammar-topics/catalog', { status: 200, data: [] })
+  fakeApi.fallback('GET', '/study-sessions/active', { status: 204 })
+  fakeApi.fallback('GET', '/study-sessions/timeline', {
+    status: 200,
+    data: {
+      months: [],
+      sessionCount: 0,
+      vocabularyCount: 0,
+      grammarTopicCount: 0,
+    },
+  })
   const queryClient = createQueryClient({
     defaultOptions: { queries: { retry: false } },
   })

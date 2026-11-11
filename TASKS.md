@@ -207,7 +207,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **SES-02 — Learning history timeline** (S) — _deps: SES-01_
   `GET /api/study-sessions/timeline` — sessions ordered by date with counts.
 
-- [ ] **FE-SES-01 — Sessions page** (M) — _deps: SES-01, FE-VOC-02, FE-GRM-01_
+- [x] **FE-SES-01 — Sessions page** (M) — _deps: SES-01, FE-VOC-02, FE-GRM-01_
   Create a session, add words/topics inside it, session detail page, timeline view.
 
 ### Epic 9: AI Integration (`AI`)

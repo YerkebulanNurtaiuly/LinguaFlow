@@ -60,6 +60,8 @@ export interface GrammarTopicFilter {
   q?: string
   status?: KnowledgeStatus
   cefrLevel?: CefrLevel
+  /** Only topics of this study session (SES-01) */
+  sessionId?: string
 }
 
 /** The API's page-size cap; all topics are loaded page by page. */
@@ -79,6 +81,7 @@ export async function fetchGrammarTopics(
     if (filter.q) params.set('q', filter.q)
     if (filter.status) params.set('status', filter.status)
     if (filter.cefrLevel) params.set('cefrLevel', filter.cefrLevel)
+    if (filter.sessionId) params.set('sessionId', filter.sessionId)
     params.append('sort', 'cefrLevel,asc')
     params.append('sort', 'title,asc')
     params.set('page', String(page))

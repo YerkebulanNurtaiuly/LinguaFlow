@@ -114,21 +114,27 @@ export interface VocabularyQuery {
   cefrLevel?: (typeof CEFR_LEVELS)[number]
   partOfSpeech?: PartOfSpeech
   tagId?: string
+  /** Only words of this study session (SES-01) */
+  sessionId?: string
   sort: VocabularySort
   page: number
 }
 
-export function toSearchParams(query: VocabularyQuery): URLSearchParams {
+export function toSearchParams(
+  query: VocabularyQuery,
+  size = PAGE_SIZE,
+): URLSearchParams {
   const params = new URLSearchParams()
   if (query.q) params.set('q', query.q)
   if (query.status) params.set('status', query.status)
   if (query.cefrLevel) params.set('cefrLevel', query.cefrLevel)
   if (query.partOfSpeech) params.set('partOfSpeech', query.partOfSpeech)
   if (query.tagId) params.set('tagId', query.tagId)
+  if (query.sessionId) params.set('sessionId', query.sessionId)
   params.set('sort', query.sort)
   // Ties (same date, same level…) are broken by id on the server, so pages are stable
   params.set('page', String(query.page))
-  params.set('size', String(PAGE_SIZE))
+  params.set('size', String(size))
   return params
 }
 
@@ -136,9 +142,10 @@ export function toSearchParams(query: VocabularyQuery): URLSearchParams {
 export async function fetchVocabulary(
   query: VocabularyQuery,
   signal?: AbortSignal,
+  size = PAGE_SIZE,
 ): Promise<VocabularyWordPage> {
   const { data } = await api.get<unknown>('/vocabulary', {
-    params: toSearchParams(query),
+    params: toSearchParams(query, size),
     signal,
   })
   return vocabularyPageSchema.parse(data)

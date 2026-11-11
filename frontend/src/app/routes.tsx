@@ -17,6 +17,8 @@ import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { GrammarPage } from '@/pages/grammar/GrammarPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
+import { SessionPage } from '@/pages/sessions/SessionPage'
+import { SessionsPage } from '@/pages/sessions/SessionsPage'
 import { BulkAddPage } from '@/pages/vocabulary/BulkAddPage'
 import { VocabularyPage } from '@/pages/vocabulary/VocabularyPage'
 
@@ -26,6 +28,7 @@ const title = (value: string): RouteHandle => ({ title: value })
 const SECTION_PAGES: Partial<Record<string, ReactNode>> = {
   '/settings': <SettingsPage />,
   '/grammar': <GrammarPage />,
+  '/sessions': <SessionsPage />,
   '/vocabulary': <VocabularyPage />,
 }
 
@@ -96,6 +99,11 @@ export const routes: RouteObject[] = [
                           />
                         ),
                       })),
+                      {
+                        path: '/sessions/:id',
+                        handle: title('Lesson'),
+                        element: <SessionPage />,
+                      },
                       {
                         path: '/grammar/:id',
                         handle: title('Grammar topic'),
