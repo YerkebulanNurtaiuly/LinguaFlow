@@ -7,6 +7,8 @@ import java.util.UUID;
 import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.domain.ExerciseType;
+import com.linguaflow.flashcard.ReviewGrade;
+import com.linguaflow.flashcard.SrsState;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
 import org.flywaydb.core.api.MigrationState;
@@ -280,6 +282,21 @@ class MigrationTests {
 			for (CardDirection direction : CardDirection.values()) {
 				assertThat(check).as(constraint).contains("'" + direction.name() + "'");
 			}
+		}
+	}
+
+	@Test
+	void reviewGradesAndSrsStatesMatchTheDatabaseChecks() {
+		String grades = jdbc.queryForObject(
+				"select pg_get_constraintdef(oid) from pg_constraint where conname = 'flashcard_reviews_grade_ck'",
+				String.class);
+		for (ReviewGrade grade : ReviewGrade.values()) {
+			assertThat(grades).contains("'" + grade.name() + "'");
+		}
+		String states = jdbc.queryForObject(
+				"select pg_get_constraintdef(oid) from pg_constraint where conname = 'srs_state_state_ck'", String.class);
+		for (SrsState.State state : SrsState.State.values()) {
+			assertThat(states).contains("'" + state.name() + "'");
 		}
 	}
 

@@ -258,6 +258,13 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **One card:** `GET /{id}` works in any of the user's languages. Another user's card is 404.
   - **Frontend:** the flashcard browser is FE-FC-02, and review is SRS-02 and FE-FC-01.
   - **Tests:** `FlashcardApiTests`.
+- **Scheduling (SRS-01):** `flashcard.SrsScheduler` is a pure, deterministic SM-2 variant (Anki-style, no fuzz, no clock): `review(Card, ReviewGrade, now, zone)` returns the next `Card` (state, ease, interval, repetitions, lapses, dueAt, lastReviewedAt). `SrsState.toCard()` and `apply(card)` convert to and from the entity.
+  - **Learning:** NEW and LEARNING cards go through steps of 1 and 10 minutes (`repetitions` is the step index). AGAIN restarts, HARD repeats the step, GOOD moves on and finally graduates to REVIEW with 1 day, EASY graduates at once with 4 days.
+  - **Review:** with interval `i` and ease `e`, HARD is `i×1.2` (ease −0.15), GOOD `i×e`, EASY `i×e×1.3` (ease +0.15). Each beats the grade below by at least a day, and intervals are capped at 36,500 days. The scheduled interval is used, not the days elapsed.
+  - **Lapses:** AGAIN on a review card adds a lapse, takes 0.20 off the ease and relearns through one 10-minute step, then returns with 1 day (`lapseIntervalMultiplier` 0). Ease never drops below 1.30 and is kept to two decimals.
+  - **Time zone:** review cards fall due at the start of a local day in the learner's zone (`dueOn`, DST-safe); `SrsScheduler.today(now, zone)` is the learner's "today" for SRS-02's daily limits.
+  - **Settings:** `SrsScheduler.Config` (`DEFAULT` follows Anki's defaults). `ReviewGrade` must match `flashcard_reviews_grade_ck`; `MigrationTests` checks it and the SRS states.
+  - **Tests:** `SrsSchedulerTests` (table-driven transitions, zones and DST, grade ordering, a card's whole life).
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

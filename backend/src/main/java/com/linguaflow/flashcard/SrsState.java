@@ -75,6 +75,22 @@ public class SrsState extends AuditableEntity implements OwnedEntity {
 	@Column(nullable = false)
 	private Long version;
 
+	/** The state the scheduler (SRS-01) works on. */
+	public SrsScheduler.Card toCard() {
+		return new SrsScheduler.Card(state, easeFactor, intervalDays, repetitions, lapses, dueAt, lastReviewedAt);
+	}
+
+	/** Stores the scheduler's result after a review (SRS-02). */
+	public void apply(SrsScheduler.Card next) {
+		this.state = next.state();
+		this.easeFactor = next.ease();
+		this.intervalDays = next.intervalDays();
+		this.repetitions = next.repetitions();
+		this.lapses = next.lapses();
+		this.dueAt = next.dueAt();
+		this.lastReviewedAt = next.lastReviewedAt();
+	}
+
 	SrsState(Flashcard card) {
 		this.id = Objects.requireNonNull(card.getId(), "save the card first");
 		this.userId = card.getUserId();

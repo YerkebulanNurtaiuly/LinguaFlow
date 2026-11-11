@@ -251,7 +251,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 11: Spaced Repetition & Flashcard Review (`SRS`)
 
-- [ ] **SRS-01 — Scheduling algorithm** (M) — _deps: FC-01_
+- [x] **SRS-01 — Scheduling algorithm** (M) — _deps: FC-01_
   Implement SM-2 (or FSRS) as a pure, deterministic service: inputs = current state + grade (`AGAIN`, `HARD`, `GOOD`, `EASY`), outputs = new interval, ease, due date, lapses. Respect user timezone for "today".
   _Done when:_ thoroughly unit-tested with table-driven cases.
 
