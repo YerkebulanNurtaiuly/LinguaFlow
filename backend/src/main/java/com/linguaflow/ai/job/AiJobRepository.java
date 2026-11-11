@@ -1,0 +1,46 @@
+package com.linguaflow.ai.job;
+
+import java.time.Instant;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+
+import com.linguaflow.common.persistence.OwnedRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+/**
+ * AI jobs. Users see their own through the {@link OwnedRepository} methods (AI-08); the
+ * worker's system-wide methods are named {@code ...ForProcessing...}.
+ */
+public interface AiJobRepository extends OwnedRepository<AiJob> {
+
+	/**
+	 * Locks up to {@code limit} due jobs, oldest first. Rows another worker has locked are
+	 * skipped, so two workers never claim the same job. Must run in a transaction.
+	 */
+	@Query(value = """
+			select id from ai_jobs
+			where status = 'QUEUED' and next_run_at <= :now
+			order by next_run_at, id
+			limit :limit
+			for update skip locked""", nativeQuery = true)
+	List<UUID> lockDueForProcessing(@Param("now") Instant now, @Param("limit") int limit);
+
+	/** Locks jobs RUNNING since before {@code before}: their worker stopped. */
+	@Query(value = """
+			select id from ai_jobs
+			where status = 'RUNNING' and locked_at < :before
+			order by locked_at
+			limit :limit
+			for update skip locked""", nativeQuery = true)
+	List<UUID> lockStaleForProcessing(@Param("before") Instant before, @Param("limit") int limit);
+
+	@Query("select j from AiJob j where j.id in :ids order by j.nextRunAt, j.id")
+	List<AiJob> findAllForProcessingByIdIn(@Param("ids") Collection<UUID> ids);
+
+	@Query("select j from AiJob j where j.id = :id")
+	Optional<AiJob> findForProcessingById(@Param("id") UUID id);
+
+}

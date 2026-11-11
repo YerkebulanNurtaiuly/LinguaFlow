@@ -221,7 +221,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AI-03 — Prompt templates library** (M) — _deps: AI-02_
   Versioned templates in `resources/prompts/` for: vocabulary enrichment (single + batch), grammar explanation, exercise generation (per type), answer evaluation, mistake explanation. Variables: target/explanation language, CEFR, known vocabulary, focus topics.
 
-- [ ] **AI-04 — Async processing & job queue** (M) — _deps: AI-03_
+- [x] **AI-04 — Async processing & job queue** (M) — _deps: AI-03_
   `@Async` executor or DB-backed job table (`ai_jobs`) with status, retries with exponential backoff, and dead-letter state. Batch vocabulary into chunks (e.g. 20 words per call).
   _Done when:_ bulk add of 100 words completes without blocking the request and survives a restart.
 

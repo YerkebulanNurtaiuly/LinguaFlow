@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
@@ -18,12 +20,12 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties("linguaflow")
-public record LinguaFlowProperties(@Valid @NotNull Security security, Ai ai, Cors cors,
+public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai ai, Cors cors,
 		@Valid RateLimit rateLimit, App app, Mail mail) {
 
 	public LinguaFlowProperties {
 		if (ai == null) {
-			ai = new Ai(null, null, null, null, null);
+			ai = new Ai(null, null, null, null, null, null);
 		}
 		if (app == null) {
 			app = new App(null);
@@ -129,9 +131,10 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, Ai ai, Cor
 	 * effort, max-tokens and timeout, each optional
 	 * @param baseUrl the API endpoint; always set explicitly, so an {@code ANTHROPIC_BASE_URL}
 	 * in the environment can't redirect calls
+	 * @param jobs the background job queue (AI-04)
 	 */
 	public record Ai(String apiKey, Provider provider, String model, Map<String, UseCase> useCases,
-			String baseUrl) {
+			String baseUrl, @Valid Jobs jobs) {
 
 		public static final String DEFAULT_MODEL = "claude-opus-5-5";
 
@@ -147,12 +150,43 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, Ai ai, Cor
 		public record UseCase(String model, String effort, Integer maxTokens, Duration timeout) {
 		}
 
+		/**
+		 * The DB-backed AI job queue (AI-04). Null fields keep the defaults.
+		 * @param enabled whether this instance runs a worker (off in the test profile, where
+		 * tests drive it)
+		 * @param pollInterval how often the worker looks for due jobs
+		 * @param concurrency how many jobs run at once on this instance
+		 * @param batchSize how many items one job handles, e.g. words per enrichment call
+		 * @param maxAttempts how many tries a job gets before it is dead-lettered
+		 * @param backoffBase the wait before the first retry; it doubles per attempt
+		 * @param backoffMax the longest wait between retries
+		 * @param staleAfter a job RUNNING this long belongs to a crashed worker and is
+		 * queued again
+		 */
+		public record Jobs(Boolean enabled, Duration pollInterval, @Min(1) @Max(64) Integer concurrency,
+				@Min(1) @Max(200) Integer batchSize, @Min(1) @Max(20) Integer maxAttempts, Duration backoffBase,
+				Duration backoffMax, Duration staleAfter) {
+
+			public Jobs {
+				enabled = (enabled == null) ? Boolean.TRUE : enabled;
+				pollInterval = (pollInterval == null) ? Duration.ofSeconds(2) : pollInterval;
+				concurrency = (concurrency == null) ? 4 : concurrency;
+				batchSize = (batchSize == null) ? 20 : batchSize;
+				maxAttempts = (maxAttempts == null) ? 3 : maxAttempts;
+				backoffBase = (backoffBase == null) ? Duration.ofSeconds(30) : backoffBase;
+				backoffMax = (backoffMax == null) ? Duration.ofHours(1) : backoffMax;
+				staleAfter = (staleAfter == null) ? Duration.ofMinutes(10) : staleAfter;
+			}
+
+		}
+
 		public Ai {
 			apiKey = (apiKey == null) ? "" : apiKey.strip();
 			provider = (provider == null) ? Provider.AUTO : provider;
 			model = (model == null || model.isBlank()) ? DEFAULT_MODEL : model.strip();
 			useCases = (useCases == null) ? Map.of() : Map.copyOf(useCases);
 			baseUrl = (baseUrl == null || baseUrl.isBlank()) ? DEFAULT_BASE_URL : baseUrl.strip();
+			jobs = (jobs == null) ? new Jobs(null, null, null, null, null, null, null, null) : jobs;
 			if (provider == Provider.ANTHROPIC && apiKey.isEmpty()) {
 				throw new IllegalArgumentException(
 						"linguaflow.ai.provider is anthropic but no API key is set (env AI_API_KEY)");
@@ -172,7 +206,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, Ai ai, Cor
 		@Override
 		public String toString() {
 			return "Ai[apiKey=" + (hasApiKey() ? "***" : "") + ", provider=" + provider + ", model=" + model
-					+ ", useCases=" + useCases + ", baseUrl=" + baseUrl + "]";
+					+ ", useCases=" + useCases + ", baseUrl=" + baseUrl + ", jobs=" + jobs + "]";
 		}
 
 	}

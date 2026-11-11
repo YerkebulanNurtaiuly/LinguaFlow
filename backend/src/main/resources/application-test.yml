@@ -8,6 +8,9 @@ linguaflow:
     # Tests never call a real provider, even when AI_API_KEY is set in the environment
     provider: fake
     api-key: ""
+    # No background worker: AI job tests drive AiJobWorker.runOnce() themselves
+    jobs:
+      enabled: false
   # Auth tests log in many times in a row; RateLimitTests switch it back on
   rate-limit:
     enabled: false
