@@ -5,6 +5,8 @@ linguaflow:
     jwt:
       secret: test-only-jwt-secret-not-used-outside-tests-0123456789
   ai:
+    # Tests never call a real provider, even when AI_API_KEY is set in the environment
+    provider: fake
     api-key: ""
   # Auth tests log in many times in a row; RateLimitTests switch it back on
   rate-limit:

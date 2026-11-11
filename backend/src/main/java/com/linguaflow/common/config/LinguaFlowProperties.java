@@ -2,6 +2,7 @@ package com.linguaflow.common.config;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
@@ -17,10 +18,13 @@ import org.springframework.validation.annotation.Validated;
  */
 @Validated
 @ConfigurationProperties("linguaflow")
-public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @NotNull Ai ai, Cors cors,
+public record LinguaFlowProperties(@Valid @NotNull Security security, Ai ai, Cors cors,
 		@Valid RateLimit rateLimit, App app, Mail mail) {
 
 	public LinguaFlowProperties {
+		if (ai == null) {
+			ai = new Ai(null, null, null, null, null);
+		}
 		if (app == null) {
 			app = new App(null);
 		}
@@ -114,11 +118,61 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid @No
 
 	}
 
-	/** {@code apiKey} may be blank: the app then uses the fake LLM client. */
-	public record Ai(String apiKey) {
+	/**
+	 * The LLM provider (AI-01).
+	 * @param apiKey Anthropic API key (env {@code AI_API_KEY}); a secret, never logged
+	 * @param provider {@code auto} (the default) uses Anthropic when a key is set and the
+	 * fake client otherwise; {@code fake} always uses the fake; {@code anthropic} requires a
+	 * key and fails at startup without one
+	 * @param model the model for every use case without its own
+	 * @param useCases per use case (keys like {@code vocabulary-enrichment}): model,
+	 * effort, max-tokens and timeout, each optional
+	 * @param baseUrl the API endpoint; always set explicitly, so an {@code ANTHROPIC_BASE_URL}
+	 * in the environment can't redirect calls
+	 */
+	public record Ai(String apiKey, Provider provider, String model, Map<String, UseCase> useCases,
+			String baseUrl) {
+
+		public static final String DEFAULT_MODEL = "claude-opus-5-5";
+
+		public static final String DEFAULT_BASE_URL = "https://api.anthropic.com";
+
+		public enum Provider {
+
+			AUTO, FAKE, ANTHROPIC
+
+		}
+
+		/** Overrides for one use case; null fields keep the built-in default. */
+		public record UseCase(String model, String effort, Integer maxTokens, Duration timeout) {
+		}
+
+		public Ai {
+			apiKey = (apiKey == null) ? "" : apiKey.strip();
+			provider = (provider == null) ? Provider.AUTO : provider;
+			model = (model == null || model.isBlank()) ? DEFAULT_MODEL : model.strip();
+			useCases = (useCases == null) ? Map.of() : Map.copyOf(useCases);
+			baseUrl = (baseUrl == null || baseUrl.isBlank()) ? DEFAULT_BASE_URL : baseUrl.strip();
+			if (provider == Provider.ANTHROPIC && apiKey.isEmpty()) {
+				throw new IllegalArgumentException(
+						"linguaflow.ai.provider is anthropic but no API key is set (env AI_API_KEY)");
+			}
+		}
 
 		public boolean hasApiKey() {
-			return apiKey != null && !apiKey.isBlank();
+			return !apiKey.isEmpty();
+		}
+
+		/** Whether calls go to Anthropic rather than the fake client. */
+		public boolean usesAnthropic() {
+			return provider == Provider.ANTHROPIC || (provider == Provider.AUTO && hasApiKey());
+		}
+
+		/** Keeps the key out of logs and error messages. */
+		@Override
+		public String toString() {
+			return "Ai[apiKey=" + (hasApiKey() ? "***" : "") + ", provider=" + provider + ", model=" + model
+					+ ", useCases=" + useCases + ", baseUrl=" + baseUrl + "]";
 		}
 
 	}

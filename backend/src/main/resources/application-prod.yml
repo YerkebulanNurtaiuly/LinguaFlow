@@ -19,3 +19,6 @@ linguaflow:
   # No SMTP mailer yet: emails are suppressed (never logged with their secret links)
   mail:
     mode: disabled
+  # Production needs the real AI client: startup fails without AI_API_KEY (AI-01)
+  ai:
+    provider: ${AI_PROVIDER:anthropic}
