@@ -26,7 +26,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 
 	public LinguaFlowProperties {
 		if (ai == null) {
-			ai = new Ai(null, null, null, null, null, null, null, null, null);
+			ai = new Ai(null, null, null, null, null, null, null, null, null, null);
 		}
 		if (app == null) {
 			app = new App(null);
@@ -137,10 +137,11 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 	 * @param circuitBreaker when to stop calling a failing provider for a while (AI-05)
 	 * @param pricing USD per million tokens by model ID, for cost estimates; added to and
 	 * overriding the built-in prices (AI-05)
+	 * @param cache the AI result cache shared between users (AI-06)
 	 */
 	public record Ai(String apiKey, Provider provider, String model, Map<String, UseCase> useCases,
 			String baseUrl, @Valid Jobs jobs, @Valid Quota quota, @Valid Breaker circuitBreaker,
-			Map<String, @Valid Price> pricing) {
+			Map<String, @Valid Price> pricing, @Valid Cache cache) {
 
 		public static final String DEFAULT_MODEL = "claude-opus-5-5";
 
@@ -223,6 +224,22 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 
 		}
 
+		/**
+		 * The AI result cache shared between users (AI-06). It may only hold language data.
+		 * @param enabled whether results are read from and written to the cache
+		 * @param ttl how long an entry is used; older ones are generated again
+		 * @param maxPayloadBytes larger results aren't cached
+		 */
+		public record Cache(Boolean enabled, Duration ttl, @Min(1) Integer maxPayloadBytes) {
+
+			public Cache {
+				enabled = (enabled == null) ? Boolean.TRUE : enabled;
+				ttl = (ttl == null) ? Duration.ofDays(180) : ttl;
+				maxPayloadBytes = (maxPayloadBytes == null) ? 64 * 1024 : maxPayloadBytes;
+			}
+
+		}
+
 		/** USD per million tokens of each kind, as on the provider's pricing page. */
 		public record Price(@NotNull BigDecimal input, @NotNull BigDecimal cacheWrite, @NotNull BigDecimal cacheRead,
 				@NotNull BigDecimal output) {
@@ -238,6 +255,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 			quota = (quota == null) ? new Quota(null, null, null) : quota;
 			circuitBreaker = (circuitBreaker == null) ? new Breaker(null, null, null, null) : circuitBreaker;
 			pricing = (pricing == null) ? Map.of() : Map.copyOf(pricing);
+			cache = (cache == null) ? new Cache(null, null, null) : cache;
 			if (provider == Provider.ANTHROPIC && apiKey.isEmpty()) {
 				throw new IllegalArgumentException(
 						"linguaflow.ai.provider is anthropic but no API key is set (env AI_API_KEY)");
@@ -258,7 +276,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		public String toString() {
 			return "Ai[apiKey=" + (hasApiKey() ? "***" : "") + ", provider=" + provider + ", model=" + model
 					+ ", useCases=" + useCases + ", baseUrl=" + baseUrl + ", jobs=" + jobs + ", quota=" + quota + ", circuitBreaker=" + circuitBreaker
-					+ ", pricing=" + pricing + "]";
+					+ ", pricing=" + pricing + ", cache=" + cache + "]";
 		}
 
 	}

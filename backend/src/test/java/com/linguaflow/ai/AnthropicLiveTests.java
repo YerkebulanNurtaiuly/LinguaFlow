@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.linguaflow.ai.LlmOptions.Effort;
+import com.linguaflow.ai.cache.AiCache;
 import com.linguaflow.ai.prompt.PromptLibrary;
 import com.linguaflow.ai.prompt.PromptTemplate;
 import com.linguaflow.ai.prompt.PromptVar;
@@ -92,7 +93,7 @@ class AnthropicLiveTests {
 			.baseUrl(LinguaFlowProperties.Ai.DEFAULT_BASE_URL)
 			.maxRetries(1)
 			.build(), Clock.systemUTC())) {
-			StructuredLlm llm = new StructuredLlm(TestGateways.unlimited(client), settings,
+			StructuredLlm llm = new StructuredLlm(TestGateways.unlimited(client), mock(AiCache.class), settings,
 					Validation.buildDefaultValidatorFactory().getValidator());
 			StructuredResponse<Enrichment> response = llm.complete(AiCaller.system(), AiUseCase.VOCABULARY_ENRICHMENT,
 					new LlmPrompt("You describe German nouns for English-speaking learners. Give one example.",
@@ -129,7 +130,7 @@ class AnthropicLiveTests {
 			.baseUrl(LinguaFlowProperties.Ai.DEFAULT_BASE_URL)
 			.maxRetries(1)
 			.build(), Clock.systemUTC())) {
-			StructuredLlm llm = new StructuredLlm(TestGateways.unlimited(client), settings,
+			StructuredLlm llm = new StructuredLlm(TestGateways.unlimited(client), mock(AiCache.class), settings,
 					Validation.buildDefaultValidatorFactory().getValidator());
 
 			StructuredResponse<Enrichment> word = llm.complete(AiCaller.system(),

@@ -18,7 +18,7 @@ class AiPricingTests {
 	private static AiPricing pricing(Map<String, Price> overrides) {
 		LinguaFlowProperties properties = mock(LinguaFlowProperties.class);
 		when(properties.ai())
-			.thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, null, null, null, overrides));
+			.thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, null, null, null, overrides, null));
 		return new AiPricing(properties);
 	}
 

@@ -120,7 +120,7 @@ class AiJobWorkerTests {
 
 	private static LinguaFlowProperties properties(Jobs settings) {
 		LinguaFlowProperties properties = mock(LinguaFlowProperties.class);
-		when(properties.ai()).thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, settings, null, null, null));
+		when(properties.ai()).thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, settings, null, null, null, null));
 		return properties;
 	}
 

@@ -41,7 +41,7 @@ class AiGatewayTests {
 	private static LinguaFlowProperties properties(Duration openFor) {
 		LinguaFlowProperties properties = mock(LinguaFlowProperties.class);
 		when(properties.ai()).thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, null, null,
-				new LinguaFlowProperties.Ai.Breaker(50, 4, 4, openFor), null));
+				new LinguaFlowProperties.Ai.Breaker(50, 4, 4, openFor), null, null));
 		return properties;
 	}
 

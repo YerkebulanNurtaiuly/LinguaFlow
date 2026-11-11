@@ -7,9 +7,12 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import com.linguaflow.ai.cache.AiCache;
+import com.linguaflow.ai.cache.AiCacheKey;
 import com.linguaflow.ai.prompt.RenderedPrompt;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -62,14 +65,17 @@ public class StructuredLlm {
 
 	private final AiGateway gateway;
 
+	private final AiCache cache;
+
 	private final AiSettings settings;
 
 	private final Validator validator;
 
 	private final Map<Class<?>, Map<String, Object>> schemas = new ConcurrentHashMap<>();
 
-	public StructuredLlm(AiGateway gateway, AiSettings settings, Validator validator) {
+	public StructuredLlm(AiGateway gateway, AiCache cache, AiSettings settings, Validator validator) {
 		this.gateway = gateway;
+		this.cache = cache;
 		this.settings = settings;
 		this.validator = validator;
 	}
@@ -85,6 +91,36 @@ public class StructuredLlm {
 	public <T> StructuredResponse<T> complete(AiCaller caller, RenderedPrompt prompt, Class<T> type,
 			OutputCheck<? super T> check) {
 		return complete(caller, prompt.useCase(), prompt.versionTag(), prompt.prompt(), type, check);
+	}
+
+	/**
+	 * Like {@link #complete(AiCaller, RenderedPrompt, Class, OutputCheck)}, but shares the
+	 * result between users through the {@link AiCache} (AI-06). A hit makes no call: it
+	 * doesn't count against the quota and has no {@code calls}
+	 * ({@link StructuredResponse#cached()}). It must still pass every check, so a rule
+	 * tightened since it was cached sends it back to the model. A fresh valid answer is
+	 * stored for the next caller.
+	 * @param key language data only: never the user or their own text
+	 */
+	public <T> StructuredResponse<T> completeCached(AiCaller caller, RenderedPrompt prompt, AiCacheKey key,
+			Class<T> type, OutputCheck<? super T> check) {
+		if (key.useCase() != prompt.useCase()) {
+			throw new IllegalArgumentException(
+					"Cache key for " + key.useCase() + " used with a " + prompt.useCase() + " prompt");
+		}
+		Optional<T> hit = cache.get(key, type);
+		if (hit.isPresent()) {
+			OutputProblems problems = new OutputProblems();
+			checkValue(hit.get(), check, problems);
+			if (problems.isEmpty()) {
+				return new StructuredResponse<>(hit.get(), List.of());
+			}
+			log.info("Cached AI {} answer no longer passes its checks ({}); asking again", key.useCase().configKey(),
+					String.join("; ", problems.list()));
+		}
+		StructuredResponse<T> fresh = complete(caller, prompt, type, check);
+		cache.put(key, fresh.value());
+		return fresh;
 	}
 
 	/** A hand-built prompt; logged with the prompt version {@code custom}. */
@@ -106,13 +142,7 @@ public class StructuredLlm {
 			OutputProblems found = new OutputProblems();
 			T value = parse(response.text(), type, found);
 			if (value != null) {
-				requirePresent(value, "", found);
-				if (found.isEmpty()) {
-					validate(value, found);
-				}
-				if (found.isEmpty()) {
-					check.check(value, found);
-				}
+				checkValue(value, check, found);
 				if (found.isEmpty()) {
 					return new StructuredResponse<>(value, calls);
 				}
@@ -224,6 +254,17 @@ public class StructuredLlm {
 			else {
 				requirePresent(field, where, problems);
 			}
+		}
+	}
+
+	/** Every check after parsing: required fields, Bean Validation, then the domain check. */
+	private <T> void checkValue(T value, OutputCheck<? super T> check, OutputProblems problems) {
+		requirePresent(value, "", problems);
+		if (problems.isEmpty()) {
+			validate(value, problems);
+		}
+		if (problems.isEmpty()) {
+			check.check(value, problems);
 		}
 	}
 

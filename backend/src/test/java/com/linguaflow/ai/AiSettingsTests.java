@@ -106,7 +106,7 @@ class AiSettingsTests {
 
 	@Test
 	void neverPrintsTheApiKey() {
-		Ai ai = new Ai("sk-ant-secret", null, null, Map.of(), null, null, null, null, null);
+		Ai ai = new Ai("sk-ant-secret", null, null, Map.of(), null, null, null, null, null, null);
 		assertThat(ai.toString()).doesNotContain("sk-ant-secret").contains("apiKey=***");
 		assertThat(ai.usesAnthropic()).isTrue();
 	}

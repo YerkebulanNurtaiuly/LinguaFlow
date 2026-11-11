@@ -12,6 +12,7 @@ import java.util.Deque;
 import java.util.List;
 
 import com.linguaflow.ai.LlmOptions.Effort;
+import com.linguaflow.ai.cache.AiCache;
 import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.constraints.NotBlank;
@@ -71,7 +72,7 @@ class StructuredLlmTests {
 	void setUp() {
 		AiSettings settings = mock(AiSettings.class);
 		when(settings.options(any())).thenReturn(OPTIONS);
-		llm = new StructuredLlm(TestGateways.unlimited(fake), settings,
+		llm = new StructuredLlm(TestGateways.unlimited(fake), mock(AiCache.class), settings,
 				Validation.buildDefaultValidatorFactory().getValidator());
 		fake.respondTo(AiUseCase.VOCABULARY_ENRICHMENT, prompt -> answers.isEmpty() ? VALID : answers.poll());
 	}

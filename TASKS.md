@@ -228,7 +228,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AI-05 — Resilience, limits, and cost tracking** (M) — _deps: AI-04_
   Resilience4j circuit breaker + timeouts; per-user daily AI quota; log every call in `ai_requests` (use-case, tokens, latency, cost estimate, success). Admin endpoint for usage summary.
 
-- [ ] **AI-06 — Caching** (S) — _deps: AI-04_
+- [x] **AI-06 — Caching** (S) — _deps: AI-04_
   Cache enrichment results by `(language, normalized_lemma, part_of_speech)` across users to cut cost.
 
 - [ ] **AI-07 — Prompt safety** (S) — _deps: AI-03_
