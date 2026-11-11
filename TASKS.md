@@ -255,7 +255,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Implement SM-2 (or FSRS) as a pure, deterministic service: inputs = current state + grade (`AGAIN`, `HARD`, `GOOD`, `EASY`), outputs = new interval, ease, due date, lapses. Respect user timezone for "today".
   _Done when:_ thoroughly unit-tested with table-driven cases.
 
-- [ ] **SRS-02 — Review queue API** (M) — _deps: SRS-01, USR-03_
+- [x] **SRS-02 — Review queue API** (M) — _deps: SRS-01, USR-03_
   `GET /api/reviews/due?limit=` returns due cards + new cards respecting daily limits; ordering: overdue first, then weak, then new. `POST /api/reviews` records a grade, updates `srs_state`, writes `flashcard_reviews`.
   _Done when:_ review submission is idempotent per (card, review token).
 

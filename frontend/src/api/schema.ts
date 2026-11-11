@@ -479,6 +479,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/reviews": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grade a card
+         * @description Reschedules the card and records the review. Resending the same reviewToken for the same card changes nothing and returns the stored review with replayed: true.
+         */
+        post: operations["submit"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/reviews/due": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Cards to review now
+         * @description The active language's cards due now and new cards within today's limit: overdue first, then the rest due today (the weakest first), then new cards. Suspended cards, directions you don't review and words without a translation are left out.
+         */
+        get: operations["due"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/study-sessions": {
         parameters: {
             query?: never;
@@ -1336,6 +1376,24 @@ export interface components {
             sentence?: string;
             translation?: string;
         };
+        FlashcardReview: {
+            /** Format: int32 */
+            durationMs?: number;
+            easeAfter?: number;
+            easeBefore?: number;
+            /** Format: uuid */
+            flashcardId?: string;
+            /** @enum {string} */
+            grade?: "AGAIN" | "HARD" | "GOOD" | "EASY";
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            intervalAfter?: number;
+            /** Format: int32 */
+            intervalBefore?: number;
+            /** Format: date-time */
+            reviewedAt?: string;
+        };
         /** @description Spaced-repetition state */
         FlashcardSrs: {
             /**
@@ -1601,6 +1659,84 @@ export interface components {
             /** @description Token from the reset link */
             token: string;
         };
+        /** @description The card's next state if given this grade now */
+        ReviewGradePreview: {
+            /**
+             * Format: date-time
+             * @description When it would come back
+             */
+            dueAt?: string;
+            /**
+             * Format: int32
+             * @description Days; 0 while in a learning step
+             */
+            intervalDays?: number;
+            /** @enum {string} */
+            state?: "NEW" | "LEARNING" | "REVIEW" | "RELEARNING";
+        };
+        ReviewGradePreviews: {
+            again?: components["schemas"]["ReviewGradePreview"];
+            easy?: components["schemas"]["ReviewGradePreview"];
+            good?: components["schemas"]["ReviewGradePreview"];
+            hard?: components["schemas"]["ReviewGradePreview"];
+        };
+        ReviewQueue: {
+            /** @description Cards to review now, in order */
+            cards?: components["schemas"]["ReviewQueueItem"][];
+            /**
+             * Format: int32
+             * @description Your daily review goal
+             */
+            dailyReviewGoal?: number;
+            /**
+             * Format: int64
+             * @description Every card due now, also beyond the limit
+             */
+            dueCount?: number;
+            /**
+             * Format: int32
+             * @description Your daily limit of new cards
+             */
+            newCardsPerDay?: number;
+            /**
+             * Format: int64
+             * @description New cards seen for the first time today
+             */
+            newCardsToday?: number;
+            /**
+             * Format: int64
+             * @description New cards still available today, within your daily limit
+             */
+            newCount?: number;
+            /**
+             * Format: date-time
+             * @description When a card in a learning step comes due later today; null if none
+             */
+            nextLearningDueAt?: string;
+            /**
+             * Format: int64
+             * @description Reviews recorded today
+             */
+            reviewedToday?: number;
+            /**
+             * Format: date
+             * @description Your today, in your time zone
+             * @example 2026-11-11
+             */
+            today?: string;
+        };
+        ReviewQueueItem: {
+            card?: components["schemas"]["Flashcard"];
+            /** @description Where each grade would send the card */
+            previews?: components["schemas"]["ReviewGradePreviews"];
+        };
+        ReviewResult: {
+            /** @description The card after the review */
+            card?: components["schemas"]["Flashcard"];
+            /** @description True when this review token was already recorded; nothing changed */
+            replayed?: boolean;
+            review?: components["schemas"]["FlashcardReview"];
+        };
         SettingsUpdate: {
             /** @description Flashcard directions to review; at least one */
             cardDirections?: ("TARGET_TO_NATIVE" | "NATIVE_TO_TARGET")[];
@@ -1677,6 +1813,22 @@ export interface components {
             sessions?: components["schemas"]["StudySession"][];
             /** Format: int64 */
             vocabularyCount?: number;
+        };
+        SubmitReviewRequest: {
+            /**
+             * Format: int32
+             * @description How long the answer took, in milliseconds
+             */
+            durationMs?: number;
+            /** Format: uuid */
+            flashcardId: string;
+            /** @enum {string} */
+            grade: "AGAIN" | "HARD" | "GOOD" | "EASY";
+            /**
+             * Format: uuid
+             * @description Made by the client for each answer; resending it changes nothing
+             */
+            reviewToken: string;
         };
         TagNameRequest: {
             /**
@@ -3847,6 +3999,155 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LanguageResponse"][];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    submit: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitReviewRequest"];
+            };
+        };
+        responses: {
+            /** @description Already recorded with this token */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResult"];
+                };
+            };
+            /** @description Recorded */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewResult"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    due: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description At most this many cards, 1–200 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The review queue */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewQueue"];
                 };
             };
             /** @description Invalid request */

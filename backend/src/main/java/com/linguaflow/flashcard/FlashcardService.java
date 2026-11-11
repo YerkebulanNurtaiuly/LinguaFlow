@@ -88,7 +88,8 @@ public class FlashcardService {
 		return views(userId, List.of(cards.saveAndFlush(card))).getFirst();
 	}
 
-	private List<CardView> views(UUID userId, List<Flashcard> page) {
+	/** The cards as the API shows them, in the given order. */
+	List<CardView> views(UUID userId, List<Flashcard> page) {
 		if (page.isEmpty()) {
 			return List.of();
 		}

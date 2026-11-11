@@ -108,3 +108,11 @@ export type AiJobProgress = Schemas['AiJobProgress']
 export type Flashcard = Schemas['Flashcard']
 export type FlashcardContent = Schemas['FlashcardContent']
 export type FlashcardSrs = Schemas['FlashcardSrs']
+
+// Reviews (SRS-02)
+export type ReviewQueue = Schemas['ReviewQueue']
+export type ReviewQueueItem = Schemas['ReviewQueueItem']
+export type ReviewGradePreview = Schemas['ReviewGradePreview']
+export type SubmitReviewRequest = Schemas['SubmitReviewRequest']
+export type ReviewResult = Schemas['ReviewResult']
+export type FlashcardReview = Schemas['FlashcardReview']
