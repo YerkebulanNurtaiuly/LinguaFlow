@@ -218,7 +218,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AI-02 — Structured output & validation** (M) — _deps: AI-01_
   Request JSON output matching a schema; parse into Java records; validate (Bean Validation + domain checks such as article ∈ {der, die, das}); retry once with error feedback on invalid output.
 
-- [ ] **AI-03 — Prompt templates library** (M) — _deps: AI-02_
+- [x] **AI-03 — Prompt templates library** (M) — _deps: AI-02_
   Versioned templates in `resources/prompts/` for: vocabulary enrichment (single + batch), grammar explanation, exercise generation (per type), answer evaluation, mistake explanation. Variables: target/explanation language, CEFR, known vocabulary, focus topics.
 
 - [ ] **AI-04 — Async processing & job queue** (M) — _deps: AI-03_

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import com.linguaflow.ai.prompt.RenderedPrompt;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.jspecify.annotations.Nullable;
@@ -71,6 +72,11 @@ public class StructuredLlm {
 
 	public <T> StructuredResponse<T> complete(AiUseCase useCase, LlmPrompt prompt, Class<T> type) {
 		return complete(useCase, prompt, type, OutputCheck.none());
+	}
+
+	/** A prompt from the {@link com.linguaflow.ai.prompt.PromptLibrary} (AI-03), with its use case. */
+	public <T> StructuredResponse<T> complete(RenderedPrompt prompt, Class<T> type, OutputCheck<? super T> check) {
+		return complete(prompt.useCase(), prompt.prompt(), type, check);
 	}
 
 	/**

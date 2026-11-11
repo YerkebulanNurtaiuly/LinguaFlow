@@ -1,0 +1,13 @@
+# Hashes of released prompt versions; see PromptVersionTests. Never change a line, add one.
+answer-evaluation/v1 e86ad41316f068a6adc9fb0d
+exercise-error-correction/v1 395880d5a1581bda4c60dd46
+exercise-fill-blank/v1 c763d4c26abe530714d25f05
+exercise-multiple-choice/v1 e51974228f04c62e199c843b
+exercise-sentence-construction/v1 04938701d8bba31cd6638926
+exercise-transformation/v1 8f4e76bd43570289ef23987e
+exercise-translation/v1 f226fe1e0aa7e7346a4b2a57
+exercise-word-order/v1 d2888d8bb7701b7cf57b271f
+grammar-explanation/v1 cbec8459c031a577e501e126
+mistake-explanation/v1 d40009b5abfde08befb47c49
+vocabulary-enrichment-batch/v1 3d5b03492c512ebc072b98ba
+vocabulary-enrichment/v1 3a0f3b44a481ce626afa379d

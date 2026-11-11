@@ -12,7 +12,12 @@ import java.util.Map;
 
 import com.anthropic.client.okhttp.AnthropicOkHttpClient;
 import com.linguaflow.ai.LlmOptions.Effort;
+import com.linguaflow.ai.prompt.PromptLibrary;
+import com.linguaflow.ai.prompt.PromptTemplate;
+import com.linguaflow.ai.prompt.PromptVar;
+import com.linguaflow.ai.prompt.PromptVariables;
 import com.linguaflow.common.config.LinguaFlowProperties;
+import com.linguaflow.common.domain.ExerciseType;
 import jakarta.validation.Valid;
 import jakarta.validation.Validation;
 import jakarta.validation.constraints.NotBlank;
@@ -99,6 +104,65 @@ class AnthropicLiveTests {
 			assertThat(response.value().translation().toLowerCase()).contains("dog");
 			assertThat(response.value().gender()).isEqualTo(Gender.MASCULINE);
 			assertThat(response.value().examples()).isNotEmpty();
+		}
+	}
+
+	record ExerciseSet(@Size(min = 1) List<@Valid Exercise> exercises) {
+	}
+
+	record Exercise(@NotBlank String instruction, @NotBlank String content, @NotBlank String solution,
+			List<String> acceptedAnswers, @NotBlank String explanation) {
+	}
+
+	/** The library's real templates produce usable answers (AI-03). */
+	@Test
+	void rendersLibraryTemplatesThatTheModelFollows() {
+		String key = System.getenv("AI_API_KEY");
+		assertThat(key).as("AI_API_KEY in the environment").isNotBlank();
+		AiSettings settings = mock(AiSettings.class);
+		when(settings.options(any())).thenAnswer(call -> new LlmOptions(call.getArgument(0),
+				LinguaFlowProperties.Ai.DEFAULT_MODEL, Effort.LOW, 8_000, Duration.ofMinutes(2)));
+		PromptLibrary library = new PromptLibrary();
+
+		try (AnthropicLlmClient client = new AnthropicLlmClient(AnthropicOkHttpClient.builder()
+			.apiKey(key)
+			.baseUrl(LinguaFlowProperties.Ai.DEFAULT_BASE_URL)
+			.maxRetries(1)
+			.build(), Clock.systemUTC())) {
+			StructuredLlm llm = new StructuredLlm(client, settings,
+					Validation.buildDefaultValidatorFactory().getValidator());
+
+			StructuredResponse<Enrichment> word = llm.complete(
+					library.render(PromptTemplate.VOCABULARY_ENRICHMENT,
+							PromptVariables.forLanguages("de", "en")
+								.set(PromptVar.WORD, "Hund")
+								.set(PromptVar.CEFR_LEVEL, "A1")
+								.set(PromptVar.KNOWN_VOCABULARY, List.of("Park", "laufen"))),
+					Enrichment.class, OutputCheck.none());
+			System.out.printf("Live enrichment: %d attempt(s), %s%n", word.attempts(), word.value());
+			assertThat(word.value().translation().toLowerCase()).contains("dog");
+			assertThat(word.value().gender()).isEqualTo(Gender.MASCULINE);
+
+			StructuredResponse<ExerciseSet> exercises = llm.complete(
+					library.render(PromptTemplate.exercise(ExerciseType.FILL_BLANK),
+							PromptVariables.forLanguages("de", "en")
+								.set(PromptVar.COUNT, 3)
+								.set(PromptVar.CEFR_LEVEL, "A2")
+								.set(PromptVar.FOCUS_TOPICS, List.of("Dativ nach Präpositionen (mit, bei, von, zu)"))),
+					ExerciseSet.class, (set, problems) -> {
+						for (int i = 0; i < set.exercises().size(); i++) {
+							if (!set.exercises().get(i).content().contains("___")) {
+								problems.add("exercises[" + i + "].content", "must contain the gap ___");
+							}
+						}
+					});
+			exercises.value()
+				.exercises()
+				.forEach(exercise -> System.out.printf("Live exercise: %s | %s -> %s (%s) %s%n", exercise.instruction(),
+						exercise.content(), exercise.solution(), exercise.acceptedAnswers(), exercise.explanation()));
+			System.out.printf("Live exercises: %d attempt(s), %d input, %d output tokens%n", exercises.attempts(),
+					exercises.inputTokens(), exercises.outputTokens());
+			assertThat(exercises.value().exercises()).hasSize(3);
 		}
 	}
 
