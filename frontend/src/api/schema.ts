@@ -1135,6 +1135,8 @@ export interface components {
             text: string;
         };
         BulkVocabularyResult: {
+            /** @description AI jobs enriching the new words, in batches; follow them with GET /api/ai/jobs/progress */
+            aiJobIds?: string[];
             /** Format: int32 */
             createdCount?: number;
             /** Format: int32 */
@@ -1639,6 +1641,8 @@ export interface components {
             translation?: string;
         };
         VocabularyImportResult: {
+            /** @description AI jobs enriching the imported words, in batches */
+            aiJobIds?: string[];
             /** Format: int32 */
             createdCount?: number;
             /**

@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.linguaflow.common.persistence.OwnedRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -61,5 +62,20 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 			""")
 	List<ExistingLemma> findExistingLemmas(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("normalizedLemmas") Collection<String> normalizedLemmas);
+
+	/** Words for the AI enrichment worker (VOC-05); system-wide, the job knows the owner. */
+	@Query("select v from VocabularyItem v where v.id in :ids order by v.createdAt, v.id")
+	List<VocabularyItem> findAllForEnrichmentByIdIn(@Param("ids") Collection<UUID> ids);
+
+	@Query("select v from VocabularyItem v where v.id = :id")
+	Optional<VocabularyItem> findForEnrichmentById(@Param("id") UUID id);
+
+	/** Marks the words still waiting for AI as failed; returns how many. */
+	@Modifying
+	@Query("""
+			update VocabularyItem v set v.aiStatus = :failed, v.version = v.version + 1
+			where v.id in :ids and v.aiStatus = :pending""")
+	int markFailedForEnrichment(@Param("ids") Collection<UUID> ids, @Param("pending") AiStatus pending,
+			@Param("failed") AiStatus failed);
 
 }

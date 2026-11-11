@@ -1,4 +1,3 @@
-import { useQuery } from '@tanstack/react-query'
 import { z } from 'zod'
 import type {
   BulkVocabularyConfirmRequest,
@@ -8,7 +7,6 @@ import type {
 } from '@/api/types'
 import { CEFR_LEVELS } from '@/languages/languagesApi'
 import { api } from '@/lib/api'
-import { VOCABULARY_QUERY_KEY } from './queries'
 import { PARTS_OF_SPEECH } from './vocabularyApi'
 
 /** Most lines one preview or confirm may carry (the backend's limit). */
@@ -53,6 +51,8 @@ const resultSchema = z.object({
   createdCount: z.number(),
   duplicateCount: z.number(),
   invalidCount: z.number(),
+  // The AI jobs enriching the new words, one per batch (VOC-05)
+  aiJobIds: z.array(z.string()).default([]),
 }) satisfies z.ZodType<BulkVocabularyResult>
 
 export type BulkPreview = z.infer<typeof previewSchema>
@@ -78,25 +78,3 @@ export async function confirmBulk(
   const { data } = await api.post<unknown>('/vocabulary/bulk/confirm', request)
   return resultSchema.parse(data)
 }
-
-const countSchema = z.object({ totalElements: z.number() })
-
-/** How many of the learner's words AI hasn't processed yet. */
-export async function fetchPendingAiCount(): Promise<number> {
-  const params = new URLSearchParams({ aiStatus: 'PENDING_AI', size: '1' })
-  const { data } = await api.get<unknown>('/vocabulary', { params })
-  return countSchema.parse(data).totalElements
-}
-
-/** Polls the pending count while `enabled`, stopping once nothing is pending. */
-export function usePendingAiCount(enabled: boolean) {
-  return useQuery({
-    queryKey: [...VOCABULARY_QUERY_KEY, 'pending-ai'],
-    queryFn: fetchPendingAiCount,
-    enabled,
-    refetchInterval: (query) =>
-      query.state.data === 0 ? false : PENDING_POLL_MS,
-  })
-}
-
-export const PENDING_POLL_MS = 10_000

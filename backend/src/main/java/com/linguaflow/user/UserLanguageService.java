@@ -46,6 +46,14 @@ public class UserLanguageService {
 			.orElseThrow(UserLanguageService::notLearning);
 	}
 
+	/** The language explanations are written in for one of the user's learning languages (VOC-05). */
+	@Transactional(readOnly = true)
+	public String explanationLanguageFor(UUID userId, String languageCode) {
+		return userLanguages.findById(new UserLanguage.Key(userId, languageCode))
+			.map(UserLanguage::getExplanationLanguageCode)
+			.orElseThrow(UserLanguageService::notLearning);
+	}
+
 	@Transactional(noRollbackFor = ApiException.class)
 	public UserLanguage add(UUID userId, AddLanguageRequest request) {
 		Language target = languages.findById(request.languageCode())

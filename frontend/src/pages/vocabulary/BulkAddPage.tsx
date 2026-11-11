@@ -1,4 +1,4 @@
-import { ArrowLeft, CircleCheck, Sparkles } from 'lucide-react'
+import { ArrowLeft, CircleAlert, CircleCheck, Sparkles } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import type { BulkVocabularyFormat } from '@/api/types'
 import { describeError, getFieldErrors } from '@/api/errors'
@@ -26,12 +26,12 @@ import {
   confirmBulk,
   MAX_BULK_LINES,
   previewBulk,
-  usePendingAiCount,
   type BulkPreview,
   type BulkPreviewLine,
   type BulkResult,
 } from '@/vocabulary/bulkApi'
 import { useInvalidateVocabulary, useTags } from '@/vocabulary/queries'
+import { useAiJobProgress } from '@/ai/aiJobsApi'
 
 const FORMAT_OPTIONS = [
   {
@@ -411,8 +411,11 @@ function DoneStep({
   result: BulkResult
   onAddMore: () => void
 }) {
-  const pending = usePendingAiCount(result.createdCount > 0)
+  const progress = useAiJobProgress(result.aiJobIds)
   const skipped = result.results.filter((r) => r.status !== 'CREATED')
+  const jobs = progress.data
+  const done = jobs?.finished === true
+  const someFailed = done && jobs.failed + jobs.dead > 0
 
   return (
     <div className="space-y-5">
@@ -436,13 +439,18 @@ function DoneStep({
         </ul>
       )}
 
-      {result.createdCount > 0 && (
+      {result.aiJobIds.length > 0 && (
         <Card>
           <CardContent>
             <div role="status" className="flex items-start gap-3">
-              {pending.data === 0 ? (
+              {someFailed ? (
+                <CircleAlert
+                  className="mt-0.5 size-5 text-warning-soft-fg"
+                  aria-hidden="true"
+                />
+              ) : done ? (
                 <CircleCheck
-                  className="mt-0.5 size-5 text-success"
+                  className="mt-0.5 size-5 text-success-soft-fg"
                   aria-hidden="true"
                 />
               ) : (
@@ -453,19 +461,23 @@ function DoneStep({
               )}
               <div className="space-y-1">
                 <p className="font-medium">
-                  {pending.data === 0
-                    ? 'AI has filled in the details'
-                    : 'AI is filling in the details'}
+                  {someFailed
+                    ? "AI couldn't fill in every word"
+                    : done
+                      ? 'AI has filled in the details'
+                      : 'AI is filling in the details'}
                 </p>
                 <p className="text-sm text-fg-muted">
-                  {pending.data === undefined ? (
+                  {jobs === undefined ? (
                     <span className="inline-flex items-center gap-2">
                       <Spinner /> Checking…
                     </span>
-                  ) : pending.data === 0 ? (
+                  ) : someFailed ? (
+                    'Some words are still missing their details. You can fill them in yourself from your vocabulary.'
+                  ) : done ? (
                     'Translations, articles, plurals and examples are ready.'
                   ) : (
-                    `${plural(pending.data, 'word is', 'words are')} waiting for translations, articles, plurals and examples. You can keep learning meanwhile.`
+                    `Adding translations, articles, plurals and examples to ${plural(result.createdCount, 'word', 'words')}${jobs.total > 1 ? ` (${jobs.succeeded + jobs.failed + jobs.dead} of ${jobs.total} batches done)` : ''}. You can keep learning meanwhile.`
                   )}
                 </p>
               </div>

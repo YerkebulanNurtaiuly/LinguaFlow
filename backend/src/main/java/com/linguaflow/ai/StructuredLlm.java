@@ -134,6 +134,17 @@ public class StructuredLlm {
 		return fresh;
 	}
 
+	/**
+	 * The problems a value has against an answer record's rules: required fields, Bean
+	 * Validation and {@code check}. Empty when it's fine. For values from elsewhere, such as
+	 * the AI cache.
+	 */
+	public <T> List<String> problems(T value, OutputCheck<? super T> check) {
+		OutputProblems problems = new OutputProblems();
+		checkValue(value, check, problems);
+		return problems.list();
+	}
+
 	/** A hand-built prompt; logged with the prompt version {@code custom}. */
 	public <T> StructuredResponse<T> complete(AiCaller caller, AiUseCase useCase, LlmPrompt prompt, Class<T> type,
 			OutputCheck<? super T> check) {

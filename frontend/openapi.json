@@ -5762,6 +5762,14 @@
       "BulkVocabularyResult" : {
         "type" : "object",
         "properties" : {
+          "aiJobIds" : {
+            "type" : "array",
+            "description" : "AI jobs enriching the new words, in batches; follow them with GET /api/ai/jobs/progress",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
           "createdCount" : {
             "type" : "integer",
             "format" : "int32"
@@ -6892,6 +6900,14 @@
       "VocabularyImportResult" : {
         "type" : "object",
         "properties" : {
+          "aiJobIds" : {
+            "type" : "array",
+            "description" : "AI jobs enriching the imported words, in batches",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
           "createdCount" : {
             "type" : "integer",
             "format" : "int32"

@@ -158,7 +158,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `POST /api/vocabulary/bulk` accepts raw text (one word/phrase per line, optional `word - translation` format) or CSV. Returns a **preview** per line: parsed, duplicate, invalid. Second call confirms the selected items.
   _Done when:_ 100 lines are processed in one request with clear per-line results.
 
-- [ ] **VOC-05 — AI enrichment of vocabulary** (M) — _deps: VOC-04, AI-03_
+- [x] **VOC-05 — AI enrichment of vocabulary** (M) — _deps: VOC-04, AI-03_
   On create/bulk, enqueue AI processing: translation, part of speech, article/gender, plural, verb forms (Präteritum, Partizip II, auxiliary), CEFR estimate, 2–3 example sentences with translations. Item status `PENDING_AI → READY | AI_FAILED`. User edits always override AI values; flag `aiGenerated` per field.
   _Done when:_ adding "Hund" yields "der Hund, die Hunde, dog" with examples.
 

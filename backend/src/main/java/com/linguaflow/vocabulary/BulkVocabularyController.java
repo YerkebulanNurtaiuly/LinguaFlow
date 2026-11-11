@@ -122,12 +122,14 @@ class BulkVocabularyController {
 
 	@Schema(name = "BulkVocabularyResult")
 	record ConfirmResponse(List<ItemResultResponse> results, int createdCount, int duplicateCount,
-			int invalidCount) {
+			int invalidCount,
+			@Schema(description = "AI jobs enriching the new words, in batches; follow them with GET /api/ai/jobs/progress") List<UUID> aiJobIds) {
 
-		static ConfirmResponse from(List<ItemResult> results) {
+		static ConfirmResponse from(BulkVocabularyService.ConfirmResult confirmed) {
+			List<ItemResult> results = confirmed.results();
 			return new ConfirmResponse(results.stream().map(ItemResultResponse::from).toList(),
 					count(results, ItemStatus.CREATED), count(results, ItemStatus.DUPLICATE),
-					count(results, ItemStatus.INVALID));
+					count(results, ItemStatus.INVALID), confirmed.aiJobIds());
 		}
 
 		private static int count(List<ItemResult> results, ItemStatus status) {

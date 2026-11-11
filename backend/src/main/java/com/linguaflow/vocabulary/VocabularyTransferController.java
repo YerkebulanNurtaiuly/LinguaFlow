@@ -69,12 +69,13 @@ class VocabularyTransferController {
 
 	@Schema(name = "VocabularyImportResult")
 	record ImportResponse(List<RowResponse> rows, int createdCount, int duplicateCount, int invalidCount,
-			@Schema(description = "Tags the file named that you didn't have yet") int createdTagCount) {
+			@Schema(description = "Tags the file named that you didn't have yet") int createdTagCount,
+			@Schema(description = "AI jobs enriching the imported words, in batches") List<UUID> aiJobIds) {
 
 		static ImportResponse from(ImportResult result) {
 			return new ImportResponse(result.rows().stream().map(RowResponse::from).toList(),
 					count(result, RowStatus.CREATED), count(result, RowStatus.DUPLICATE),
-					count(result, RowStatus.INVALID), result.createdTagCount());
+					count(result, RowStatus.INVALID), result.createdTagCount(), result.aiJobIds());
 		}
 
 		private static int count(ImportResult result, RowStatus status) {

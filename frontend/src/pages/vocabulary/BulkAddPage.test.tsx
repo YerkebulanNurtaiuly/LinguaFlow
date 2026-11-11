@@ -41,21 +41,21 @@ const preview = {
   },
 }
 
-/** Answers the "words waiting for AI" poll with `count`. */
-function pendingAi(count: number) {
-  fakeApi.on('GET', '/vocabulary', (config) => {
-    const params = config.params as URLSearchParams
-    expect(params.get('aiStatus')).toBe('PENDING_AI')
-    return {
-      status: 200,
-      data: {
-        content: [],
-        page: 0,
-        size: 1,
-        totalElements: count,
-        totalPages: count,
-      },
-    }
+/** Answers the AI job progress poll for the bulk add's jobs. */
+function jobProgress(progress: Partial<Record<string, number | boolean>>) {
+  fakeApi.on('GET', '/ai/jobs/progress', {
+    status: 200,
+    data: {
+      total: 2,
+      queued: 0,
+      running: 0,
+      succeeded: 0,
+      failed: 0,
+      dead: 0,
+      finished: false,
+      notFound: [],
+      ...progress,
+    },
   })
 }
 
@@ -126,9 +126,10 @@ describe('adding many words', () => {
         createdCount: 1,
         duplicateCount: 0,
         invalidCount: 0,
+        aiJobIds: ['job-1', 'job-2'],
       },
     })
-    pendingAi(1)
+    jobProgress({ succeeded: 1, running: 1 })
     await previewList()
 
     await userEvent.click(
@@ -143,9 +144,13 @@ describe('adding many words', () => {
       tagIds: ['tag-1'],
     })
     expect(
-      await screen.findByText(/1 word is waiting for translations/),
+      await screen.findByText(/to 1 word \(1 of 2 batches done\)/),
     ).toBeInTheDocument()
     expect(screen.getByText('AI is filling in the details')).toBeInTheDocument()
+    // It follows exactly the jobs of this bulk add
+    expect(fakeApi.requests('/ai/jobs/progress')[0]?.query).toBe(
+      'id=job-1&id=job-2',
+    )
   })
 
   it('reports skipped words and when the AI is done', async () => {
@@ -165,9 +170,10 @@ describe('adding many words', () => {
         createdCount: 1,
         duplicateCount: 1,
         invalidCount: 0,
+        aiJobIds: ['job-1'],
       },
     })
-    pendingAi(0)
+    jobProgress({ total: 1, succeeded: 1, finished: true })
     await previewList()
     await userEvent.click(screen.getByRole('button', { name: 'Add 2 words' }))
 
@@ -181,6 +187,29 @@ describe('adding many words', () => {
       screen.getByRole('button', { name: 'Add more words' }),
     )
     expect(screen.getByLabelText('Your words')).toHaveValue('')
+  })
+
+  it('says when the AI could not fill in every word', async () => {
+    fakeApi.on('POST', '/vocabulary/bulk/confirm', {
+      status: 200,
+      data: {
+        results: [{ index: 0, lemma: 'der Hund', status: 'CREATED', id: 'w1' }],
+        createdCount: 1,
+        duplicateCount: 0,
+        invalidCount: 0,
+        aiJobIds: ['job-1', 'job-2'],
+      },
+    })
+    jobProgress({ succeeded: 1, dead: 1, finished: true })
+    await previewList()
+    await userEvent.click(screen.getByRole('button', { name: 'Add 2 words' }))
+
+    expect(
+      await screen.findByText("AI couldn't fill in every word"),
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(/You can fill them in yourself/),
+    ).toBeInTheDocument()
   })
 
   it('labels a line that repeats an earlier one', async () => {

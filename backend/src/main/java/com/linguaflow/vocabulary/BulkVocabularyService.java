@@ -62,6 +62,10 @@ public class BulkVocabularyService {
 	 * {@code existingId} (your word, or the one an earlier item just created), or INVALID
 	 * with the {@code field} and {@code message}.
 	 */
+	/** The outcome per item, and the AI jobs enriching the new words (VOC-05, AI-08). */
+	public record ConfirmResult(List<ItemResult> results, List<UUID> aiJobIds) {
+	}
+
 	public record ItemResult(int index, String lemma, ItemStatus status, UUID id, UUID existingId, String field,
 			String message) {
 	}
@@ -74,8 +78,11 @@ public class BulkVocabularyService {
 
 	private final ActiveLanguageService activeLanguages;
 
+	private final EnrichmentQueue enrichment;
+
 	BulkVocabularyService(VocabularyItemRepository items, VocabularyService vocabulary, TagService tags,
-			ActiveLanguageService activeLanguages) {
+			ActiveLanguageService activeLanguages, EnrichmentQueue enrichment) {
+		this.enrichment = enrichment;
 		this.items = items;
 		this.vocabulary = vocabulary;
 		this.tags = tags;
@@ -131,7 +138,7 @@ public class BulkVocabularyService {
 	 * Adds the items to the active language, optionally all with the same tags.
 	 * @throws InvalidFieldException on "tagIds" if a tag isn't usable; nothing is added then
 	 */
-	public List<ItemResult> confirm(UUID userId, List<BulkItem> bulkItems, List<UUID> tagIds) {
+	public ConfirmResult confirm(UUID userId, List<BulkItem> bulkItems, List<UUID> tagIds) {
 		String language = activeLanguages.requireActive(userId);
 		List<UUID> wantedTags = tagIds == null ? List.of() : List.copyOf(tagIds);
 		tags.checkUsable(userId, language, wantedTags);
@@ -159,7 +166,8 @@ public class BulkVocabularyService {
 			}
 			try {
 				VocabularyItem created = vocabulary.create(userId, new NewVocabularyItem(lemma, item.partOfSpeech(),
-						item.translation(), null, null, item.cefrLevel(), null, item.notes(), List.of(), wantedTags));
+						item.translation(), null, null, item.cefrLevel(), null, item.notes(), List.of(), wantedTags),
+						VocabularyService.DuplicateRule.SAME_WORD, false);
 				sameLemma.add(new ExistingLemma(created.getId(), created.getNormalizedLemma(),
 						created.getPartOfSpeech()));
 				results.add(new ItemResult(index, lemma, ItemStatus.CREATED, created.getId(), null, null, null));
@@ -172,7 +180,12 @@ public class BulkVocabularyService {
 				results.add(new ItemResult(index, lemma, ItemStatus.INVALID, null, null, ex.field(), ex.getMessage()));
 			}
 		}
-		return results;
+		List<UUID> created = results.stream()
+			.filter(result -> result.status() == ItemStatus.CREATED)
+			.map(ItemResult::id)
+			.toList();
+		// One AI job per batch of new words (VOC-05), rather than one per word
+		return new ConfirmResult(results, created.isEmpty() ? List.of() : enrichment.enqueue(userId, created));
 	}
 
 	/** Same word for bulk purposes: parts of speech match, or one side has none. */

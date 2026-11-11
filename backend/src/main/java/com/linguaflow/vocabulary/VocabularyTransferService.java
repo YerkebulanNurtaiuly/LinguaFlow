@@ -49,7 +49,7 @@ public class VocabularyTransferService {
 	public record RowResult(int line, String lemma, RowStatus status, UUID id, UUID existingId, String message) {
 	}
 
-	public record ImportResult(List<RowResult> rows, int createdTagCount) {
+	public record ImportResult(List<RowResult> rows, int createdTagCount, List<UUID> aiJobIds) {
 	}
 
 	public record Export(String languageCode, String csv, int count) {
@@ -63,8 +63,11 @@ public class VocabularyTransferService {
 
 	private final ActiveLanguageService activeLanguages;
 
+	private final EnrichmentQueue enrichment;
+
 	VocabularyTransferService(VocabularyService vocabulary, TagService tags, TagRepository tagRepository,
-			ActiveLanguageService activeLanguages) {
+			ActiveLanguageService activeLanguages, EnrichmentQueue enrichment) {
+		this.enrichment = enrichment;
 		this.vocabulary = vocabulary;
 		this.tags = tags;
 		this.tagRepository = tagRepository;
@@ -125,7 +128,7 @@ public class VocabularyTransferService {
 				VocabularyItem created = vocabulary.create(userId,
 						new NewVocabularyItem(row.lemma(), row.partOfSpeech(), row.translation(), row.gender(),
 								row.plural(), row.cefrLevel(), status, row.notes(), List.of(), rowTags),
-						VocabularyService.DuplicateRule.EXACT);
+						VocabularyService.DuplicateRule.EXACT, false);
 				results.add(new RowResult(row.line(), row.lemma(), RowStatus.CREATED, created.getId(), null, note));
 			}
 			catch (DuplicateVocabularyItemException ex) {
@@ -137,7 +140,12 @@ public class VocabularyTransferService {
 						ex.field() + " " + ex.getMessage()));
 			}
 		}
-		return new ImportResult(results, createdTags);
+		List<UUID> created = results.stream()
+			.filter(result -> result.status() == RowStatus.CREATED)
+			.map(RowResult::id)
+			.toList();
+		return new ImportResult(results, createdTags,
+				created.isEmpty() ? List.of() : enrichment.enqueue(userId, created));
 	}
 
 }

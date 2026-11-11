@@ -72,9 +72,13 @@ public class VocabularyService {
 
 	private final ApplicationEventPublisher events;
 
+	private final EnrichmentQueue enrichment;
+
 	VocabularyService(VocabularyItemRepository items, ActiveLanguageService activeLanguages, TagService tags,
-			PlatformTransactionManager transactionManager, ApplicationEventPublisher events) {
+			PlatformTransactionManager transactionManager, ApplicationEventPublisher events,
+			EnrichmentQueue enrichment) {
 		this.items = items;
+		this.enrichment = enrichment;
 		this.events = events;
 		this.tags = tags;
 		this.activeLanguages = activeLanguages;
@@ -93,6 +97,14 @@ public class VocabularyService {
 
 	/** Like {@link #create(UUID, NewVocabularyItem)}, with the given duplicate rule. */
 	public VocabularyItem create(UUID userId, NewVocabularyItem request, DuplicateRule rule) {
+		return create(userId, request, rule, true);
+	}
+
+	/**
+	 * @param enrichNow queue the word for AI enrichment (VOC-05) in the same transaction;
+	 * false when the caller adds many words and queues them in batches itself
+	 */
+	VocabularyItem create(UUID userId, NewVocabularyItem request, DuplicateRule rule, boolean enrichNow) {
 		String language = activeLanguages.requireActive(userId);
 		String lemma = cleanLemma(request.lemma());
 		String normalized = LemmaNormalizer.normalize(language, lemma);
@@ -117,7 +129,12 @@ public class VocabularyService {
 		}
 		VocabularyItem created = saveRejectingDuplicates(() -> transactions.execute(tx -> {
 			item.replaceTags(tags.resolveForWord(userId, language, request.tagIds()));
-			return items.saveAndFlush(item);
+			VocabularyItem saved = items.saveAndFlush(item);
+			if (enrichNow) {
+				// In the same transaction: no word without its job, no job without its word
+				enrichment.enqueue(userId, List.of(saved.getId()));
+			}
+			return saved;
 		}), () -> key, () -> lemma);
 		// After the commit, so listeners see the word (e.g. the active study session, SES-01)
 		events.publishEvent(new VocabularyItemCreated(userId, language, created.getId()));
@@ -183,6 +200,7 @@ public class VocabularyService {
 			}
 			if (changes.notes() != null) {
 				item.setNotes(blankToNull(changes.notes()));
+				item.markEditedByUser(AiFields.NOTES);
 			}
 			if (changes.tagIds() != null) {
 				item.replaceTags(tags.resolveForWord(userId, item.getLanguageCode(), changes.tagIds()));
@@ -211,6 +229,11 @@ public class VocabularyService {
 		public static final String PLURAL = "plural";
 
 		public static final String CEFR_LEVEL = "cefrLevel";
+
+		/** The principal parts of a verb, stored in {@code extra} (VOC-05). */
+		public static final String VERB_FORMS = "verbForms";
+
+		public static final String NOTES = "notes";
 
 		private AiFields() {
 		}
