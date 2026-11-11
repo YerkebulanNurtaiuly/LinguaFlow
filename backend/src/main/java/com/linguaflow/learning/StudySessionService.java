@@ -2,16 +2,20 @@ package com.linguaflow.learning;
 
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.ToLongFunction;
 import java.util.stream.Collectors;
 
 import com.linguaflow.common.error.InvalidFieldException;
@@ -49,6 +53,11 @@ public class StudySessionService {
 	/** Most words or topics attached in one request. */
 	public static final int MAX_ATTACH = 500;
 
+	/** Open ends of a timeline range; PostgreSQL dates span these comfortably. */
+	private static final LocalDate EARLIEST = LocalDate.of(1, 1, 1);
+
+	private static final LocalDate LATEST = LocalDate.of(9999, 12, 31);
+
 	public record NewSession(String title, LocalDate studiedOn, String notes, boolean active) {
 	}
 
@@ -58,6 +67,19 @@ public class StudySessionService {
 
 	/** A session with how much material it has. */
 	public record SessionSummary(StudySession session, long vocabularyCount, long grammarTopicCount) {
+	}
+
+	/** One month of the timeline (SES-02): its sessions, most recent first, and their totals. */
+	public record TimelineMonth(YearMonth month, List<SessionSummary> sessions, long vocabularyCount,
+			long grammarTopicCount) {
+	}
+
+	/**
+	 * The learning history (SES-02). Counts are attachments: a word studied in two lessons
+	 * counts in both.
+	 */
+	public record Timeline(List<TimelineMonth> months, int sessionCount, long vocabularyCount,
+			long grammarTopicCount) {
 	}
 
 	/** What a session covers, for "Current Lesson" practice (PRC-01). */
@@ -119,6 +141,38 @@ public class StudySessionService {
 			.filter(summary -> summary.session().getId().equals(session.getId()))
 			.findFirst()
 			.orElseThrow());
+	}
+
+	/**
+	 * The sessions of the active language studied between {@code from} and {@code to}
+	 * (inclusive; either may be null for no limit), grouped by month, most recent first.
+	 * @throws InvalidFieldException on "from" if it is after {@code to}
+	 */
+	@Transactional(readOnly = true)
+	public Timeline timeline(UUID userId, LocalDate from, LocalDate to) {
+		if (from != null && to != null && from.isAfter(to)) {
+			throw new InvalidFieldException("from", "must not be after to");
+		}
+		String language = activeLanguages.requireActive(userId);
+		List<SessionSummary> summaries = summarize(sessions.findStudiedBetween(userId, language,
+				from == null ? EARLIEST : from, to == null ? LATEST : to));
+
+		Map<YearMonth, List<SessionSummary>> byMonth = new LinkedHashMap<>();
+		summaries.forEach(summary -> byMonth
+			.computeIfAbsent(YearMonth.from(summary.session().getStudiedOn()), month -> new ArrayList<>())
+			.add(summary));
+		List<TimelineMonth> months = byMonth.entrySet()
+			.stream()
+			.map(entry -> new TimelineMonth(entry.getKey(), List.copyOf(entry.getValue()),
+					sum(entry.getValue(), SessionSummary::vocabularyCount),
+					sum(entry.getValue(), SessionSummary::grammarTopicCount)))
+			.toList();
+		return new Timeline(months, summaries.size(), sum(summaries, SessionSummary::vocabularyCount),
+				sum(summaries, SessionSummary::grammarTopicCount));
+	}
+
+	private static long sum(List<SessionSummary> summaries, ToLongFunction<SessionSummary> count) {
+		return summaries.stream().mapToLong(count).sum();
 	}
 
 	/** The active session of the active language, if any. */

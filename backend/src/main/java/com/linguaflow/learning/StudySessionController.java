@@ -16,7 +16,10 @@ import com.linguaflow.learning.StudySessionService.NewSession;
 import com.linguaflow.learning.StudySessionService.SessionChanges;
 import com.linguaflow.learning.StudySessionService.SessionMaterial;
 import com.linguaflow.learning.StudySessionService.SessionSummary;
+import com.linguaflow.learning.StudySessionService.Timeline;
+import com.linguaflow.learning.StudySessionService.TimelineMonth;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -33,6 +36,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.SortDefault;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,6 +45,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /** Study sessions: lessons with the words and grammar topics studied in them (SES-01). */
@@ -101,6 +106,31 @@ class StudySessionController {
 
 	}
 
+	@Schema(name = "StudySessionTimelineMonth")
+	record TimelineMonthResponse(@Schema(example = "2026-11", description = "Year and month, yyyy-MM") String month,
+			int sessionCount, long vocabularyCount, long grammarTopicCount,
+			@Schema(description = "Most recent lesson first") List<SessionResponse> sessions) {
+
+		static TimelineMonthResponse from(TimelineMonth month) {
+			return new TimelineMonthResponse(month.month().toString(), month.sessions().size(),
+					month.vocabularyCount(), month.grammarTopicCount(),
+					month.sessions().stream().map(SessionResponse::from).toList());
+		}
+
+	}
+
+	@Schema(name = "StudySessionTimeline",
+			description = "Counts are attachments: a word studied in two lessons counts in both")
+	record TimelineResponse(@Schema(description = "Most recent month first") List<TimelineMonthResponse> months,
+			int sessionCount, long vocabularyCount, long grammarTopicCount) {
+
+		static TimelineResponse from(Timeline timeline) {
+			return new TimelineResponse(timeline.months().stream().map(TimelineMonthResponse::from).toList(),
+					timeline.sessionCount(), timeline.vocabularyCount(), timeline.grammarTopicCount());
+		}
+
+	}
+
 	@Schema(name = "StudySessionMaterial", description = "IDs of the session's material, in the order it was added")
 	record MaterialResponse(List<UUID> vocabularyItemIds, List<UUID> grammarTopicIds) {
 
@@ -125,6 +155,23 @@ class StudySessionController {
 		var page = sessions.list(userId, toEntitySort(pageable));
 		return PageResponse.from(new PageImpl<>(page.getContent(), pageable, page.getTotalElements()),
 				SessionResponse::from);
+	}
+
+	@GetMapping("/timeline")
+	@Operation(summary = "Learning history",
+			description = "Your lessons in the active language grouped by month, most recent first, with how many "
+					+ "words and grammar topics each covered. Optionally limited to lessons studied from and/or to a "
+					+ "date (inclusive).")
+	@ApiResponse(responseCode = "200", description = "The timeline")
+	@ApiResponse(responseCode = "409", description = "No active language yet (code NO_ACTIVE_LANGUAGE)",
+			content = @Content(mediaType = "application/problem+json",
+					schema = @Schema(implementation = ApiProblem.class)))
+	TimelineResponse timeline(@CurrentUserId UUID userId,
+			@Parameter(description = "First day, e.g. 2026-10-01") @RequestParam(required = false)
+			@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+			@Parameter(description = "Last day, e.g. 2026-10-31") @RequestParam(required = false)
+			@DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+		return TimelineResponse.from(sessions.timeline(userId, from, to));
 	}
 
 	@GetMapping("/active")

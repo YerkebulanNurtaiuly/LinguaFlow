@@ -362,6 +362,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/study-sessions/timeline": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Learning history
+         * @description Your lessons in the active language grouped by month, most recent first, with how many words and grammar topics each covered. Optionally limited to lessons studied from and/or to a date (inclusive).
+         */
+        get: operations["timeline"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/study-sessions/{id}": {
         parameters: {
             query?: never;
@@ -1232,6 +1252,32 @@ export interface components {
         StudySessionMaterial: {
             grammarTopicIds?: string[];
             vocabularyItemIds?: string[];
+        };
+        /** @description Counts are attachments: a word studied in two lessons counts in both */
+        StudySessionTimeline: {
+            /** Format: int64 */
+            grammarTopicCount?: number;
+            /** @description Most recent month first */
+            months?: components["schemas"]["StudySessionTimelineMonth"][];
+            /** Format: int32 */
+            sessionCount?: number;
+            /** Format: int64 */
+            vocabularyCount?: number;
+        };
+        StudySessionTimelineMonth: {
+            /** Format: int64 */
+            grammarTopicCount?: number;
+            /**
+             * @description Year and month, yyyy-MM
+             * @example 2026-11
+             */
+            month?: string;
+            /** Format: int32 */
+            sessionCount?: number;
+            /** @description Most recent lesson first */
+            sessions?: components["schemas"]["StudySession"][];
+            /** Format: int64 */
+            vocabularyCount?: number;
         };
         TagNameRequest: {
             /**
@@ -2983,6 +3029,86 @@ export interface operations {
             };
             /** @description Resource not found */
             404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    timeline: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description First day, e.g. 2026-10-01 */
+                from?: string;
+                /** @description Last day, e.g. 2026-10-31 */
+                to?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The timeline */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StudySessionTimeline"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description No active language yet (code NO_ACTIVE_LANGUAGE) */
+            409: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -193,6 +193,80 @@ class StudySessionApiTests {
 	}
 
 	@Nested
+	class Timeline {
+
+		@Test
+		void groupsLessonsByMonthWithTheirCounts() throws Exception {
+			UUID octoberEarly = session(anna, "{\"title\":\"Lesson 1\",\"studiedOn\":\"2026-10-03\"}");
+			UUID octoberLate = session(anna, "{\"title\":\"Lesson 2\",\"studiedOn\":\"2026-10-20\"}");
+			UUID november = session(anna, "{\"title\":\"Lesson 3\",\"studiedOn\":\"2026-11-05\"}");
+			session(ben, "{\"title\":\"Ben's\",\"studiedOn\":\"2026-11-06\"}");
+			UUID dog = word(anna, "der Hund");
+			UUID cat = word(anna, "die Katze");
+			attachWords(anna, octoberEarly, dog, cat).andExpect(status().isOk());
+			// A word studied in two lessons counts in both
+			attachWords(anna, november, dog).andExpect(status().isOk());
+			send(anna, post("/api/study-sessions/{id}/grammar-topics", octoberLate),
+					"{\"grammarTopicIds\":[\"" + topic(anna, "Dativ") + "\"]}")
+				.andExpect(status().isOk());
+
+			mvc.perform(as(anna, get("/api/study-sessions/timeline")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.sessionCount").value(3))
+				.andExpect(jsonPath("$.vocabularyCount").value(3))
+				.andExpect(jsonPath("$.grammarTopicCount").value(1))
+				.andExpect(jsonPath("$.months[*].month", contains("2026-11", "2026-10")))
+				.andExpect(jsonPath("$.months[0].sessionCount").value(1))
+				.andExpect(jsonPath("$.months[0].vocabularyCount").value(1))
+				.andExpect(jsonPath("$.months[1].sessions[*].title", contains("Lesson 2", "Lesson 1")))
+				.andExpect(jsonPath("$.months[1].vocabularyCount").value(2))
+				.andExpect(jsonPath("$.months[1].grammarTopicCount").value(1))
+				.andExpect(jsonPath("$.months[1].sessions[1].vocabularyCount").value(2));
+		}
+
+		@Test
+		void limitsTheTimelineToADateRange() throws Exception {
+			session(anna, "{\"title\":\"September\",\"studiedOn\":\"2026-09-30\"}");
+			session(anna, "{\"title\":\"October 1\",\"studiedOn\":\"2026-10-01\"}");
+			session(anna, "{\"title\":\"October 31\",\"studiedOn\":\"2026-10-31\"}");
+			session(anna, "{\"title\":\"November\",\"studiedOn\":\"2026-11-01\"}");
+
+			mvc.perform(as(anna, get("/api/study-sessions/timeline?from=2026-10-01&to=2026-10-31")))
+				.andExpect(jsonPath("$.sessionCount").value(2))
+				.andExpect(jsonPath("$.months[0].sessions[*].title", contains("October 31", "October 1")));
+			mvc.perform(as(anna, get("/api/study-sessions/timeline?from=2026-10-31")))
+				.andExpect(jsonPath("$.sessionCount").value(2));
+			mvc.perform(as(anna, get("/api/study-sessions/timeline?to=2026-09-30")))
+				.andExpect(jsonPath("$.months[*].month", contains("2026-09")));
+		}
+
+		@Test
+		void isEmptyWithoutLessons() throws Exception {
+			mvc.perform(as(anna, get("/api/study-sessions/timeline")))
+				.andExpect(status().isOk())
+				.andExpect(jsonPath("$.months").isEmpty())
+				.andExpect(jsonPath("$.sessionCount").value(0));
+		}
+
+		@Test
+		void rejectsAnInvertedOrMalformedRange() throws Exception {
+			mvc.perform(as(anna, get("/api/study-sessions/timeline?from=2026-11-01&to=2026-10-01")))
+				.andExpect(status().isBadRequest())
+				.andExpect(jsonPath("$.errors[0].field").value("from"));
+			mvc.perform(as(anna, get("/api/study-sessions/timeline?from=yesterday")))
+				.andExpect(status().isBadRequest());
+		}
+
+		@Test
+		void needsALanguageFirst() throws Exception {
+			TestUser newcomer = testUsers.user("new@example.de");
+			mvc.perform(as(newcomer, get("/api/study-sessions/timeline"))).andExpect(status().isConflict())
+				.andExpect(jsonPath("$.code").value("NO_ACTIVE_LANGUAGE"));
+		}
+
+	}
+
+	@Nested
 	class ActiveSession {
 
 		@Test

@@ -1918,6 +1918,113 @@
         "tags" : [ "Study sessions" ]
       }
     },
+    "/api/study-sessions/timeline" : {
+      "get" : {
+        "description" : "Your lessons in the active language grouped by month, most recent first, with how many words and grammar topics each covered. Optionally limited to lessons studied from and/or to a date (inclusive).",
+        "operationId" : "timeline",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "First day, e.g. 2026-10-01",
+          "in" : "query",
+          "name" : "from",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        }, {
+          "description" : "Last day, e.g. 2026-10-31",
+          "in" : "query",
+          "name" : "to",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "date"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/StudySessionTimeline"
+                }
+              }
+            },
+            "description" : "The timeline"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "No active language yet (code NO_ACTIVE_LANGUAGE)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Learning history",
+        "tags" : [ "Study sessions" ]
+      }
+    },
     "/api/study-sessions/{id}" : {
       "delete" : {
         "description" : "Its words and topics stay in your collection.",
@@ -5678,6 +5785,60 @@
               "type" : "string",
               "format" : "uuid"
             }
+          }
+        }
+      },
+      "StudySessionTimeline" : {
+        "type" : "object",
+        "description" : "Counts are attachments: a word studied in two lessons counts in both",
+        "properties" : {
+          "grammarTopicCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "months" : {
+            "type" : "array",
+            "description" : "Most recent month first",
+            "items" : {
+              "$ref" : "#/components/schemas/StudySessionTimelineMonth"
+            }
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "vocabularyCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "StudySessionTimelineMonth" : {
+        "type" : "object",
+        "properties" : {
+          "grammarTopicCount" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "month" : {
+            "type" : "string",
+            "description" : "Year and month, yyyy-MM",
+            "example" : "2026-11"
+          },
+          "sessionCount" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sessions" : {
+            "type" : "array",
+            "description" : "Most recent lesson first",
+            "items" : {
+              "$ref" : "#/components/schemas/StudySession"
+            }
+          },
+          "vocabularyCount" : {
+            "type" : "integer",
+            "format" : "int64"
           }
         }
       },

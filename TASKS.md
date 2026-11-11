@@ -204,7 +204,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   A study session = one lesson (e.g. "Lesson 5 – 2026-11-09"). `POST/GET/PATCH/DELETE /api/study-sessions`; attach/detach vocabulary and grammar topics. New material added while a session is "active" is attached automatically.
   _Done when:_ "Current Lesson" practice can query material by session.
 
-- [ ] **SES-02 — Learning history timeline** (S) — _deps: SES-01_
+- [x] **SES-02 — Learning history timeline** (S) — _deps: SES-01_
   `GET /api/study-sessions/timeline` — sessions ordered by date with counts.
 
 - [ ] **FE-SES-01 — Sessions page** (M) — _deps: SES-01, FE-VOC-02, FE-GRM-01_
