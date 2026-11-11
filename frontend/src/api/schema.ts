@@ -868,6 +868,26 @@ export interface paths {
         patch: operations["update"];
         trace?: never;
     };
+    "/api/vocabulary/{id}/regenerate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the AI again
+         * @description Clears every value the AI filled in and its examples, then queues a fresh enrichment that doesn't reuse earlier answers. Your own values, examples and the part of speech stay; change the part of speech first if it's wrong. Follow the job with GET /api/ai/jobs/{aiJobId}.
+         */
+        post: operations["regenerate"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1579,6 +1599,10 @@ export interface components {
         UpdateVocabularyRequest: {
             /** @enum {string} */
             cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
+            /** @description Fields to clear, which an empty string can't express */
+            clear?: ("PART_OF_SPEECH" | "GENDER" | "CEFR_LEVEL" | "VERB_FORMS")[];
+            /** @description Replaces all examples, in this order; an empty list removes them. Send an example's id back unchanged to keep it marked as AI-generated */
+            examples?: components["schemas"]["VocabularyExampleUpdate"][];
             /** @enum {string} */
             gender?: "MASCULINE" | "FEMININE" | "NEUTER";
             /** @example der Hund */
@@ -1595,6 +1619,8 @@ export interface components {
             /** @description Replaces the word's tags; an empty list removes them all */
             tagIds?: string[];
             translation?: string;
+            /** @description Sets a verb's principal parts; only for verbs */
+            verbForms?: components["schemas"]["VerbForms"];
         };
         UserLanguageResponse: {
             active?: boolean;
@@ -1623,6 +1649,15 @@ export interface components {
             /** @example Europe/Berlin */
             timezone?: string;
         };
+        /** @description A German verb's principal parts */
+        VerbForms: {
+            /** @enum {string} */
+            auxiliary: "HABEN" | "SEIN";
+            /** @example gelaufen */
+            partizip2: string;
+            /** @example lief */
+            praeteritum: string;
+        };
         VerifyEmailRequest: {
             /** @description Token from the verification link */
             token: string;
@@ -1635,6 +1670,17 @@ export interface components {
             translation?: string;
         };
         VocabularyExampleRequest: {
+            /** @example Der Hund bellt. */
+            sentence: string;
+            /** @example The dog barks. */
+            translation?: string;
+        };
+        VocabularyExampleUpdate: {
+            /**
+             * Format: uuid
+             * @description The example's id, when it's an existing one
+             */
+            id?: string;
             /** @example Der Hund bellt. */
             sentence: string;
             /** @example The dog barks. */
@@ -1720,6 +1766,12 @@ export interface components {
              * @description Increases with every change
              */
             version?: number;
+        };
+        /** @description The word, back to PENDING_AI, and the AI job filling it in */
+        VocabularyRegenerateResult: {
+            /** Format: uuid */
+            aiJobId?: string;
+            item?: components["schemas"]["VocabularyItem"];
         };
         VocabularyTag: {
             /** Format: uuid */
@@ -5832,6 +5884,84 @@ export interface operations {
                 };
             };
             /** @description The new lemma clashes with another word (code VOCABULARY_DUPLICATE, see existingId), or the word was changed meanwhile (code CONFLICT) */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    regenerate: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The word is waiting for AI again */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VocabularyRegenerateResult"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description AI is still working on the word (code CONFLICT) */
             409: {
                 headers: {
                     [name: string]: unknown;

@@ -1,16 +1,25 @@
 package com.linguaflow.vocabulary;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import com.linguaflow.common.domain.KnowledgeStatus;
+import com.linguaflow.common.error.ConflictException;
 import com.linguaflow.common.error.InvalidFieldException;
 import com.linguaflow.common.error.NotFoundException;
 import com.linguaflow.user.ActiveLanguageService;
+import com.linguaflow.vocabulary.VocabularyCommands.ClearableField;
+import com.linguaflow.vocabulary.VocabularyCommands.ExampleChange;
 import com.linguaflow.vocabulary.VocabularyCommands.NewExample;
 import com.linguaflow.vocabulary.VocabularyCommands.NewVocabularyItem;
+import com.linguaflow.vocabulary.VocabularyCommands.VerbFormsChange;
 import com.linguaflow.vocabulary.VocabularyCommands.VocabularyItemChanges;
 import org.hibernate.Hibernate;
 import org.springframework.context.ApplicationEventPublisher;
@@ -169,8 +178,14 @@ public class VocabularyService {
 		return saveRejectingDuplicates(() -> transactions.execute(tx -> {
 			VocabularyItem item = items.requireOwned(id, userId);
 			String lemma = changes.lemma() == null ? item.getLemma() : cleanLemma(changes.lemma());
-			PartOfSpeech partOfSpeech = changes.partOfSpeech() == null ? item.getPartOfSpeech()
-					: changes.partOfSpeech();
+			Set<ClearableField> clear = changes.clear();
+			rejectSetAndClear(clear, ClearableField.PART_OF_SPEECH, changes.partOfSpeech(), "partOfSpeech");
+			rejectSetAndClear(clear, ClearableField.GENDER, changes.gender(), "gender");
+			rejectSetAndClear(clear, ClearableField.CEFR_LEVEL, changes.cefrLevel(), "cefrLevel");
+			rejectSetAndClear(clear, ClearableField.VERB_FORMS, changes.verbForms(), "verbForms");
+			boolean clearPartOfSpeech = clear.contains(ClearableField.PART_OF_SPEECH);
+			PartOfSpeech partOfSpeech = clearPartOfSpeech ? null
+					: changes.partOfSpeech() == null ? item.getPartOfSpeech() : changes.partOfSpeech();
 			String normalized = LemmaNormalizer.normalize(item.getLanguageCode(), lemma);
 			lemmaHolder[0] = lemma;
 			key[0] = new DuplicateKey(userId, item.getLanguageCode(), normalized, partOfSpeech);
@@ -178,7 +193,10 @@ public class VocabularyService {
 			if (changes.status() != null) {
 				checkStatus(changes.status());
 			}
-			if (changes.lemma() != null || changes.partOfSpeech() != null) {
+			if (changes.verbForms() != null && partOfSpeech != PartOfSpeech.VERB) {
+				throw new InvalidFieldException("verbForms", "only verbs have verb forms");
+			}
+			if (changes.lemma() != null || changes.partOfSpeech() != null || clearPartOfSpeech) {
 				rejectDuplicate(key[0], lemma, item.getId(), DuplicateRule.SAME_WORD);
 			}
 
@@ -186,15 +204,39 @@ public class VocabularyService {
 				item.rename(lemma, normalized);
 			}
 			edit(item, AiFields.PART_OF_SPEECH, changes.partOfSpeech(), item::setPartOfSpeech);
+			if (clearPartOfSpeech) {
+				item.setPartOfSpeech(null);
+				item.markEditedByUser(AiFields.PART_OF_SPEECH);
+			}
 			edit(item, AiFields.TRANSLATION, changes.translation(), value -> item.setTranslation(blankToNull(value)));
 			edit(item, AiFields.GENDER, changes.gender(), item::setGender);
-			if (partOfSpeech != null && partOfSpeech != PartOfSpeech.NOUN && item.getGender() != null) {
-				// No longer a noun, so the gender no longer applies
+			if (clear.contains(ClearableField.GENDER)
+					|| partOfSpeech != null && partOfSpeech != PartOfSpeech.NOUN && item.getGender() != null) {
+				// Cleared, or no longer a noun so the gender no longer applies
 				item.setGender(null);
 				item.markEditedByUser(AiFields.GENDER);
 			}
 			edit(item, AiFields.PLURAL, changes.plural(), value -> item.setPlural(blankToNull(value)));
 			edit(item, AiFields.CEFR_LEVEL, changes.cefrLevel(), item::setCefrLevel);
+			if (clear.contains(ClearableField.CEFR_LEVEL)) {
+				item.setCefrLevel(null);
+				item.markEditedByUser(AiFields.CEFR_LEVEL);
+			}
+			if (changes.verbForms() != null) {
+				VerbFormsChange forms = changes.verbForms();
+				item.setVerbForms(requiredForm(forms.praeteritum(), "verbForms.praeteritum"),
+						requiredForm(forms.partizip2(), "verbForms.partizip2"), requireAuxiliary(forms.auxiliary()));
+				item.markEditedByUser(AiFields.VERB_FORMS);
+			}
+			if (clear.contains(ClearableField.VERB_FORMS)
+					|| partOfSpeech != null && partOfSpeech != PartOfSpeech.VERB && item.hasVerbForms()) {
+				// Cleared, or no longer a verb
+				item.removeVerbForms();
+				item.markEditedByUser(AiFields.VERB_FORMS);
+			}
+			if (changes.examples() != null) {
+				replaceExamples(item, changes.examples());
+			}
 			if (changes.status() != null) {
 				item.changeStatusByUser(changes.status());
 			}
@@ -207,6 +249,121 @@ public class VocabularyService {
 			}
 			return loaded(items.saveAndFlush(item));
 		}), () -> key[0], () -> lemmaHolder[0]);
+	}
+
+	/** A word sent back to the AI, and the job doing it (VOC-06). */
+	public record Regenerated(VocabularyItem item, UUID aiJobId) {
+	}
+
+	/**
+	 * Asks the AI again (VOC-06): every value the AI filled in is cleared, AI examples are
+	 * removed, and a fresh enrichment job is queued. The learner's own values and examples
+	 * stay, and so does the part of speech, which tells the AI which word is meant; change
+	 * it first if it's wrong. The job skips the shared cache, so the answer is new.
+	 * @throws ConflictException while the AI is still working on the word
+	 */
+	public Regenerated regenerate(UUID userId, UUID id) {
+		return transactions.execute(tx -> {
+			VocabularyItem item = items.requireOwned(id, userId);
+			if (item.getAiStatus() == AiStatus.PENDING_AI) {
+				throw new ConflictException("AI is already filling in this word. Wait for it to finish, then try again.");
+			}
+			List<String> aiFields = item.getAiGeneratedFields();
+			if (aiFields.contains(AiFields.TRANSLATION)) {
+				item.setTranslation(null);
+			}
+			if (aiFields.contains(AiFields.GENDER)) {
+				item.setGender(null);
+			}
+			if (aiFields.contains(AiFields.PLURAL)) {
+				item.setPlural(null);
+			}
+			if (aiFields.contains(AiFields.CEFR_LEVEL)) {
+				item.setCefrLevel(null);
+			}
+			if (aiFields.contains(AiFields.NOTES)) {
+				item.setNotes(null);
+			}
+			if (aiFields.contains(AiFields.VERB_FORMS)) {
+				item.removeVerbForms();
+			}
+			item.setAiGeneratedFields(
+					aiFields.contains(AiFields.PART_OF_SPEECH) ? List.of(AiFields.PART_OF_SPEECH) : List.of());
+			rewriteExamples(item, item.getExamples()
+				.stream()
+				.filter(example -> !example.isAiGenerated())
+				.map(example -> new ExampleData(example.getSentence(), example.getTranslation(), false))
+				.toList());
+			item.setAiStatus(AiStatus.PENDING_AI);
+			VocabularyItem saved = items.saveAndFlush(item);
+			UUID jobId = enrichment.enqueueFresh(userId, saved.getId());
+			return new Regenerated(loaded(saved), jobId);
+		});
+	}
+
+	/** At most this many examples per word. */
+	public static final int MAX_EXAMPLES = 10;
+
+	private record ExampleData(String sentence, String translation, boolean aiGenerated) {
+	}
+
+	/** A PATCH's examples replace the word's; one sent back unchanged keeps its AI flag. */
+	private void replaceExamples(VocabularyItem item, List<ExampleChange> wanted) {
+		if (wanted.size() > MAX_EXAMPLES) {
+			throw new InvalidFieldException("examples", "must have at most " + MAX_EXAMPLES + " examples");
+		}
+		Map<UUID, VocabularyExample> existing = new HashMap<>();
+		item.getExamples().forEach(example -> existing.put(example.getId(), example));
+		List<ExampleData> rewritten = new ArrayList<>();
+		for (int i = 0; i < wanted.size(); i++) {
+			ExampleChange change = wanted.get(i);
+			if (change == null) {
+				throw new InvalidFieldException("examples[" + i + "]", "must not be null");
+			}
+			String sentence = cleanExample(change.sentence(), i);
+			String translation = blankToNull(change.translation());
+			if (translation != null && translation.length() > MAX_EXAMPLE_LENGTH) {
+				throw new InvalidFieldException("examples[" + i + "].translation",
+						"must be at most " + MAX_EXAMPLE_LENGTH + " characters");
+			}
+			VocabularyExample before = change.id() == null ? null : existing.get(change.id());
+			boolean unchangedAi = before != null && before.isAiGenerated() && before.getSentence().equals(sentence)
+					&& Objects.equals(before.getTranslation(), translation);
+			rewritten.add(new ExampleData(sentence, translation, unchangedAi));
+		}
+		rewriteExamples(item, rewritten);
+	}
+
+	/**
+	 * Replaces the examples. Positions are unique per word and Hibernate inserts before it
+	 * deletes, so the old rows are flushed away first.
+	 */
+	private void rewriteExamples(VocabularyItem item, List<ExampleData> examples) {
+		item.clearExamples();
+		items.saveAndFlush(item);
+		examples.forEach(example -> item.addExample(example.sentence(), example.translation(), example.aiGenerated()));
+	}
+
+	private static void rejectSetAndClear(Set<ClearableField> clear, ClearableField field, Object value,
+			String name) {
+		if (value != null && clear.contains(field)) {
+			throw new InvalidFieldException(name, "can't be set and cleared at once");
+		}
+	}
+
+	private static String requiredForm(String form, String field) {
+		String value = form == null ? "" : form.strip();
+		if (value.isEmpty() || value.length() > 100) {
+			throw new InvalidFieldException(field, "must be 1 to 100 characters");
+		}
+		return value;
+	}
+
+	private static Auxiliary requireAuxiliary(Auxiliary auxiliary) {
+		if (auxiliary == null) {
+			throw new InvalidFieldException("verbForms.auxiliary", "must be HABEN or SEIN");
+		}
+		return auxiliary;
 	}
 
 	/** Deletes the word and everything attached to it (examples, flashcards, progress). */

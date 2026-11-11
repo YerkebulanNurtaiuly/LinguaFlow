@@ -43,12 +43,6 @@ final class EnrichmentAnswer {
 			@JsonPropertyDescription("Auxiliary of the perfect tense") Auxiliary auxiliary) {
 	}
 
-	enum Auxiliary {
-
-		HABEN, SEIN
-
-	}
-
 	record Example(@JsonPropertyDescription("A short natural sentence in the learned language") @NotBlank @Size(max = 500) String sentence,
 			@JsonPropertyDescription("Its translation into the explanation language") @NotBlank @Size(max = 500) String translation) {
 	}

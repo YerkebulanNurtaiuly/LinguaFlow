@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.linguaflow.ai.InvalidLlmOutputException;
@@ -100,6 +101,7 @@ class VocabularyEnrichmentHandler implements AiJobHandler {
 	@Override
 	public Map<String, Object> handle(AiJob job) {
 		UUID userId = Objects.requireNonNull(job.getUserId(), "enrichment jobs belong to a user");
+		boolean fresh = Boolean.TRUE.equals(job.getPayload().get(EnrichmentQueue.FRESH));
 		List<Pending> pending = Objects.requireNonNull(tx.execute(status -> items
 			.findAllForEnrichmentByIdIn(itemIds(job))
 			.stream()
@@ -125,7 +127,8 @@ class VocabularyEnrichmentHandler implements AiJobHandler {
 			Map<Pending, Word> answers = new LinkedHashMap<>();
 			List<Pending> misses = new ArrayList<>();
 			for (Pending word : group.getValue()) {
-				var cached = cache.get(cacheKey(word, explanation), Word.class)
+				// "Ask again" (VOC-06) must not get the same cached answer back
+				var cached = (fresh ? Optional.<Word>empty() : cache.get(cacheKey(word, explanation), Word.class))
 					.filter(answer -> llm.problems(answer, (value, problems) -> EnrichmentRules.check("", word.input(),
 							language, value, problems)).isEmpty());
 				if (cached.isPresent()) {

@@ -92,6 +92,9 @@ class VocabularyEnrichmentTests {
 	/** Words whose answers are broken on purpose. */
 	private final Set<String> broken = new CopyOnWriteArraySet<>();
 
+	/** Per-word changes to the scripted answers, e.g. a different translation the second time. */
+	private final Map<String, Map<String, Object>> overrides = new java.util.concurrent.ConcurrentHashMap<>();
+
 	/** When set, every batch answer leaves out the last entry. */
 	private volatile boolean batchesDropAWord;
 
@@ -148,6 +151,11 @@ class VocabularyEnrichmentTests {
 						Map.of("sentence", "Ich habe einen Hund.", "translation", "I have a dog."),
 						Map.of("sentence", "Der Hund schläft im Garten.", "translation", "The dog sleeps in the garden."));
 			}
+			case "laufen" -> {
+				word.putAll(Map.of("partOfSpeech", "VERB", "translation", "to run", "cefrLevel", "A1", "verbForms",
+						Map.of("praeteritum", "lief", "partizip2", "gelaufen", "auxiliary", "SEIN")));
+				word.put("plural", null);
+			}
 			case "Katze" -> word.putAll(Map.of("partOfSpeech", "NOUN", "gender", "FEMININE", "plural", "Katzen",
 					"translation", "cat", "cefrLevel", "A1"));
 			default -> word.putAll(Map.of("partOfSpeech", "NOUN", "gender", "NEUTER", "plural", lemma + "e",
@@ -158,9 +166,10 @@ class VocabularyEnrichmentTests {
 			word.put("gender", null);
 		}
 		word.putIfAbsent("gender", null);
-		word.put("verbForms", null);
+		word.putIfAbsent("verbForms", null);
 		word.put("examples", examples);
 		word.put("notes", null);
+		word.putAll(overrides.getOrDefault(lemma, Map.of()));
 		return word;
 	}
 
@@ -331,6 +340,151 @@ class VocabularyEnrichmentTests {
 
 		assertThat(enrichmentCalls()).isZero();
 		assertThat(jdbc.queryForObject("select status from ai_jobs", String.class)).isEqualTo("SUCCEEDED");
+	}
+
+	// --- VOC-06: ask again, and edit everything ------------------------------------
+
+	private JsonNode word(TestUser user, UUID id) throws Exception {
+		return JSON.readTree(mvc.perform(get("/api/vocabulary/{id}", id).header("Authorization", user.bearer()))
+			.andExpect(status().isOk())
+			.andReturn()
+			.getResponse()
+			.getContentAsString());
+	}
+
+	private org.springframework.test.web.servlet.ResultActions edit(TestUser user, UUID id, String body)
+			throws Exception {
+		return mvc.perform(patch("/api/vocabulary/{id}", id).header("Authorization", user.bearer())
+			.contentType(MediaType.APPLICATION_JSON)
+			.content(body));
+	}
+
+	@Test
+	void askingAgainReplacesOnlyWhatTheAiFilledInWithAFreshAnswer() throws Exception {
+		UUID id = add(anna,
+				"{\"lemma\":\"Hund\",\"notes\":\"Mein Nachbar hat einen.\",\"examples\":[{\"sentence\":\"Mein Hund heißt Bello.\"}]}");
+		worker.runDueJobs();
+		assertThat(word(anna, id).get("examples")).hasSize(3);
+		// The model would now answer differently, and the cache still holds the first answer
+		overrides.put("Hund", Map.of("translation", "dog; hound"));
+
+		mvc.perform(post("/api/vocabulary/{id}/regenerate", id).header("Authorization", anna.bearer()))
+			.andExpect(status().isAccepted())
+			.andExpect(jsonPath("$.aiJobId").exists())
+			.andExpect(jsonPath("$.item.aiStatus").value("PENDING_AI"))
+			.andExpect(jsonPath("$.item.translation").doesNotExist())
+			.andExpect(jsonPath("$.item.plural").doesNotExist())
+			// The learner's own example and notes stay, and the part of speech keeps saying which word it is
+			.andExpect(jsonPath("$.item.examples.length()").value(1))
+			.andExpect(jsonPath("$.item.examples[0].sentence").value("Mein Hund heißt Bello."))
+			.andExpect(jsonPath("$.item.notes").value("Mein Nachbar hat einen."))
+			.andExpect(jsonPath("$.item.partOfSpeech").value("NOUN"));
+
+		worker.runDueJobs();
+
+		JsonNode again = word(anna, id);
+		assertThat(again.get("aiStatus").asString()).isEqualTo("READY");
+		assertThat(again.get("translation").asString()).isEqualTo("dog; hound");
+		assertThat(again.get("plural").asString()).isEqualTo("Hunde");
+		assertThat(again.get("examples")).hasSize(3);
+		assertThat(again.at("/examples/0/aiGenerated").asBoolean()).isFalse();
+		assertThat(again.at("/examples/1/aiGenerated").asBoolean()).isTrue();
+		assertThat(enrichmentCalls()).isEqualTo(2);
+	}
+
+	@Test
+	void askingAgainKeepsTheLearnersValuesAndWaitsForARunningJob() throws Exception {
+		UUID id = add(anna, "{\"lemma\":\"Katze\",\"translation\":\"kitty\"}");
+		mvc.perform(post("/api/vocabulary/{id}/regenerate", id).header("Authorization", anna.bearer()))
+			.andExpect(status().isConflict())
+			.andExpect(jsonPath("$.code").value("CONFLICT"));
+		worker.runDueJobs();
+
+		mvc.perform(post("/api/vocabulary/{id}/regenerate", id).header("Authorization", anna.bearer()))
+			.andExpect(status().isAccepted())
+			.andExpect(jsonPath("$.item.translation").value("kitty"));
+		worker.runDueJobs();
+		com.linguaflow.testsupport.OwnershipAssertions.assertOnlyOwnerCanAccess(mvc,
+				org.springframework.http.HttpMethod.POST, "/api/vocabulary/{id}/regenerate", id, anna.accessToken(),
+				ben.accessToken());
+	}
+
+	@Test
+	void examplesCanBeEditedAndKeepTheirAiFlagOnlyWhenUnchanged() throws Exception {
+		UUID id = add(anna, "{\"lemma\":\"Hund\"}");
+		worker.runDueJobs();
+		JsonNode examples = word(anna, id).get("examples");
+		String first = examples.get(0).get("id").asString();
+		String second = examples.get(1).get("id").asString();
+
+		edit(anna, id, """
+				{"examples":[
+				  {"id":"%s","sentence":"Der Hund bellt.","translation":"The dog barks."},
+				  {"id":"%s","sentence":"Ich habe zwei Hunde.","translation":"I have two dogs."},
+				  {"sentence":"  Hunde sind treu. ","translation":""}
+				]}""".formatted(first, second))
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.examples.length()").value(3))
+			// Sent back unchanged: still the AI's
+			.andExpect(jsonPath("$.examples[0].sentence").value("Der Hund bellt."))
+			.andExpect(jsonPath("$.examples[0].aiGenerated").value(true))
+			// Edited or new: the learner's
+			.andExpect(jsonPath("$.examples[1].aiGenerated").value(false))
+			.andExpect(jsonPath("$.examples[2].sentence").value("Hunde sind treu."))
+			.andExpect(jsonPath("$.examples[2].translation").doesNotExist());
+
+		edit(anna, id, "{\"examples\":[]}").andExpect(jsonPath("$.examples").isEmpty());
+		edit(anna, id, "{\"examples\":[{\"sentence\":\" \"}]}").andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void verbFormsCanBeSetAndClearedOnVerbsOnly() throws Exception {
+		UUID id = add(anna, "{\"lemma\":\"laufen\",\"partOfSpeech\":\"VERB\"}");
+
+		edit(anna, id, "{\"verbForms\":{\"praeteritum\":\"lief\",\"partizip2\":\"gelaufen\",\"auxiliary\":\"SEIN\"}}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.extra.praeteritum").value("lief"))
+			.andExpect(jsonPath("$.extra.auxiliary").value("SEIN"));
+		edit(anna, id, "{\"clear\":[\"VERB_FORMS\"]}").andExpect(jsonPath("$.extra.praeteritum").doesNotExist());
+
+		UUID noun = add(anna, "{\"lemma\":\"Tisch\",\"partOfSpeech\":\"NOUN\"}");
+		edit(anna, noun, "{\"verbForms\":{\"praeteritum\":\"x\",\"partizip2\":\"y\",\"auxiliary\":\"HABEN\"}}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("verbForms"));
+
+		// No longer a verb: its verb forms go
+		edit(anna, id, "{\"verbForms\":{\"praeteritum\":\"lief\",\"partizip2\":\"gelaufen\",\"auxiliary\":\"SEIN\"}}");
+		edit(anna, id, "{\"partOfSpeech\":\"NOUN\"}").andExpect(jsonPath("$.extra.praeteritum").doesNotExist());
+	}
+
+	@Test
+	void choicesCanBeClearedButNotSetAndClearedAtOnce() throws Exception {
+		UUID id = add(anna, "{\"lemma\":\"Hund\",\"partOfSpeech\":\"NOUN\",\"gender\":\"MASCULINE\",\"cefrLevel\":\"A1\"}");
+
+		edit(anna, id, "{\"clear\":[\"GENDER\",\"CEFR_LEVEL\",\"PART_OF_SPEECH\"]}")
+			.andExpect(status().isOk())
+			.andExpect(jsonPath("$.partOfSpeech").doesNotExist())
+			.andExpect(jsonPath("$.gender").doesNotExist())
+			.andExpect(jsonPath("$.article").doesNotExist())
+			.andExpect(jsonPath("$.cefrLevel").doesNotExist());
+
+		edit(anna, id, "{\"gender\":\"FEMININE\",\"clear\":[\"GENDER\"]}")
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("gender"));
+		edit(anna, id, "{\"clear\":[\"TRANSLATION\"]}").andExpect(status().isBadRequest());
+	}
+
+	@Test
+	void editedFieldsStopCountingAsAiGenerated() throws Exception {
+		UUID id = add(anna, "{\"lemma\":\"laufen\"}");
+		worker.runDueJobs();
+		assertThat(word(anna, id).get("aiGeneratedFields").toString()).contains("verbForms");
+
+		edit(anna, id, "{\"verbForms\":{\"praeteritum\":\"lief\",\"partizip2\":\"gerannt\",\"auxiliary\":\"SEIN\"},"
+				+ "\"notes\":\"\"}")
+			.andExpect(jsonPath("$.aiGeneratedFields", not(hasItem("verbForms"))))
+			.andExpect(jsonPath("$.aiGeneratedFields", not(hasItem("notes"))))
+			.andExpect(jsonPath("$.extra.partizip2").value("gerannt"));
 	}
 
 }

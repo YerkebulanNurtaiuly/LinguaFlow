@@ -161,10 +161,40 @@ public class VocabularyItem extends AuditableEntity implements OwnedEntity {
 	}
 
 	public VocabularyExample addExample(String sentence, String translation, boolean aiGenerated) {
-		VocabularyExample example = new VocabularyExample(this, sentence, translation, (short) examples.size(),
-				aiGenerated);
+		// The next free position, so a gap left by a removed example is never reused
+		int next = examples.stream().mapToInt(VocabularyExample::getPosition).max().orElse(-1) + 1;
+		VocabularyExample example = new VocabularyExample(this, sentence, translation, (short) next, aiGenerated);
 		examples.add(example);
 		return example;
+	}
+
+	/**
+	 * Removes every example. Positions are unique per word and the database checks them at
+	 * once, so flush before adding new ones (Hibernate inserts before it deletes).
+	 */
+	public void clearExamples() {
+		examples.clear();
+	}
+
+	public boolean hasVerbForms() {
+		return extra.containsKey(EnrichmentRules.PRAETERITUM);
+	}
+
+	/** A verb's principal parts, in {@code extra} (VOC-05). */
+	public void setVerbForms(String praeteritum, String partizip2, Auxiliary auxiliary) {
+		Map<String, Object> updated = new HashMap<>(extra);
+		updated.put(EnrichmentRules.PRAETERITUM, praeteritum);
+		updated.put(EnrichmentRules.PARTIZIP_2, partizip2);
+		updated.put(EnrichmentRules.AUXILIARY, auxiliary.name());
+		extra = updated;
+	}
+
+	public void removeVerbForms() {
+		Map<String, Object> updated = new HashMap<>(extra);
+		updated.remove(EnrichmentRules.PRAETERITUM);
+		updated.remove(EnrichmentRules.PARTIZIP_2);
+		updated.remove(EnrichmentRules.AUXILIARY);
+		extra = updated;
 	}
 
 	public void addTag(Tag tag) {

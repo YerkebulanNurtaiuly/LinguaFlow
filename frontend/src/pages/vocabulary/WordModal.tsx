@@ -6,7 +6,10 @@ import {
   useTags,
   useVocabularyItem,
 } from '@/vocabulary/queries'
-import type { VocabularyWord } from '@/vocabulary/vocabularyApi'
+import {
+  regenerateVocabularyItem,
+  type VocabularyWord,
+} from '@/vocabulary/vocabularyApi'
 import { WordForm } from './WordForm'
 
 /** Which word the modal shows: a new one, or an existing one by ID. */
@@ -36,9 +39,30 @@ export function WordModal({ target, onClose, onOpen }: WordModalProps) {
     onClose()
   }
 
+  const regenerate = async (word: VocabularyWord) => {
+    try {
+      await regenerateVocabularyItem(word.id)
+    } catch (error) {
+      toast({
+        title: `Couldn't ask AI again for “${word.lemma}”`,
+        description: describeError(error),
+        variant: 'error',
+      })
+      return
+    }
+    void invalidate()
+    toast({
+      title: `AI is filling in “${word.lemma}” again`,
+      description: 'Your own values and examples stay as they are.',
+      variant: 'success',
+    })
+    onClose()
+  }
+
   const formProps = {
     tags: tags.data ?? [],
     onSaved: saved,
+    onRegenerate: regenerate,
     onCancel: onClose,
     onOpenExisting: (id: string) => onOpen({ mode: 'edit', id }),
     onTagCreated: () => void invalidate(),

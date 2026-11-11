@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import com.linguaflow.ai.OutputProblems;
 import com.linguaflow.common.domain.CefrLevel;
-import com.linguaflow.vocabulary.EnrichmentAnswer.Auxiliary;
+
 import com.linguaflow.vocabulary.EnrichmentAnswer.Batch;
 import com.linguaflow.vocabulary.EnrichmentAnswer.Example;
 import com.linguaflow.vocabulary.EnrichmentAnswer.VerbForms;

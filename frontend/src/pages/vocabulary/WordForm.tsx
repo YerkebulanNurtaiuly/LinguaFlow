@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus, Sparkles, X } from 'lucide-react'
-import { useState, type RefObject } from 'react'
+import { useEffect, useState, type RefObject } from 'react'
 import { useFieldArray, useForm, useWatch, type Path } from 'react-hook-form'
 import {
   describeError,
@@ -58,6 +58,8 @@ interface WordFormProps {
   onTagCreated: () => void
   /** Receives the word input, so the dialog can focus it when it opens */
   lemmaRef?: RefObject<HTMLInputElement | null>
+  /** Asks the AI to fill in the word again (VOC-06); edit mode only */
+  onRegenerate?: (word: VocabularyWord) => Promise<void>
 }
 
 interface Duplicate {
@@ -74,8 +76,10 @@ export function WordForm({
   onOpenExisting,
   onTagCreated,
   lemmaRef,
+  onRegenerate,
 }: WordFormProps) {
   const editing = word !== undefined
+  const [regenerating, setRegenerating] = useState(false)
   const [formError, setFormError] = useState<string>()
   const [duplicate, setDuplicate] = useState<Duplicate>()
   const [newTagName, setNewTagName] = useState('')
@@ -90,6 +94,7 @@ export function WordForm({
     setError,
     setValue,
     getValues,
+    reset,
     control,
     formState: { errors, isSubmitting, isDirty },
   } = useForm<WordFormInput, unknown, WordFormValues>({
@@ -100,11 +105,25 @@ export function WordForm({
   const examples = useFieldArray({ control, name: 'examples' })
   const partOfSpeech = useWatch({ control, name: 'partOfSpeech' })
 
+  // A word the AI is still filling in refreshes while open; adopt its new values
+  // unless the learner has started typing
+  useEffect(() => {
+    if (word && !isDirty) reset(valuesOf(word))
+  }, [word, isDirty, reset])
+
   const aiFields = new Set(word?.aiGeneratedFields ?? [])
   const aiHint = (field: string) => (aiFields.has(field) ? AI_HINT : undefined)
-  // The API can't clear a choice, so an existing value has no empty option
-  const placeholder = (current: string | undefined, label: string) =>
-    editing && current ? undefined : label
+  const pending = word?.aiStatus === 'PENDING_AI'
+
+  const regenerate = async () => {
+    if (!word || !onRegenerate) return
+    setRegenerating(true)
+    try {
+      await onRegenerate(word)
+    } finally {
+      setRegenerating(false)
+    }
+  }
 
   const allTags = [
     ...tags,
@@ -180,6 +199,11 @@ export function WordForm({
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       {formError && <Alert variant="danger">{formError}</Alert>}
+      {pending && (
+        <Alert variant="info" title="AI is filling in this word">
+          Its details appear here in a few seconds. What you save now is kept.
+        </Alert>
+      )}
       {duplicate && (
         <Alert variant="info" title="You already have this word">
           <p>“{duplicate.lemma}” is already in your vocabulary.</p>
@@ -223,7 +247,7 @@ export function WordForm({
           error={errors.partOfSpeech?.message}
         >
           <Select
-            placeholder={placeholder(word?.partOfSpeech, 'Not set')}
+            placeholder="Not set"
             options={PARTS_OF_SPEECH.map((value) => ({
               value,
               label: PART_OF_SPEECH_LABELS[value],
@@ -237,7 +261,7 @@ export function WordForm({
           error={errors.cefrLevel?.message}
         >
           <Select
-            placeholder={placeholder(word?.cefrLevel, 'Not set')}
+            placeholder="Not set"
             options={CEFR_LEVELS.map((value) => ({ value, label: value }))}
             {...register('cefrLevel')}
           />
@@ -250,7 +274,7 @@ export function WordForm({
               error={errors.gender?.message}
             >
               <Select
-                placeholder={placeholder(word?.gender, 'Not set')}
+                placeholder="Not set"
                 options={GENDERS.map((value) => ({
                   value,
                   label: GENDER_LABELS[value],
@@ -291,7 +315,7 @@ export function WordForm({
         </Field>
       </div>
 
-      <Field label="Notes" error={errors.notes?.message}>
+      <Field label="Notes" hint={aiHint('notes')} error={errors.notes?.message}>
         <Textarea rows={2} {...register('notes')} />
       </Field>
 
@@ -350,76 +374,114 @@ export function WordForm({
         </div>
       </fieldset>
 
-      {editing ? (
-        word.examples.length > 0 && (
-          <section aria-label="Examples" className="space-y-2">
-            <h3 className="text-sm font-medium text-fg">Examples</h3>
-            <ul className="space-y-2">
-              {word.examples.map((example) => (
-                <li
-                  key={example.id}
-                  className="rounded-lg bg-surface-muted px-3 py-2 text-sm"
-                >
-                  <p className="text-fg">{example.sentence}</p>
-                  {example.translation && (
-                    <p className="text-fg-muted">{example.translation}</p>
-                  )}
-                  {example.aiGenerated && (
-                    <Badge variant="info" className="mt-1">
-                      <Sparkles className="mr-1 size-3" aria-hidden="true" />
-                      AI example
-                    </Badge>
-                  )}
-                </li>
-              ))}
-            </ul>
-          </section>
-        )
-      ) : (
+      {editing && partOfSpeech === 'VERB' && (
         <fieldset className="space-y-3">
-          <legend className="text-sm font-medium text-fg">Examples</legend>
-          {examples.fields.map((field, index) => (
-            <div
-              key={field.id}
-              className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[1fr_1fr_auto]"
-            >
-              <Field
-                label={`Example ${index + 1}`}
-                error={errors.examples?.[index]?.sentence?.message}
-              >
-                <Input {...register(`examples.${index}.sentence`)} />
-              </Field>
-              <Field
-                label={`Example ${index + 1} translation`}
-                error={errors.examples?.[index]?.translation?.message}
-              >
-                <Input {...register(`examples.${index}.translation`)} />
-              </Field>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="self-end px-2 sm:mb-1"
-                onClick={() => examples.remove(index)}
-              >
-                <X className="size-4" aria-hidden="true" />
-                <span className="sr-only">Remove example {index + 1}</span>
-              </Button>
-            </div>
-          ))}
-          {examples.fields.length < MAX_EXAMPLES && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => examples.append({ sentence: '', translation: '' })}
-            >
-              <Plus className="size-4" aria-hidden="true" />
-              Add example
-            </Button>
+          <legend className="text-sm font-medium text-fg">Verb forms</legend>
+          {aiHint('verbForms') && (
+            <p className="text-xs text-fg-muted">{aiHint('verbForms')}</p>
           )}
+          <div className="grid gap-4 sm:grid-cols-3">
+            <Field
+              label="Präteritum"
+              hint="e.g. lief"
+              error={errors.praeteritum?.message}
+            >
+              <Input autoComplete="off" {...register('praeteritum')} />
+            </Field>
+            <Field
+              label="Partizip II"
+              hint="e.g. gelaufen"
+              error={errors.partizip2?.message}
+            >
+              <Input autoComplete="off" {...register('partizip2')} />
+            </Field>
+            <Field label="Perfect with" error={errors.auxiliary?.message}>
+              <Select
+                placeholder="Not set"
+                options={[
+                  { value: 'HABEN', label: 'haben' },
+                  { value: 'SEIN', label: 'sein' },
+                ]}
+                {...register('auxiliary')}
+              />
+            </Field>
+          </div>
         </fieldset>
       )}
 
-      <div className="flex justify-end gap-3 border-t border-border pt-4">
+      <fieldset className="space-y-3">
+        <legend className="text-sm font-medium text-fg">Examples</legend>
+        {examples.fields.some((field) => field.aiGenerated) && (
+          <p className="text-xs text-fg-muted">
+            Editing an AI example makes it your own.
+          </p>
+        )}
+        {examples.fields.map((field, index) => (
+          <div
+            key={field.id}
+            className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-[1fr_1fr_auto]"
+          >
+            <Field
+              label={`Example ${index + 1}`}
+              error={errors.examples?.[index]?.sentence?.message}
+            >
+              <Input {...register(`examples.${index}.sentence`)} />
+            </Field>
+            <Field
+              label={`Example ${index + 1} translation`}
+              error={errors.examples?.[index]?.translation?.message}
+            >
+              <Input {...register(`examples.${index}.translation`)} />
+            </Field>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="self-end px-2 sm:mb-1"
+              onClick={() => examples.remove(index)}
+            >
+              <X className="size-4" aria-hidden="true" />
+              <span className="sr-only">Remove example {index + 1}</span>
+            </Button>
+            {field.aiGenerated && (
+              <Badge variant="info" className="w-fit sm:col-span-3">
+                <Sparkles className="mr-1 size-3" aria-hidden="true" />
+                AI example
+              </Badge>
+            )}
+          </div>
+        ))}
+        {examples.fields.length < MAX_EXAMPLES && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => examples.append({ sentence: '', translation: '' })}
+          >
+            <Plus className="size-4" aria-hidden="true" />
+            Add example
+          </Button>
+        )}
+      </fieldset>
+
+      <div className="flex flex-wrap items-center justify-end gap-3 border-t border-border pt-4">
+        {editing && onRegenerate && (
+          <Button
+            variant="ghost"
+            className="mr-auto"
+            onClick={() => void regenerate()}
+            loading={regenerating}
+            disabled={pending || isDirty}
+            title={
+              isDirty
+                ? 'Save or cancel your changes first'
+                : pending
+                  ? 'AI is still working on this word'
+                  : undefined
+            }
+          >
+            <Sparkles className="size-4" aria-hidden="true" />
+            Ask AI again
+          </Button>
+        )}
         <Button variant="secondary" onClick={onCancel}>
           Cancel
         </Button>

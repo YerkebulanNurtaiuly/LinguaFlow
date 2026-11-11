@@ -1,6 +1,7 @@
 package com.linguaflow.vocabulary;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import com.linguaflow.common.domain.CefrLevel;
@@ -40,12 +41,41 @@ public final class VocabularyCommands {
 	}
 
 	/**
+	 * One example in a PATCH that replaces all of a word's examples (VOC-06). An example sent
+	 * back unchanged with its {@code id} keeps its AI flag; anything else counts as the learner's.
+	 */
+	public record ExampleChange(UUID id, String sentence, String translation) {
+	}
+
+	/** A verb's principal parts, set by the learner (VOC-06). */
+	public record VerbFormsChange(String praeteritum, String partizip2, Auxiliary auxiliary) {
+	}
+
+	/** Fields a PATCH can clear, which an empty string can't express (VOC-06). */
+	public enum ClearableField {
+
+		PART_OF_SPEECH, GENDER, CEFR_LEVEL, VERB_FORMS
+
+	}
+
+	/**
 	 * A partial update made by the learner: null means "leave unchanged". Every field the
 	 * learner sets stops counting as AI-generated. A non-null {@code tagIds} replaces the word's
 	 * tags (empty removes them all).
 	 */
 	public record VocabularyItemChanges(String lemma, PartOfSpeech partOfSpeech, String translation, Gender gender,
-			String plural, CefrLevel cefrLevel, KnowledgeStatus status, String notes, List<UUID> tagIds) {
+			String plural, CefrLevel cefrLevel, KnowledgeStatus status, String notes, List<UUID> tagIds,
+			List<ExampleChange> examples, VerbFormsChange verbForms, Set<ClearableField> clear) {
+
+		public VocabularyItemChanges {
+			examples = examples == null ? null : List.copyOf(examples);
+			clear = clear == null ? Set.of() : Set.copyOf(clear);
+		}
+
+		public VocabularyItemChanges(String lemma, PartOfSpeech partOfSpeech, String translation, Gender gender,
+				String plural, CefrLevel cefrLevel, KnowledgeStatus status, String notes, List<UUID> tagIds) {
+			this(lemma, partOfSpeech, translation, gender, plural, cefrLevel, status, notes, tagIds, null, null, null);
+		}
 
 		public VocabularyItemChanges(String lemma, PartOfSpeech partOfSpeech, String translation, Gender gender,
 				String plural, CefrLevel cefrLevel, KnowledgeStatus status, String notes) {

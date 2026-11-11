@@ -66,6 +66,8 @@ const vocabularyItemSchema = z.object({
     }),
   ),
   notes: optional(z.string()),
+  // Word-type data, e.g. a verb's principal parts (VOC-05)
+  extra: z.record(z.string(), z.unknown()).optional(),
   tags: z.array(z.object({ id: z.string(), name: z.string() })),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -201,4 +203,46 @@ export async function updateVocabularyItem(
 export async function createTag(name: string): Promise<TagWithCount> {
   const { data } = await api.post<unknown>('/tags', { name })
   return tagSchema.parse(data)
+}
+
+export const AUXILIARIES = ['HABEN', 'SEIN'] as const
+export type Auxiliary = (typeof AUXILIARIES)[number]
+
+export interface VerbForms {
+  praeteritum: string
+  partizip2: string
+  auxiliary: Auxiliary
+}
+
+/** A verb's principal parts, stored in `extra` (VOC-05), if it has them. */
+export function verbFormsOf(word: VocabularyWord): VerbForms | undefined {
+  const extra = word.extra ?? {}
+  const { praeteritum, partizip2, auxiliary } = extra
+  if (typeof praeteritum !== 'string' || typeof partizip2 !== 'string') {
+    return undefined
+  }
+  return {
+    praeteritum,
+    partizip2,
+    auxiliary: auxiliary === 'HABEN' ? 'HABEN' : 'SEIN',
+  }
+}
+
+const regenerateSchema = z.object({
+  item: vocabularyItemSchema,
+  aiJobId: z.string(),
+})
+
+/**
+ * Asks the AI again (VOC-06): it clears what the AI filled in and its examples, keeps
+ * the learner's own values, and queues a fresh answer. 409 CONFLICT while the AI is
+ * still working on the word.
+ */
+export async function regenerateVocabularyItem(
+  id: string,
+): Promise<z.infer<typeof regenerateSchema>> {
+  const { data } = await api.post<unknown>(
+    `/vocabulary/${encodeURIComponent(id)}/regenerate`,
+  )
+  return regenerateSchema.parse(data)
 }

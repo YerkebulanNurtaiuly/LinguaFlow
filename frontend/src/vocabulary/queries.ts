@@ -16,6 +16,8 @@ import {
 export const VOCABULARY_QUERY_KEY = ['vocabulary'] as const
 /** Tag list with word counts; invalidate it when words or tags change. */
 export const TAGS_QUERY_KEY = ['tags'] as const
+/** How often a list or word with words waiting for AI is refreshed (VOC-05). */
+export const PENDING_AI_POLL_MS = 5_000
 
 /** A page of the list. The previous page stays on screen while the next loads. */
 export function useVocabularyList(query: VocabularyQuery) {
@@ -23,6 +25,11 @@ export function useVocabularyList(query: VocabularyQuery) {
     queryKey: [...VOCABULARY_QUERY_KEY, 'list', query],
     queryFn: ({ signal }) => fetchVocabulary(query, signal),
     placeholderData: keepPreviousData,
+    // Words waiting for AI are filled in within seconds, so keep checking until they are
+    refetchInterval: (current) =>
+      current.state.data?.content.some((word) => word.aiStatus === 'PENDING_AI')
+        ? PENDING_AI_POLL_MS
+        : false,
   })
 }
 
@@ -47,6 +54,10 @@ export function useVocabularyItem(id: string) {
   return useQuery({
     queryKey: [...VOCABULARY_QUERY_KEY, 'item', id],
     queryFn: () => fetchVocabularyItem(id),
+    refetchInterval: (current) =>
+      current.state.data?.aiStatus === 'PENDING_AI'
+        ? PENDING_AI_POLL_MS
+        : false,
   })
 }
 

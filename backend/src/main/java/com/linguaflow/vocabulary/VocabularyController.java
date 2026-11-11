@@ -15,6 +15,7 @@ import com.linguaflow.common.security.CurrentUserId;
 import com.linguaflow.common.web.PageResponse;
 import com.linguaflow.vocabulary.VocabularyDtos.CreateRequest;
 import com.linguaflow.vocabulary.VocabularyDtos.ItemResponse;
+import com.linguaflow.vocabulary.VocabularyDtos.RegenerateResponse;
 import com.linguaflow.vocabulary.VocabularyDtos.UpdateRequest;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -28,6 +29,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -35,6 +37,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -119,6 +122,21 @@ class VocabularyController {
 	ItemResponse update(@CurrentUserId UUID userId, @PathVariable UUID id,
 			@Valid @RequestBody UpdateRequest request) {
 		return ItemResponse.from(vocabulary.update(userId, id, request.toCommand()));
+	}
+
+	@PostMapping("/{id}/regenerate")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	@Operation(summary = "Ask the AI again",
+			description = "Clears every value the AI filled in and its examples, then queues a fresh enrichment that "
+					+ "doesn't reuse earlier answers. Your own values, examples and the part of speech stay; change "
+					+ "the part of speech first if it's wrong. Follow the job with GET /api/ai/jobs/{aiJobId}.")
+	@ApiResponse(responseCode = "202", description = "The word is waiting for AI again")
+	@ApiResponse(responseCode = "409", description = "AI is still working on the word (code CONFLICT)",
+			content = @Content(mediaType = "application/problem+json",
+					schema = @Schema(implementation = ApiProblem.class)))
+	RegenerateResponse regenerate(@CurrentUserId UUID userId, @PathVariable UUID id) {
+		VocabularyService.Regenerated regenerated = vocabulary.regenerate(userId, id);
+		return new RegenerateResponse(ItemResponse.from(regenerated.item()), regenerated.aiJobId());
 	}
 
 	@DeleteMapping("/{id}")

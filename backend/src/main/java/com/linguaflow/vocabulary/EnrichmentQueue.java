@@ -1,6 +1,7 @@
 package com.linguaflow.vocabulary;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import com.linguaflow.ai.job.AiJob;
@@ -23,6 +24,16 @@ class EnrichmentQueue {
 
 	EnrichmentQueue(AiJobQueue jobs) {
 		this.jobs = jobs;
+	}
+
+	/** The payload flag that makes the job skip the shared AI cache (VOC-06). */
+	static final String FRESH = "fresh";
+
+	/** One job for one word that is asked again, bypassing the cache (VOC-06). */
+	UUID enqueueFresh(UUID userId, UUID itemId) {
+		return jobs.enqueue(AiJobType.VOCABULARY_ENRICHMENT, userId,
+				Map.of(ITEM_IDS, List.of(itemId.toString()), FRESH, true))
+			.getId();
 	}
 
 	/** @return the IDs of the jobs created, for the UI to follow (AI-08) */

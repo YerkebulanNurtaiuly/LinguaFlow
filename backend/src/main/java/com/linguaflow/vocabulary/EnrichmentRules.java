@@ -127,13 +127,9 @@ final class EnrichmentRules {
 				filled.add(AiFields.PLURAL);
 			}
 		}
-		if (partOfSpeech == PartOfSpeech.VERB && answer.verbForms() != null
-				&& !item.getExtra().containsKey(PRAETERITUM)) {
-			var extra = new java.util.HashMap<>(item.getExtra());
-			extra.put(PRAETERITUM, answer.verbForms().praeteritum().strip());
-			extra.put(PARTIZIP_2, answer.verbForms().partizip2().strip());
-			extra.put(AUXILIARY, answer.verbForms().auxiliary().name());
-			item.setExtra(extra);
+		if (partOfSpeech == PartOfSpeech.VERB && answer.verbForms() != null && !item.hasVerbForms()) {
+			item.setVerbForms(answer.verbForms().praeteritum().strip(), answer.verbForms().partizip2().strip(),
+					answer.verbForms().auxiliary());
 			filled.add(AiFields.VERB_FORMS);
 		}
 		if (item.getCefrLevel() == null && answer.cefrLevel() != null) {

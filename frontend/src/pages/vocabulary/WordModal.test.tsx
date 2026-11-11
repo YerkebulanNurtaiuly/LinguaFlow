@@ -235,15 +235,127 @@ describe('editing a word', () => {
     expect(dialog.getByLabelText('Plural')).not.toHaveAccessibleDescription(
       /AI/,
     )
-    expect(dialog.getByText('Der Hund bellt.')).toBeInTheDocument()
+    // Examples are editable, and the AI's are marked
+    expect(dialog.getByLabelText('Example 1')).toHaveValue('Der Hund bellt.')
     expect(dialog.getByText('AI example')).toBeInTheDocument()
     expect(dialog.getByRole('button', { name: 'Save changes' })).toBeDisabled()
-    // A set choice can't be cleared through the API, so there's no empty option
+    // A choice can be cleared again (VOC-06)
     expect(
-      within(dialog.getByLabelText('Level')).queryByRole('option', {
+      within(dialog.getByLabelText('Level')).getByRole('option', {
         name: 'Not set',
       }),
-    ).not.toBeInTheDocument()
+    ).toBeInTheDocument()
+    // Not a verb, so no verb forms
+    expect(dialog.queryByLabelText(/Präteritum/)).not.toBeInTheDocument()
+  })
+
+  it('clears a choice and edits examples', async () => {
+    fakeApi.on('PATCH', `/vocabulary/${DOG_ID}`, { status: 200, data: dog })
+    const dialog = within(await openEditDialog())
+
+    await userEvent.selectOptions(dialog.getByLabelText('Level'), '')
+    await userEvent.clear(dialog.getByLabelText('Example 1'))
+    await userEvent.type(
+      dialog.getByLabelText('Example 1'),
+      'Der Hund schläft.',
+    )
+    await userEvent.click(dialog.getByRole('button', { name: 'Add example' }))
+    await userEvent.type(dialog.getByLabelText('Example 2'), 'Hunde sind treu.')
+    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }))
+
+    expect(await screen.findByText('Saved “der Hund”')).toBeInTheDocument()
+    expect(sentBody('PATCH', `/vocabulary/${DOG_ID}`)).toEqual({
+      clear: ['CEFR_LEVEL'],
+      examples: [
+        {
+          id: 'e1',
+          sentence: 'Der Hund schläft.',
+          translation: 'The dog barks.',
+        },
+        { sentence: 'Hunde sind treu.' },
+      ],
+    })
+  })
+
+  it('edits the verb forms of a verb', async () => {
+    const laufen: VocabularyWord = {
+      ...dog,
+      lemma: 'laufen',
+      article: undefined,
+      partOfSpeech: 'VERB',
+      gender: undefined,
+      plural: undefined,
+      translation: 'to run',
+      aiGeneratedFields: ['verbForms'],
+      extra: { praeteritum: 'lief', partizip2: 'gelaufen', auxiliary: 'SEIN' },
+      examples: [],
+    }
+    fakeApi.on('GET', '/vocabulary', listOf([laufen]))
+    fakeApi.on('GET', `/vocabulary/${DOG_ID}`, { status: 200, data: laufen })
+    fakeApi.on('PATCH', `/vocabulary/${DOG_ID}`, { status: 200, data: laufen })
+    await renderApp('/vocabulary')
+    await userEvent.click(await screen.findByRole('button', { name: 'laufen' }))
+    const dialog = within(screen.getByRole('dialog', { name: 'Edit word' }))
+
+    expect(await dialog.findByLabelText(/Präteritum/)).toHaveValue('lief')
+    expect(dialog.getByLabelText('Perfect with')).toHaveValue('SEIN')
+    expect(
+      dialog.getByText('Filled in by AI. Change it to use your own.'),
+    ).toBeInTheDocument()
+
+    await userEvent.clear(dialog.getByLabelText(/Partizip II/))
+    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }))
+    expect(
+      await dialog.findByText('Fill in all three verb forms, or none.'),
+    ).toBeInTheDocument()
+
+    await userEvent.type(dialog.getByLabelText(/Partizip II/), 'gerannt')
+    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }))
+    expect(await screen.findByText('Saved “laufen”')).toBeInTheDocument()
+    expect(sentBody('PATCH', `/vocabulary/${DOG_ID}`)).toEqual({
+      verbForms: {
+        praeteritum: 'lief',
+        partizip2: 'gerannt',
+        auxiliary: 'SEIN',
+      },
+    })
+  })
+
+  it('asks the AI again', async () => {
+    fakeApi.on('POST', `/vocabulary/${DOG_ID}/regenerate`, {
+      status: 202,
+      data: {
+        item: { ...dog, aiStatus: 'PENDING_AI', translation: null },
+        aiJobId: 'job-1',
+      },
+    })
+    const dialog = within(await openEditDialog())
+    const askAgain = dialog.getByRole('button', { name: 'Ask AI again' })
+
+    // Unsaved changes come first
+    await userEvent.type(dialog.getByLabelText('Translation'), '!')
+    expect(askAgain).toBeDisabled()
+    await userEvent.clear(dialog.getByLabelText('Translation'))
+    await userEvent.type(dialog.getByLabelText('Translation'), 'dog')
+    expect(askAgain).toBeEnabled()
+
+    await userEvent.click(askAgain)
+    expect(
+      await screen.findByText('AI is filling in “der Hund” again'),
+    ).toBeInTheDocument()
+    expect(fakeApi.requests(`/vocabulary/${DOG_ID}/regenerate`)).toHaveLength(1)
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument(),
+    )
+  })
+
+  it('says when the AI is still filling in the word', async () => {
+    const pending = { ...dog, aiStatus: 'PENDING_AI' as const }
+    fakeApi.on('GET', `/vocabulary/${DOG_ID}`, { status: 200, data: pending })
+    const dialog = within(await openEditDialog())
+
+    expect(dialog.getByText('AI is filling in this word')).toBeInTheDocument()
+    expect(dialog.getByRole('button', { name: 'Ask AI again' })).toBeDisabled()
   })
 
   it('saves only what changed', async () => {

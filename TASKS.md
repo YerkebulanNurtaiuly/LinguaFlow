@@ -162,7 +162,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   On create/bulk, enqueue AI processing: translation, part of speech, article/gender, plural, verb forms (Präteritum, Partizip II, auxiliary), CEFR estimate, 2–3 example sentences with translations. Item status `PENDING_AI → READY | AI_FAILED`. User edits always override AI values; flag `aiGenerated` per field.
   _Done when:_ adding "Hund" yields "der Hund, die Hunde, dog" with examples.
 
-- [ ] **VOC-06 — Re-generate / edit AI data** (S) — _deps: VOC-05_
+- [x] **VOC-06 — Re-generate / edit AI data** (S) — _deps: VOC-05_
   `POST /api/vocabulary/{id}/regenerate`; manual edits on all fields.
 
 - [x] **VOC-07 — Import / export** (S) — _deps: VOC-02_

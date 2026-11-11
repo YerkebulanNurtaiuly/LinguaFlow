@@ -5238,6 +5238,103 @@
         "summary" : "Edit a word",
         "tags" : [ "Vocabulary" ]
       }
+    },
+    "/api/vocabulary/{id}/regenerate" : {
+      "post" : {
+        "description" : "Clears every value the AI filled in and its examples, then queues a fresh enrichment that doesn't reuse earlier answers. Your own values, examples and the part of speech stay; change the part of speech first if it's wrong. Follow the job with GET /api/ai/jobs/{aiJobId}.",
+        "operationId" : "regenerate",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/VocabularyRegenerateResult"
+                }
+              }
+            },
+            "description" : "The word is waiting for AI again"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "409" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "AI is still working on the word (code CONFLICT)"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Ask the AI again",
+        "tags" : [ "Vocabulary" ]
+      }
     }
   },
   "components" : {
@@ -6741,6 +6838,24 @@
             "type" : "string",
             "enum" : [ "A1", "A2", "B1", "B2", "C1", "C2" ]
           },
+          "clear" : {
+            "type" : "array",
+            "description" : "Fields to clear, which an empty string can't express",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "PART_OF_SPEECH", "GENDER", "CEFR_LEVEL", "VERB_FORMS" ]
+            },
+            "uniqueItems" : true
+          },
+          "examples" : {
+            "type" : "array",
+            "description" : "Replaces all examples, in this order; an empty list removes them. Send an example's id back unchanged to keep it marked as AI-generated",
+            "items" : {
+              "$ref" : "#/components/schemas/VocabularyExampleUpdate"
+            },
+            "maxItems" : 10,
+            "minItems" : 0
+          },
           "gender" : {
             "type" : "string",
             "enum" : [ "MASCULINE", "FEMININE", "NEUTER" ]
@@ -6785,6 +6900,10 @@
             "type" : "string",
             "maxLength" : 500,
             "minLength" : 0
+          },
+          "verbForms" : {
+            "$ref" : "#/components/schemas/VerbForms",
+            "description" : "Sets a verb's principal parts; only for verbs"
           }
         }
       },
@@ -6849,6 +6968,29 @@
           }
         }
       },
+      "VerbForms" : {
+        "type" : "object",
+        "description" : "A German verb's principal parts",
+        "properties" : {
+          "auxiliary" : {
+            "type" : "string",
+            "enum" : [ "HABEN", "SEIN" ]
+          },
+          "partizip2" : {
+            "type" : "string",
+            "example" : "gelaufen",
+            "maxLength" : 100,
+            "minLength" : 0
+          },
+          "praeteritum" : {
+            "type" : "string",
+            "example" : "lief",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "auxiliary", "partizip2", "praeteritum" ]
+      },
       "VerifyEmailRequest" : {
         "type" : "object",
         "properties" : {
@@ -6882,6 +7024,29 @@
       "VocabularyExampleRequest" : {
         "type" : "object",
         "properties" : {
+          "sentence" : {
+            "type" : "string",
+            "example" : "Der Hund bellt.",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "translation" : {
+            "type" : "string",
+            "example" : "The dog barks.",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "sentence" ]
+      },
+      "VocabularyExampleUpdate" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The example's id, when it's an existing one"
+          },
           "sentence" : {
             "type" : "string",
             "example" : "Der Hund bellt.",
@@ -7047,6 +7212,19 @@
             "type" : "integer",
             "format" : "int64",
             "description" : "Increases with every change"
+          }
+        }
+      },
+      "VocabularyRegenerateResult" : {
+        "type" : "object",
+        "description" : "The word, back to PENDING_AI, and the AI job filling it in",
+        "properties" : {
+          "aiJobId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "item" : {
+            "$ref" : "#/components/schemas/VocabularyItem"
           }
         }
       },

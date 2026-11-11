@@ -93,54 +93,63 @@ export function Modal({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
+    // The overlay scrolls, so a dialog taller than the window stays reachable
+    <div className="fixed inset-0 z-50 overflow-y-auto">
       <div
-        className="absolute inset-0 bg-slate-950/50"
+        className="fixed inset-0 bg-slate-950/50"
         aria-hidden="true"
         data-testid="modal-backdrop"
         onClick={closeOnBackdrop ? onClose : undefined}
       />
       <div
-        ref={panel}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby={titleId}
-        aria-describedby={description ? descriptionId : undefined}
-        tabIndex={-1}
-        onKeyDown={onKeyDown}
-        className={cn(
-          'relative w-full rounded-xl border border-border bg-surface shadow-xl',
-          sizes[size],
-        )}
+        className="relative flex min-h-full items-end justify-center p-4 sm:items-center"
+        onClick={(event) => {
+          // This layer covers the backdrop; a click beside the panel still closes
+          if (closeOnBackdrop && event.target === event.currentTarget) onClose()
+        }}
       >
-        <div className="flex items-start justify-between gap-4 px-5 pt-5">
-          <div>
-            <h2 id={titleId} className="text-lg font-semibold text-fg">
-              {title}
-            </h2>
-            {description && (
-              <p id={descriptionId} className="mt-1 text-sm text-fg-muted">
-                {description}
-              </p>
-            )}
+        <div
+          ref={panel}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby={titleId}
+          aria-describedby={description ? descriptionId : undefined}
+          tabIndex={-1}
+          onKeyDown={onKeyDown}
+          className={cn(
+            'relative w-full rounded-xl border border-border bg-surface shadow-xl',
+            sizes[size],
+          )}
+        >
+          <div className="flex items-start justify-between gap-4 px-5 pt-5">
+            <div>
+              <h2 id={titleId} className="text-lg font-semibold text-fg">
+                {title}
+              </h2>
+              {description && (
+                <p id={descriptionId} className="mt-1 text-sm text-fg-muted">
+                  {description}
+                </p>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="-m-1 rounded-md p-1 text-fg-subtle hover:bg-surface-muted hover:text-fg"
+            >
+              <X className="size-5" aria-hidden="true" />
+              <span className="sr-only">Close</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="-m-1 rounded-md p-1 text-fg-subtle hover:bg-surface-muted hover:text-fg"
-          >
-            <X className="size-5" aria-hidden="true" />
-            <span className="sr-only">Close</span>
-          </button>
+          {children && (
+            <div className="px-5 py-4 text-sm text-fg">{children}</div>
+          )}
+          {footer && (
+            <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:justify-end">
+              {footer}
+            </div>
+          )}
         </div>
-        {children && (
-          <div className="px-5 py-4 text-sm text-fg">{children}</div>
-        )}
-        {footer && (
-          <div className="flex flex-col-reverse gap-2 border-t border-border px-5 py-4 sm:flex-row sm:justify-end">
-            {footer}
-          </div>
-        )}
       </div>
     </div>,
     document.body,

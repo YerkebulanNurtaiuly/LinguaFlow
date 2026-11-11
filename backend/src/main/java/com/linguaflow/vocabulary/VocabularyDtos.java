@@ -4,12 +4,16 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import com.linguaflow.common.domain.CefrLevel;
 import com.linguaflow.common.domain.KnowledgeStatus;
+import com.linguaflow.vocabulary.VocabularyCommands.ClearableField;
+import com.linguaflow.vocabulary.VocabularyCommands.ExampleChange;
 import com.linguaflow.vocabulary.VocabularyCommands.NewExample;
 import com.linguaflow.vocabulary.VocabularyCommands.NewVocabularyItem;
+import com.linguaflow.vocabulary.VocabularyCommands.VerbFormsChange;
 import com.linguaflow.vocabulary.VocabularyCommands.VocabularyItemChanges;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
@@ -60,11 +64,22 @@ final class VocabularyDtos {
 			@Schema(description = "MASTERED can't be set; it is earned through practice") KnowledgeStatus status,
 			@Size(max = 2000) String notes,
 			@Schema(description = "Replaces the word's tags; an empty list removes them all")
-			@Size(max = TagService.MAX_TAGS_PER_WORD) List<@NotNull UUID> tagIds) {
+			@Size(max = TagService.MAX_TAGS_PER_WORD) List<@NotNull UUID> tagIds,
+			@Schema(description = "Replaces all examples, in this order; an empty list removes them. Send an "
+					+ "example's id back unchanged to keep it marked as AI-generated")
+			@Size(max = VocabularyService.MAX_EXAMPLES) List<@Valid @NotNull ExampleUpdate> examples,
+			@Schema(description = "Sets a verb's principal parts; only for verbs") @Valid VerbFormsRequest verbForms,
+			@Schema(description = "Fields to clear, which an empty string can't express")
+			Set<@NotNull ClearableField> clear) {
 
 		VocabularyItemChanges toCommand() {
 			return new VocabularyItemChanges(lemma, partOfSpeech, translation, gender, plural, cefrLevel, status,
-					notes, tagIds);
+					notes, tagIds,
+					examples == null ? null
+							: examples.stream().map(e -> new ExampleChange(e.id(), e.sentence(), e.translation())).toList(),
+					verbForms == null ? null
+							: new VerbFormsChange(verbForms.praeteritum(), verbForms.partizip2(), verbForms.auxiliary()),
+					clear);
 		}
 
 	}
@@ -105,6 +120,21 @@ final class VocabularyDtos {
 			};
 		}
 
+	}
+
+	@Schema(name = "VocabularyExampleUpdate")
+	record ExampleUpdate(@Schema(description = "The example's id, when it's an existing one") UUID id,
+			@Schema(example = "Der Hund bellt.") @NotBlank @Size(max = 1000) String sentence,
+			@Schema(example = "The dog barks.") @Size(max = 1000) String translation) {
+	}
+
+	@Schema(name = "VerbForms", description = "A German verb's principal parts")
+	record VerbFormsRequest(@Schema(example = "lief") @NotBlank @Size(max = 100) String praeteritum,
+			@Schema(example = "gelaufen") @NotBlank @Size(max = 100) String partizip2, @NotNull Auxiliary auxiliary) {
+	}
+
+	@Schema(name = "VocabularyRegenerateResult", description = "The word, back to PENDING_AI, and the AI job filling it in")
+	record RegenerateResponse(ItemResponse item, UUID aiJobId) {
 	}
 
 	@Schema(name = "VocabularyExample")
