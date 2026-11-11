@@ -1,18 +1,43 @@
 package com.linguaflow.flashcard;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
 import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.persistence.OwnedRepository;
+import org.jspecify.annotations.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 /** Flashcards. The generator's system-wide queries say so in their names. */
 public interface FlashcardRepository extends OwnedRepository<Flashcard> {
 
-	/** The user's cards of one word. */
-	List<Flashcard> findAllByUserIdAndVocabularyItemId(UUID userId, UUID vocabularyItemId);
+	String SEARCH_FROM = """
+			from Flashcard f
+			join VocabularyItem v on v.id = f.vocabularyItemId
+			join SrsState s on s.id = f.id
+			where f.userId = :userId and v.userId = :userId and v.languageCode = :languageCode
+			  and f.direction in :directions and s.state in :states
+			  and (:suspended is null or f.suspended = :suspended)
+			  and (:itemId is null or f.vocabularyItemId = :itemId)
+			  and (:lemmaPattern = ''
+			       or v.normalizedLemma like :lemmaPattern escape '\\'
+			       or lower(v.translation) like :textPattern escape '\\')""";
+
+	/**
+	 * The user's cards of words in one language, filtered (FC-02). Empty filters are passed
+	 * as all values; {@code ''} patterns mean no search. Sorting by due date needs
+	 * {@code JpaSort.unsafe("s.dueAt")}.
+	 */
+	@Query(value = "select f " + SEARCH_FROM, countQuery = "select count(f) " + SEARCH_FROM)
+	Page<Flashcard> search(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("directions") Collection<CardDirection> directions,
+			@Param("states") Collection<SrsState.State> states, @Param("suspended") @Nullable Boolean suspended,
+			@Param("itemId") @Nullable UUID itemId, @Param("lemmaPattern") String lemmaPattern,
+			@Param("textPattern") String textPattern, Pageable pageable);
 
 	@Query("select f.direction from Flashcard f where f.vocabularyItemId = :itemId")
 	List<CardDirection> findDirectionsForGenerationByVocabularyItemId(@Param("itemId") UUID itemId);

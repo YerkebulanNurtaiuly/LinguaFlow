@@ -224,7 +224,8 @@ export function verbFormsOf(word: VocabularyWord): VerbForms | undefined {
   return {
     praeteritum,
     partizip2,
-    auxiliary: auxiliary === 'HABEN' ? 'HABEN' : 'SEIN',
+    // Older data (the dev seed) writes the auxiliary in lower case
+    auxiliary: String(auxiliary).toUpperCase() === 'HABEN' ? 'HABEN' : 'SEIN',
   }
 }
 

@@ -1,6 +1,7 @@
 package com.linguaflow.vocabulary;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -250,6 +251,19 @@ public class VocabularyService {
 			}
 			return loaded(items.saveAndFlush(item));
 		}), () -> key[0], () -> lemmaHolder[0]);
+	}
+
+	/**
+	 * The user's words among {@code ids}, with examples and tags loaded, by ID; for other
+	 * modules that show words, e.g. flashcard content (FC-02). Others' words are left out.
+	 */
+	@Transactional(readOnly = true)
+	public Map<UUID, VocabularyItem> findOwned(UUID userId, Collection<UUID> ids) {
+		Map<UUID, VocabularyItem> byId = new HashMap<>();
+		if (!ids.isEmpty()) {
+			items.findOwnedByIds(userId, ids).forEach(item -> byId.put(item.getId(), loaded(item)));
+		}
+		return byId;
 	}
 
 	/**

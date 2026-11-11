@@ -54,7 +54,8 @@ class DefaultPageSizeTests {
 	private JdbcTemplate jdbc;
 
 	@ParameterizedTest
-	@ValueSource(strings = { "/api/vocabulary", "/api/grammar-topics", "/api/study-sessions", "/api/ai/jobs" })
+	@ValueSource(strings = { "/api/vocabulary", "/api/grammar-topics", "/api/study-sessions", "/api/ai/jobs",
+			"/api/flashcards" })
 	void listsDefaultToTwentyPerPage(String path) throws Exception {
 		users.deleteAll();
 		TestUser learner = new TestUsers(registration, accessTokens, jdbc).learner("pages@example.de");

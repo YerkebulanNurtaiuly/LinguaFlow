@@ -103,3 +103,8 @@ export type AiUsageTotals = Schemas['AiUsageTotals']
 export type AiJob = Schemas['AiJob']
 export type AiJobStatus = AiJob['status']
 export type AiJobProgress = Schemas['AiJobProgress']
+
+// Flashcards (FC-02)
+export type Flashcard = Schemas['Flashcard']
+export type FlashcardContent = Schemas['FlashcardContent']
+export type FlashcardSrs = Schemas['FlashcardSrs']

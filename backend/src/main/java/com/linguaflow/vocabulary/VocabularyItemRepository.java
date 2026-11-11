@@ -72,6 +72,10 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 	List<String> findRecentLemmas(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			Pageable page);
 
+	/** The user's words among {@code ids}, in any language (FC-02). */
+	@Query("select v from VocabularyItem v where v.userId = :userId and v.id in :ids")
+	List<VocabularyItem> findOwnedByIds(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);
+
 	/** Words for the AI enrichment worker (VOC-05); system-wide, the job knows the owner. */
 	@Query("select v from VocabularyItem v where v.id in :ids order by v.createdAt, v.id")
 	List<VocabularyItem> findAllForEnrichmentByIdIn(@Param("ids") Collection<UUID> ids);

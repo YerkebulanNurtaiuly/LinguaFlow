@@ -245,6 +245,19 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Deleting:** removing a word removes its cards and states (the database cascades).
   - **Settings UI:** the language section of Settings has a "Flashcards" fieldset with "German → English" and "English → German" checkboxes, at least one.
   - **Tests:** `FlashcardGenerationTests`, `FlashcardContentTests`, plus the repository contracts.
+  - **Verb auxiliaries:** the AI and the edit form write `SEIN`/`HABEN`, while older data (the dev seed) writes `sein`/`haben`. Read them case-insensitively (`FlashcardContent`, and `verbFormsOf` in the frontend).
+- **Flashcard API (FC-02):** `FlashcardController` and `FlashcardService` serve `/api/flashcards`.
+  - **Endpoints:** a paged list, `GET /{id}`, and `PATCH /{id}` with `{suspended}` (required; suspending keeps the review state).
+  - **The `Flashcard` body:** the card, the word's `lemma`, its `content` (`FlashcardContent`: front, hint, back, plural, praeteritum, perfect, examples, complete) and its `srs` (state, dueAt, intervalDays, repetitions, lapses, lastReviewedAt).
+  - **Listing:** the active language's cards (409 `NO_ACTIVE_LANGUAGE` before onboarding), newest first.
+    - **Filters:** repeatable `direction` and `state`, plus `suspended`, `vocabularyItemId`, and `q`, which matches the normalized lemma or the lower-cased translation with `%` and `_` taken literally.
+    - **Sort:** by `createdAt`, `updatedAt` or `dueAt`. NEW cards have no due date and sort last ascending; anything else is a 400 on `sort`.
+  - **Query (`FlashcardRepository.search`):** a JPQL query with entity joins (`join VocabularyItem v on …`, `join SrsState s on …`, not comma joins). Spring Data only recognises explicit join aliases, so `JpaSort.unsafe("s.dueAt")` isn't prefixed with `f.`.
+    - Empty filters are passed as all values, and an empty `q` as `''`.
+    - Words and states for a page are loaded in two batched queries (`VocabularyService.findOwned`, `SrsStateRepository.findAllByUserIdAndIdIn`).
+  - **One card:** `GET /{id}` works in any of the user's languages. Another user's card is 404.
+  - **Frontend:** the flashcard browser is FE-FC-02, and review is SRS-02 and FE-FC-01.
+  - **Tests:** `FlashcardApiTests`.
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

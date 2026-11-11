@@ -87,7 +87,8 @@ public record FlashcardContent(CardDirection direction, String front, @Nullable 
 		}
 		Object praeteritum = word.getExtra().get("praeteritum");
 		Object partizip2 = word.getExtra().get("partizip2");
-		String auxiliary = "SEIN".equals(word.getExtra().get("auxiliary")) ? "ist" : "hat";
+		// The AI and the edit form write SEIN/HABEN; older data (the dev seed) writes sein/haben
+		String auxiliary = "SEIN".equalsIgnoreCase(String.valueOf(word.getExtra().get("auxiliary"))) ? "ist" : "hat";
 		return new VerbForms(String.valueOf(praeteritum), auxiliary + " " + partizip2);
 	}
 

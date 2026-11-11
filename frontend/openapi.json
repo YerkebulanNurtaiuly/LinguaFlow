@@ -22,6 +22,9 @@
     "description" : "The current user's account",
     "name" : "Profile"
   }, {
+    "description" : "Cards made from your words, two per word",
+    "name" : "Flashcards"
+  }, {
     "description" : "The learner's words and phrases",
     "name" : "Vocabulary"
   }, {
@@ -222,7 +225,7 @@
     "/api/ai/jobs" : {
       "get" : {
         "description" : "Your AI jobs, newest first. Sortable by createdAt, updatedAt.",
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -423,7 +426,7 @@
     "/api/ai/jobs/{id}" : {
       "get" : {
         "description" : "Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.",
-        "operationId" : "get_4",
+        "operationId" : "get_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -1232,6 +1235,322 @@
         },
         "summary" : "Send a new email verification link to the current user",
         "tags" : [ "Auth" ]
+      }
+    },
+    "/api/flashcards" : {
+      "get" : {
+        "description" : "Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).",
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Only these directions (repeatable)",
+          "in" : "query",
+          "name" : "direction",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "TARGET_TO_NATIVE", "NATIVE_TO_TARGET" ]
+            }
+          }
+        }, {
+          "description" : "Only these review states (repeatable)",
+          "in" : "query",
+          "name" : "state",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "NEW", "LEARNING", "REVIEW", "RELEARNING" ]
+            }
+          }
+        }, {
+          "description" : "Only suspended (true) or active (false) cards",
+          "in" : "query",
+          "name" : "suspended",
+          "required" : false,
+          "schema" : {
+            "type" : [ "boolean", "null" ]
+          }
+        }, {
+          "description" : "Only the cards of this word",
+          "in" : "query",
+          "name" : "vocabularyItemId",
+          "required" : false,
+          "schema" : {
+            "type" : [ "string", "null" ],
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Searches the word and its translation",
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : [ "string", "null" ]
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseFlashcard"
+                }
+              }
+            },
+            "description" : "One page of cards"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List flashcards",
+        "tags" : [ "Flashcards" ]
+      }
+    },
+    "/api/flashcards/{id}" : {
+      "get" : {
+        "operationId" : "get_4",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Flashcard"
+                }
+              }
+            },
+            "description" : "The card"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Get a flashcard",
+        "tags" : [ "Flashcards" ]
+      },
+      "patch" : {
+        "description" : "A suspended card is left out of reviews; its review history is kept.",
+        "operationId" : "update_5",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateFlashcardRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Flashcard"
+                }
+              }
+            },
+            "description" : "The card"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Suspend or unsuspend a flashcard",
+        "tags" : [ "Flashcards" ]
       }
     },
     "/api/grammar-topics" : {
@@ -6139,6 +6458,128 @@
           }
         }
       },
+      "Flashcard" : {
+        "type" : "object",
+        "description" : "One direction of one word, with what it shows and where it stands in review",
+        "properties" : {
+          "content" : {
+            "$ref" : "#/components/schemas/FlashcardContent"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "direction" : {
+            "type" : "string",
+            "enum" : [ "TARGET_TO_NATIVE", "NATIVE_TO_TARGET" ]
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "lemma" : {
+            "type" : "string",
+            "description" : "The word as you entered it"
+          },
+          "srs" : {
+            "$ref" : "#/components/schemas/FlashcardSrs"
+          },
+          "suspended" : {
+            "type" : "boolean",
+            "description" : "Left out of reviews; cards of the directions you don't review are skipped too"
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "vocabularyItemId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "FlashcardContent" : {
+        "type" : "object",
+        "description" : "Built from the word every time, so it always matches the word as it is now",
+        "properties" : {
+          "back" : {
+            "type" : "string",
+            "description" : "The answer"
+          },
+          "complete" : {
+            "type" : "boolean",
+            "description" : "False while the word has no translation; such cards aren't reviewed"
+          },
+          "examples" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/FlashcardExample"
+            }
+          },
+          "front" : {
+            "type" : "string",
+            "description" : "What's asked, e.g. \"der Hund\" or \"dog\""
+          },
+          "hint" : {
+            "type" : "string",
+            "description" : "Shown with the front, e.g. \"noun\""
+          },
+          "perfect" : {
+            "type" : "string",
+            "description" : "Perfect with its auxiliary, e.g. \"ist gelaufen\""
+          },
+          "plural" : {
+            "type" : "string",
+            "example" : "die Hunde"
+          },
+          "praeteritum" : {
+            "type" : "string",
+            "description" : "Präteritum, e.g. \"lief\""
+          }
+        }
+      },
+      "FlashcardExample" : {
+        "type" : "object",
+        "properties" : {
+          "sentence" : {
+            "type" : "string"
+          },
+          "translation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "FlashcardSrs" : {
+        "type" : "object",
+        "description" : "Spaced-repetition state",
+        "properties" : {
+          "dueAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "Null while NEW"
+          },
+          "intervalDays" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lapses" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "lastReviewedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "repetitions" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "state" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LEARNING", "REVIEW", "RELEARNING" ]
+          }
+        }
+      },
       "GrammarCatalogEntry" : {
         "type" : "object",
         "properties" : {
@@ -6432,6 +6873,39 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/AiJob"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseFlashcard" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Flashcard"
             }
           },
           "page" : {
@@ -6861,6 +7335,16 @@
             "example" : "Bearer"
           }
         }
+      },
+      "UpdateFlashcardRequest" : {
+        "type" : "object",
+        "properties" : {
+          "suspended" : {
+            "type" : "boolean",
+            "description" : "True leaves the card out of reviews"
+          }
+        },
+        "required" : [ "suspended" ]
       },
       "UpdateGrammarTopicRequest" : {
         "type" : "object",

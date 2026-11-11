@@ -67,6 +67,14 @@ class FlashcardContentTests {
 		assertThat(FlashcardContent.of(CardDirection.NATIVE_TO_TARGET, machen).verbForms().perfect())
 			.isEqualTo("hat gemacht");
 		assertThat(FlashcardContent.of(CardDirection.TARGET_TO_NATIVE, laufen).plural()).isNull();
+
+		// Older data, like the dev seed, writes the auxiliary in lower case
+		VocabularyItem gehen = word("gehen");
+		gehen.setPartOfSpeech(PartOfSpeech.VERB);
+		gehen.setTranslation("to go");
+		gehen.setExtra(java.util.Map.of("praeteritum", "ging", "partizip2", "gegangen", "auxiliary", "sein"));
+		assertThat(FlashcardContent.of(CardDirection.TARGET_TO_NATIVE, gehen).verbForms().perfect())
+			.isEqualTo("ist gegangen");
 	}
 
 	@Test

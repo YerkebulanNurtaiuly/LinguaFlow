@@ -170,4 +170,13 @@ describe('word form values', () => {
       wordFormSchema.safeParse({ ...valuesOf(verb), partizip2: '' }).success,
     ).toBe(false)
   })
+
+  it('reads a lower-case auxiliary, as older data writes it', () => {
+    const essen: VocabularyWord = {
+      ...dog,
+      partOfSpeech: 'VERB',
+      extra: { praeteritum: 'aß', partizip2: 'gegessen', auxiliary: 'haben' },
+    }
+    expect(valuesOf(essen).auxiliary).toBe('HABEN')
+  })
 })

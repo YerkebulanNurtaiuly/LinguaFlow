@@ -69,7 +69,7 @@ export interface paths {
          * List AI jobs
          * @description Your AI jobs, newest first. Sortable by createdAt, updatedAt.
          */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -109,7 +109,7 @@ export interface paths {
          * Get an AI job
          * @description Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.
          */
-        get: operations["get_4"];
+        get: operations["get_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -290,6 +290,47 @@ export interface paths {
         options?: never;
         head?: never;
         patch?: never;
+        trace?: never;
+    };
+    "/api/flashcards": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List flashcards
+         * @description Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).
+         */
+        get: operations["list_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/flashcards/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get a flashcard */
+        get: operations["get_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * Suspend or unsuspend a flashcard
+         * @description A suspended card is left out of reviews; its review history is kept.
+         */
+        patch: operations["update_5"];
         trace?: never;
     };
     "/api/grammar-topics": {
@@ -1254,6 +1295,65 @@ export interface components {
             field?: string;
             message?: string;
         };
+        /** @description One direction of one word, with what it shows and where it stands in review */
+        Flashcard: {
+            content?: components["schemas"]["FlashcardContent"];
+            /** Format: date-time */
+            createdAt?: string;
+            /** @enum {string} */
+            direction?: "TARGET_TO_NATIVE" | "NATIVE_TO_TARGET";
+            /** Format: uuid */
+            id?: string;
+            /** @description The word as you entered it */
+            lemma?: string;
+            srs?: components["schemas"]["FlashcardSrs"];
+            /** @description Left out of reviews; cards of the directions you don't review are skipped too */
+            suspended?: boolean;
+            /** Format: date-time */
+            updatedAt?: string;
+            /** Format: uuid */
+            vocabularyItemId?: string;
+        };
+        /** @description Built from the word every time, so it always matches the word as it is now */
+        FlashcardContent: {
+            /** @description The answer */
+            back?: string;
+            /** @description False while the word has no translation; such cards aren't reviewed */
+            complete?: boolean;
+            examples?: components["schemas"]["FlashcardExample"][];
+            /** @description What's asked, e.g. "der Hund" or "dog" */
+            front?: string;
+            /** @description Shown with the front, e.g. "noun" */
+            hint?: string;
+            /** @description Perfect with its auxiliary, e.g. "ist gelaufen" */
+            perfect?: string;
+            /** @example die Hunde */
+            plural?: string;
+            /** @description Präteritum, e.g. "lief" */
+            praeteritum?: string;
+        };
+        FlashcardExample: {
+            sentence?: string;
+            translation?: string;
+        };
+        /** @description Spaced-repetition state */
+        FlashcardSrs: {
+            /**
+             * Format: date-time
+             * @description Null while NEW
+             */
+            dueAt?: string;
+            /** Format: int32 */
+            intervalDays?: number;
+            /** Format: int32 */
+            lapses?: number;
+            /** Format: date-time */
+            lastReviewedAt?: string;
+            /** Format: int32 */
+            repetitions?: number;
+            /** @enum {string} */
+            state?: "NEW" | "LEARNING" | "REVIEW" | "RELEARNING";
+        };
         GrammarCatalogEntry: {
             /** @enum {string} */
             cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
@@ -1401,6 +1501,18 @@ export interface components {
         };
         PageResponseAiJob: {
             content?: components["schemas"]["AiJob"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageResponseFlashcard: {
+            content?: components["schemas"]["Flashcard"][];
             /** Format: int32 */
             page?: number;
             /** Format: int32 */
@@ -1585,6 +1697,10 @@ export interface components {
             expiresIn?: number;
             /** @example Bearer */
             tokenType?: string;
+        };
+        UpdateFlashcardRequest: {
+            /** @description True leaves the card out of reviews */
+            suspended: boolean;
         };
         /** @description Partial update: absent or null fields stay unchanged; an empty string clears the description or notes */
         UpdateGrammarTopicRequest: {
@@ -1966,7 +2082,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query: {
                 userId: string;
@@ -2107,7 +2223,7 @@ export interface operations {
             };
         };
     };
-    get_4: {
+    get_5: {
         parameters: {
             query: {
                 userId: string;
@@ -2769,6 +2885,226 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description Only these directions (repeatable) */
+                direction?: ("TARGET_TO_NATIVE" | "NATIVE_TO_TARGET")[];
+                /** @description Only these review states (repeatable) */
+                state?: ("NEW" | "LEARNING" | "REVIEW" | "RELEARNING")[];
+                /** @description Only suspended (true) or active (false) cards */
+                suspended?: boolean | null;
+                /** @description Only the cards of this word */
+                vocabularyItemId?: string | null;
+                /** @description Searches the word and its translation */
+                q?: string | null;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of cards */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseFlashcard"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    get_4: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The card */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Flashcard"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    update_5: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateFlashcardRequest"];
+            };
+        };
+        responses: {
+            /** @description The card */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Flashcard"];
+                };
             };
             /** @description Invalid request */
             400: {
