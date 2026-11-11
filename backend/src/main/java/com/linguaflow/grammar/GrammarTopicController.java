@@ -92,14 +92,26 @@ class GrammarTopicController {
 
 	}
 
-	@Schema(name = "GrammarExplanation", description = "AI-generated explanation (GRM-04)")
-	record ExplanationResponse(String summary, List<String> rules, List<String> examples) {
+	@Schema(name = "GrammarExplanation",
+			description = "AI-generated explanation (GRM-04), in your explanation language; kept apart from your notes")
+	record ExplanationResponse(String summary,
+			@Schema(description = "Most important first; a rule may contain a plain-text table, so keep its line breaks") List<String> rules,
+			List<ExampleResponse> examples, List<String> commonMistakes) {
 
 		static ExplanationResponse from(GrammarExplanation explanation) {
 			return explanation == null ? null
-					: new ExplanationResponse(explanation.summary(), explanation.rules(), explanation.examples());
+					: new ExplanationResponse(explanation.summary(), explanation.rules(),
+							explanation.examples()
+								.stream()
+								.map(example -> new ExampleResponse(example.sentence(), example.translation()))
+								.toList(),
+							explanation.commonMistakes());
 		}
 
+	}
+
+	@Schema(name = "GrammarExplanationExample")
+	record ExampleResponse(@Schema(description = "In the learned language") String sentence, String translation) {
 	}
 
 	@Schema(name = "GrammarTopicStatusChange")
@@ -173,6 +185,24 @@ class GrammarTopicController {
 		GrammarTopic topic = topics.create(userId, request.toCommand());
 		return ResponseEntity.created(URI.create("/api/grammar-topics/" + topic.getId()))
 			.body(TopicResponse.from(topic));
+	}
+
+	@Schema(name = "GrammarExplanationRequest", description = "The AI job writing the explanation")
+	record ExplanationRequestResponse(UUID aiJobId,
+			@Schema(description = "True when an earlier request is still being worked on; this is its job") boolean alreadyRunning) {
+	}
+
+	@PostMapping("/{id}/explanation")
+	@Operation(summary = "Ask the AI to explain the topic",
+			description = "Queues an AI explanation (summary, rules, examples, common mistakes) in your explanation "
+					+ "language, replacing an earlier one; your notes are never changed. Poll GET /api/ai/jobs/{aiJobId} "
+					+ "until it's finished, then reload the topic. While one is still being written, its job is "
+					+ "returned instead of queueing another.")
+	@ApiResponse(responseCode = "202", description = "The explanation is being written")
+	ResponseEntity<ExplanationRequestResponse> requestExplanation(@CurrentUserId UUID userId, @PathVariable UUID id) {
+		GrammarTopicService.ExplanationRequest request = topics.requestExplanation(userId, id);
+		return ResponseEntity.accepted()
+			.body(new ExplanationRequestResponse(request.aiJobId(), request.alreadyRunning()));
 	}
 
 	@GetMapping("/{id}/status-history")

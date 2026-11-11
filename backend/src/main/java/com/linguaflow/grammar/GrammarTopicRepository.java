@@ -5,7 +5,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.common.persistence.OwnedRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -36,5 +38,21 @@ public interface GrammarTopicRepository extends OwnedRepository<GrammarTopic>, G
 			from GrammarTopic t where t.userId = :userId and t.languageCode = :languageCode
 			""")
 	List<GrammarTopicKey> findKeys(@Param("userId") UUID userId, @Param("languageCode") String languageCode);
+
+
+	/** Titles of the user's other topics with these statuses, most recently changed first (GRM-04). */
+	@Query("""
+			select t.title from GrammarTopic t
+			where t.userId = :userId and t.languageCode = :languageCode and t.id <> :excludedId
+			  and t.status in :statuses
+			order by t.updatedAt desc, t.id""")
+	List<String> findTitlesByStatus(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("excludedId") UUID excludedId,
+			@Param("statuses") Collection<KnowledgeStatus> statuses,
+			Pageable page);
+
+	/** A topic for the AI explanation worker (GRM-04); system-wide, the job knows the owner. */
+	@Query("select t from GrammarTopic t where t.id = :id")
+	Optional<GrammarTopic> findForExplanationById(@Param("id") UUID id);
 
 }

@@ -53,3 +53,38 @@ export function useAiJobProgress(ids: string[]) {
   }, [finished, queryClient])
   return query
 }
+
+const jobSchema = z.object({
+  id: z.string(),
+  type: z.string(),
+  status: z.enum(['QUEUED', 'RUNNING', 'SUCCEEDED', 'FAILED', 'DEAD']),
+  finished: z.boolean(),
+  attempts: z.number(),
+  maxAttempts: z.number(),
+  waiting: z
+    .enum(['RETRY', 'DAILY_LIMIT'])
+    .nullish()
+    .transform((value) => value ?? undefined),
+  nextRunAt: z
+    .string()
+    .nullish()
+    .transform((value) => value ?? undefined),
+})
+
+export type Job = z.infer<typeof jobSchema>
+
+export async function fetchAiJob(id: string): Promise<Job> {
+  const { data } = await api.get<unknown>(`/ai/jobs/${encodeURIComponent(id)}`)
+  return jobSchema.parse(data)
+}
+
+/** Follows one AI job (AI-08) until it has finished; idle without an ID. */
+export function useAiJob(id: string | undefined) {
+  return useQuery({
+    queryKey: [...AI_JOBS_QUERY_KEY, 'job', id],
+    queryFn: () => fetchAiJob(id ?? ''),
+    enabled: id !== undefined,
+    refetchInterval: (current) =>
+      current.state.data?.finished ? false : AI_JOB_POLL_MS,
+  })
+}

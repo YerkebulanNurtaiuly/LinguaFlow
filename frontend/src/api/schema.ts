@@ -381,6 +381,26 @@ export interface paths {
         patch: operations["update_4"];
         trace?: never;
     };
+    "/api/grammar-topics/{id}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ask the AI to explain the topic
+         * @description Queues an AI explanation (summary, rules, examples, common mistakes) in your explanation language, replacing an earlier one; your notes are never changed. Poll GET /api/ai/jobs/{aiJobId} until it's finished, then reload the topic. While one is still being written, its job is returned instead of queueing another.
+         */
+        post: operations["requestExplanation"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/grammar-topics/{id}/status-history": {
         parameters: {
             query?: never;
@@ -1250,11 +1270,25 @@ export interface components {
              */
             topicId?: string;
         };
-        /** @description AI-generated explanation (GRM-04) */
+        /** @description AI-generated explanation (GRM-04), in your explanation language; kept apart from your notes */
         GrammarExplanation: {
-            examples?: string[];
+            commonMistakes?: string[];
+            examples?: components["schemas"]["GrammarExplanationExample"][];
+            /** @description Most important first; a rule may contain a plain-text table, so keep its line breaks */
             rules?: string[];
             summary?: string;
+        };
+        GrammarExplanationExample: {
+            /** @description In the learned language */
+            sentence?: string;
+            translation?: string;
+        };
+        /** @description The AI job writing the explanation */
+        GrammarExplanationRequest: {
+            /** Format: uuid */
+            aiJobId?: string;
+            /** @description True when an earlier request is still being worked on; this is its job */
+            alreadyRunning?: boolean;
         };
         GrammarTopic: {
             aiExplanation?: components["schemas"]["GrammarExplanation"];
@@ -3301,6 +3335,75 @@ export interface operations {
             };
             /** @description The new title clashes with another topic (code GRAMMAR_TOPIC_DUPLICATE, see existingId), or the topic was changed meanwhile (code CONFLICT) */
             409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    requestExplanation: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The explanation is being written */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GrammarExplanationRequest"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
                 headers: {
                     [name: string]: unknown;
                 };

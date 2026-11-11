@@ -87,8 +87,11 @@ describe('grammar topic page', () => {
       await within(status).findByText(/New → Learning/),
     ).toBeInTheDocument()
     expect(within(status).getByText('(by you)')).toBeInTheDocument()
+    // No explanation yet: the learner can ask for one
     expect(
-      within(section('AI explanation')).getByText(/No AI explanation yet/),
+      within(section('AI explanation')).getByRole('button', {
+        name: 'Explain with AI',
+      }),
     ).toBeInTheDocument()
   })
 
@@ -232,14 +235,19 @@ describe('grammar topic page', () => {
     })
   })
 
+  const explanation = {
+    summary: 'The case of the indirect object.',
+    rules: ['mit, nach, bei take the dative'],
+    examples: [
+      { sentence: 'Ich helfe dem Mann.', translation: 'I help the man.' },
+    ],
+    commonMistakes: ['Using the accusative after mit.'],
+  }
+
   it('shows the AI explanation when there is one', async () => {
     await openTopic(
       topic({
-        aiExplanation: {
-          summary: 'The case of the indirect object.',
-          rules: ['mit, nach, bei take the dative'],
-          examples: ['Ich helfe dem Mann.'],
-        },
+        aiExplanation: explanation,
         aiExplanationGeneratedAt: '2026-11-02T10:00:00Z',
       }),
     )
@@ -247,6 +255,107 @@ describe('grammar topic page', () => {
     expect(ai.getByText('The case of the indirect object.')).toBeInTheDocument()
     expect(ai.getByText('mit, nach, bei take the dative')).toBeInTheDocument()
     expect(ai.getByText('Ich helfe dem Mann.')).toBeInTheDocument()
+    expect(ai.getByText('I help the man.')).toBeInTheDocument()
+    expect(ai.getByText('Using the accusative after mit.')).toBeInTheDocument()
+    expect(
+      ai.getByRole('button', { name: 'Write a new explanation' }),
+    ).toBeInTheDocument()
+  })
+
+  describe('asking the AI for an explanation', () => {
+    const job = (overrides: Record<string, unknown>) => ({
+      status: 200,
+      data: {
+        id: 'job-1',
+        type: 'GRAMMAR_EXPLANATION',
+        status: 'QUEUED',
+        finished: false,
+        attempts: 0,
+        maxAttempts: 3,
+        ...overrides,
+      },
+    })
+
+    it('writes one and shows it once it is ready', async () => {
+      let written = false
+      fakeApi.on('POST', `${URL}/explanation`, {
+        status: 202,
+        data: { aiJobId: 'job-1', alreadyRunning: false },
+      })
+      let polls = 0
+      fakeApi.on('GET', '/ai/jobs/job-1', () => {
+        polls += 1
+        if (polls < 2) return job({})
+        written = true
+        return job({ status: 'SUCCEEDED', finished: true, attempts: 1 })
+      })
+      await openTopic()
+      // The topic is fetched again once the job is done
+      fakeApi.on('GET', URL, () => ({
+        status: 200,
+        data: written
+          ? topic({
+              aiExplanation: explanation,
+              aiExplanationGeneratedAt: '2026-11-11T10:00:00Z',
+            })
+          : topic(),
+      }))
+      const ai = within(section('AI explanation'))
+
+      await userEvent.click(ai.getByRole('button', { name: 'Explain with AI' }))
+
+      expect(await ai.findByText(/Writing an explanation/)).toBeInTheDocument()
+      expect(
+        await ai.findByText('The case of the indirect object.', undefined, {
+          timeout: 8000,
+        }),
+      ).toBeInTheDocument()
+      expect(fakeApi.requests(`${URL}/explanation`)).toHaveLength(1)
+    }, 15000)
+
+    it('says when the AI could not write one', async () => {
+      fakeApi.on('POST', `${URL}/explanation`, {
+        status: 202,
+        data: { aiJobId: 'job-1', alreadyRunning: false },
+      })
+      fakeApi.on(
+        'GET',
+        '/ai/jobs/job-1',
+        job({ status: 'FAILED', finished: true, attempts: 1 }),
+      )
+      await openTopic()
+      const ai = within(section('AI explanation'))
+
+      await userEvent.click(ai.getByRole('button', { name: 'Explain with AI' }))
+
+      expect(
+        await ai.findByText("The AI couldn't write an explanation"),
+      ).toBeInTheDocument()
+      expect(ai.getByRole('button', { name: 'Explain with AI' })).toBeEnabled()
+    })
+
+    it('explains a wait for the daily AI allowance', async () => {
+      fakeApi.on('POST', `${URL}/explanation`, {
+        status: 202,
+        data: { aiJobId: 'job-1', alreadyRunning: true },
+      })
+      fakeApi.on(
+        'GET',
+        '/ai/jobs/job-1',
+        job({ waiting: 'DAILY_LIMIT', nextRunAt: '2026-11-12T00:00:00Z' }),
+      )
+      await openTopic()
+      const ai = within(section('AI explanation'))
+
+      await userEvent.click(ai.getByRole('button', { name: 'Explain with AI' }))
+
+      expect(
+        await ai.findByText(/used today's AI allowance/),
+      ).toBeInTheDocument()
+      expect(
+        ai.queryByRole('button', { name: 'Explain with AI' }),
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('deletes the topic after confirmation', async () => {

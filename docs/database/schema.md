@@ -209,7 +209,7 @@ Also `created_at` and `updated_at`, because the user can edit examples (added in
 | normalized_title | text not null | **UQ** `(user_id, language_code, normalized_title)`: one topic per title (GRM-01) |
 | description | text | |
 | personal_notes | text | Markdown, sanitized when rendered (SEC-01) |
-| ai_explanation | jsonb | `{summary, rules[], examples[]}` (GRM-04), kept separate from the user's notes |
+| ai_explanation | jsonb | `{summary, rules[], examples[{sentence, translation}], commonMistakes[]}` (GRM-04), written by AI on request in the explanation language, kept separate from the user's notes |
 | ai_explanation_generated_at | timestamptz | |
 | cefr_level | text | CK CEFR |
 | status | text not null default `'NEW'` | CK `NEW, LEARNING, LEARNED, MASTERED`. Adding a topic never sets MASTERED (design principle 6) |

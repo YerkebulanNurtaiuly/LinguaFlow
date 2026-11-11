@@ -121,7 +121,9 @@ class LearningMaterialMappingTests {
 		GrammarTopic topic = new GrammarTopic(userId, "de", "Dativ", "dativ", KnowledgeStatus.LEARNING, NOW);
 		topic.setCefrLevel(CefrLevel.A2);
 		topic.setAiExplanation(new GrammarExplanation("Indirect object case",
-				List.of("mit, nach, bei, ... take the dative"), List.of("Ich helfe dem Mann.")), NOW);
+				List.of("mit, nach, bei, ... take the dative"),
+				List.of(new GrammarExplanation.Example("Ich helfe dem Mann.", "I help the man.")),
+				List.of("Using the accusative after mit")), NOW);
 		topic.changeStatusByUser(KnowledgeStatus.LEARNED, false, NOW.plusSeconds(60));
 		topic.changeStatusByUser(KnowledgeStatus.LEARNED, false, NOW.plusSeconds(120));
 
@@ -131,7 +133,10 @@ class LearningMaterialMappingTests {
 
 		assertThat(loaded.getStatus()).isEqualTo(KnowledgeStatus.LEARNED);
 		assertThat(loaded.getAiExplanation().summary()).isEqualTo("Indirect object case");
-		assertThat(loaded.getAiExplanation().examples()).containsExactly("Ich helfe dem Mann.");
+		// The nested JSON (examples with translations) comes back intact
+		assertThat(loaded.getAiExplanation().examples())
+			.containsExactly(new GrammarExplanation.Example("Ich helfe dem Mann.", "I help the man."));
+		assertThat(loaded.getAiExplanation().commonMistakes()).containsExactly("Using the accusative after mit");
 		assertThat(loaded.getStatusHistory()).extracting(c -> c.getReason())
 			.containsExactly(StatusChangeReason.CREATED, StatusChangeReason.MANUAL);
 		assertThat(loaded.getStatusHistory().get(1).getFromStatus()).isEqualTo(KnowledgeStatus.LEARNING);

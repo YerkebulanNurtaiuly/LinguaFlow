@@ -6,7 +6,7 @@ For each word or phrase:
 - For verbs, give the principal parts where the answer asks for them, and the auxiliary used in the perfect tense.
 - Translate into {{explanationLanguage}}. Put the most common meaning first, and give at most three meanings, separated by "; ". Translate the meaning, not the individual words, for phrases and idioms.
 - Estimate the CEFR level (A1 to C2) at which learners usually meet the word.
-- Write short, natural example sentences in {{targetLanguage}} that use the word in its most common meaning, each with a {{explanationLanguage}} translation. Keep them at or slightly below the learner's level, and vary the grammatical form of the word where that is natural.
+- Write short, natural example sentences in {{targetLanguage}} that use the word in its most common meaning, each with its translation into {{explanationLanguage}}. Keep them at or slightly below the learner's level, and vary the grammatical form of the word where that is natural.
 
 Quality rules:
 - Never invent words, forms or meanings. If you are unsure about an optional detail, leave it out rather than guess.

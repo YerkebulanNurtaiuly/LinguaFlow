@@ -24,11 +24,15 @@ const topicSchema = z.object({
   cefrLevel: optional(z.enum(CEFR_LEVELS)),
   status: z.enum(KNOWLEDGE_STATUSES),
   catalogTopicId: optional(z.string()),
+  // Written by AI on request (GRM-04), in the explanation language
   aiExplanation: optional(
     z.object({
       summary: optional(z.string()),
       rules: z.array(z.string()),
-      examples: z.array(z.string()),
+      examples: z.array(
+        z.object({ sentence: z.string(), translation: optional(z.string()) }),
+      ),
+      commonMistakes: z.array(z.string()).default([]),
     }),
   ),
   aiExplanationGeneratedAt: optional(z.string()),
@@ -160,4 +164,23 @@ export async function fetchStatusHistory(id: string): Promise<StatusChange[]> {
     `/grammar-topics/${encodeURIComponent(id)}/status-history`,
   )
   return z.array(statusChangeSchema).parse(data)
+}
+
+const explanationRequestSchema = z.object({
+  aiJobId: z.string(),
+  alreadyRunning: z.boolean(),
+})
+
+/**
+ * Asks the AI to write (or rewrite) the topic's explanation (GRM-04). It's written in the
+ * background: follow `aiJobId` with `useAiJob`, then reload the topic. While one is still
+ * being written, its job comes back with `alreadyRunning`.
+ */
+export async function requestExplanation(
+  id: string,
+): Promise<z.infer<typeof explanationRequestSchema>> {
+  const { data } = await api.post<unknown>(
+    `/grammar-topics/${encodeURIComponent(id)}/explanation`,
+  )
+  return explanationRequestSchema.parse(data)
 }

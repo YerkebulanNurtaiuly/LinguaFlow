@@ -25,6 +25,7 @@ import org.hibernate.Hibernate;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -249,6 +250,15 @@ public class VocabularyService {
 			}
 			return loaded(items.saveAndFlush(item));
 		}), () -> key[0], () -> lemmaHolder[0]);
+	}
+
+	/**
+	 * Up to {@code limit} of the user's words in a language, most recently changed first;
+	 * for other modules' AI prompts, e.g. examples in a grammar explanation (GRM-04).
+	 */
+	@Transactional(readOnly = true)
+	public List<String> recentLemmas(UUID userId, String languageCode, int limit) {
+		return items.findRecentLemmas(userId, languageCode, PageRequest.of(0, limit));
 	}
 
 	/** A word sent back to the AI, and the job doing it (VOC-06). */

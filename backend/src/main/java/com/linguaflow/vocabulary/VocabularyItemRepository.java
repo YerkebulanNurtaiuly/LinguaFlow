@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.linguaflow.common.persistence.OwnedRepository;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -62,6 +63,14 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 			""")
 	List<ExistingLemma> findExistingLemmas(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("normalizedLemmas") Collection<String> normalizedLemmas);
+
+	/** The user's words in a language, most recently changed first, for AI prompts (GRM-04). */
+	@Query("""
+			select v.lemma from VocabularyItem v
+			where v.userId = :userId and v.languageCode = :languageCode
+			order by v.updatedAt desc, v.id""")
+	List<String> findRecentLemmas(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			Pageable page);
 
 	/** Words for the AI enrichment worker (VOC-05); system-wide, the job knows the owner. */
 	@Query("select v from VocabularyItem v where v.id in :ids order by v.createdAt, v.id")

@@ -4,6 +4,7 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import com.linguaflow.common.config.LinguaFlowProperties;
@@ -47,6 +48,15 @@ public class AiJobQueue {
 		AiJob job = jobs.save(new AiJob(type, userId, payload, settings.maxAttempts(), clock.instant()));
 		events.publishEvent(new JobsEnqueued(1));
 		return job;
+	}
+
+	/**
+	 * The user's unfinished job of {@code type} for one thing, found by a payload value,
+	 * so a second request can return it instead of queueing the same work twice.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<AiJob> findActive(AiJobType type, UUID userId, String payloadKey, String payloadValue) {
+		return jobs.findActiveByUserIdAndPayload(userId, type.name(), payloadKey, payloadValue);
 	}
 
 	/**

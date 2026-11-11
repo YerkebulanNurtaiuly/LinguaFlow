@@ -1946,6 +1946,93 @@
         "tags" : [ "Grammar" ]
       }
     },
+    "/api/grammar-topics/{id}/explanation" : {
+      "post" : {
+        "description" : "Queues an AI explanation (summary, rules, examples, common mistakes) in your explanation language, replacing an earlier one; your notes are never changed. Poll GET /api/ai/jobs/{aiJobId} until it's finished, then reload the topic. While one is still being written, its job is returned instead of queueing another.",
+        "operationId" : "requestExplanation",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "202" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/GrammarExplanationRequest"
+                }
+              }
+            },
+            "description" : "The explanation is being written"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Ask the AI to explain the topic",
+        "tags" : [ "Grammar" ]
+      }
+    },
     "/api/grammar-topics/{id}/status-history" : {
       "get" : {
         "description" : "Every status change, oldest first.",
@@ -6083,22 +6170,55 @@
       },
       "GrammarExplanation" : {
         "type" : "object",
-        "description" : "AI-generated explanation (GRM-04)",
+        "description" : "AI-generated explanation (GRM-04), in your explanation language; kept apart from your notes",
         "properties" : {
-          "examples" : {
+          "commonMistakes" : {
             "type" : "array",
             "items" : {
               "type" : "string"
             }
           },
+          "examples" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/GrammarExplanationExample"
+            }
+          },
           "rules" : {
             "type" : "array",
+            "description" : "Most important first; a rule may contain a plain-text table, so keep its line breaks",
             "items" : {
               "type" : "string"
             }
           },
           "summary" : {
             "type" : "string"
+          }
+        }
+      },
+      "GrammarExplanationExample" : {
+        "type" : "object",
+        "properties" : {
+          "sentence" : {
+            "type" : "string",
+            "description" : "In the learned language"
+          },
+          "translation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "GrammarExplanationRequest" : {
+        "type" : "object",
+        "description" : "The AI job writing the explanation",
+        "properties" : {
+          "aiJobId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "alreadyRunning" : {
+            "type" : "boolean",
+            "description" : "True when an earlier request is still being worked on; this is its job"
           }
         }
       },

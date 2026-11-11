@@ -189,7 +189,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **GRM-03 — Predefined topic catalog (suggestions)** (S) — _deps: GRM-01_
   Seed table of common German grammar topics per CEFR level (Akkusativ, Dativ, Perfekt, Nebensätze, Adjektivdeklination, Konjunktiv II …) the user can pick from instead of typing.
 
-- [ ] **GRM-04 — AI grammar explanation** (S) — _deps: GRM-01, AI-03_
+- [x] **GRM-04 — AI grammar explanation** (S) — _deps: GRM-01, AI-03_
   Optional AI-generated summary, rules and examples for a topic, stored separately from personal notes.
 
 - [x] **FE-GRM-01 — Grammar topics page** (M) — _deps: FE-02, GRM-01_

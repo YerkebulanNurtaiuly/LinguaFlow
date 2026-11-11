@@ -58,6 +58,19 @@ public interface AiJobRepository extends OwnedRepository<AiJob> {
 
 	}
 
+	/**
+	 * The user's newest QUEUED or RUNNING job of {@code type} whose payload has
+	 * {@code key = value}, e.g. the explanation job of one grammar topic (GRM-04).
+	 */
+	@Query(value = """
+			select * from ai_jobs
+			where user_id = :userId and type = :type and status in ('QUEUED', 'RUNNING')
+			  and payload ->> :key = :value
+			order by created_at desc
+			limit 1""", nativeQuery = true)
+	Optional<AiJob> findActiveByUserIdAndPayload(@Param("userId") UUID userId, @Param("type") String type,
+			@Param("key") String key, @Param("value") String value);
+
 	/** The status of each of the user's jobs among {@code ids}; others' jobs are left out. */
 	@Query("select j.id as id, j.status as status from AiJob j where j.userId = :userId and j.id in :ids")
 	List<JobStatus> findStatusesByUserIdAndIdIn(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);

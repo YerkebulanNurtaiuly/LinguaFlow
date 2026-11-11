@@ -7,7 +7,7 @@ exercise-sentence-construction/v1 04938701d8bba31cd6638926
 exercise-transformation/v1 8f4e76bd43570289ef23987e
 exercise-translation/v1 f226fe1e0aa7e7346a4b2a57
 exercise-word-order/v1 d2888d8bb7701b7cf57b271f
-grammar-explanation/v1 cbec8459c031a577e501e126
-mistake-explanation/v1 d40009b5abfde08befb47c49
-vocabulary-enrichment-batch/v1 3d5b03492c512ebc072b98ba
-vocabulary-enrichment/v1 3a0f3b44a481ce626afa379d
+grammar-explanation/v1 58c80d2788a7fa5ef41a6b03
+mistake-explanation/v1 ff62f11ca5b5e4451253c034
+vocabulary-enrichment-batch/v1 27f0a10efde7554f34297be1
+vocabulary-enrichment/v1 49d8973286402fff50f3ae98

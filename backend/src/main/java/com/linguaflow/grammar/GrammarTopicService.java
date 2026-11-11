@@ -2,10 +2,13 @@ package com.linguaflow.grammar;
 
 import java.time.Clock;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.function.Supplier;
 
 import com.linguaflow.common.domain.CefrLevel;
+import com.linguaflow.ai.job.AiJobQueue;
+import com.linguaflow.ai.job.AiJobType;
 import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.common.error.InvalidFieldException;
 import com.linguaflow.common.error.NotFoundException;
@@ -82,13 +85,36 @@ public class GrammarTopicService {
 
 	private final ApplicationEventPublisher events;
 
+	private final AiJobQueue aiJobs;
+
 	GrammarTopicService(GrammarTopicRepository topics, ActiveLanguageService activeLanguages,
-			PlatformTransactionManager transactionManager, Clock clock, ApplicationEventPublisher events) {
+			PlatformTransactionManager transactionManager, Clock clock, ApplicationEventPublisher events,
+			AiJobQueue aiJobs) {
 		this.topics = topics;
+		this.aiJobs = aiJobs;
 		this.events = events;
 		this.activeLanguages = activeLanguages;
 		this.transactions = new TransactionTemplate(transactionManager);
 		this.clock = clock;
+	}
+
+	/** The AI job writing a topic's explanation (GRM-04); {@code alreadyRunning} when it was queued before. */
+	public record ExplanationRequest(UUID aiJobId, boolean alreadyRunning) {
+	}
+
+	/**
+	 * Asks the AI to explain the topic (GRM-04), or to write a new explanation. While one is
+	 * still queued or running, that job is returned instead of queueing the same work twice.
+	 * Follow it with {@code GET /api/ai/jobs/{id}}; the explanation then appears on the topic.
+	 */
+	public ExplanationRequest requestExplanation(UUID userId, UUID id) {
+		topics.requireOwned(id, userId);
+		return aiJobs
+			.findActive(AiJobType.GRAMMAR_EXPLANATION, userId, GrammarExplanationHandler.TOPIC_ID, id.toString())
+			.map(job -> new ExplanationRequest(job.getId(), true))
+			.orElseGet(() -> new ExplanationRequest(aiJobs
+				.enqueue(AiJobType.GRAMMAR_EXPLANATION, userId, Map.of(GrammarExplanationHandler.TOPIC_ID, id.toString()))
+				.getId(), false));
 	}
 
 	/**
