@@ -81,7 +81,8 @@ public class PromptLibrary {
 			.collect(Collectors.toMap(entry -> entry.getKey().key(), Map.Entry::getValue));
 		Source source = sources.get(template);
 		return new RenderedPrompt(template,
-				new LlmPrompt(PromptText.render(source.system(), byKey), PromptText.render(source.user(), byKey)));
+				new LlmPrompt(PromptText.render(source.system(), byKey), PromptText.render(source.user(), byKey)),
+				variables.flags());
 	}
 
 	/** The prepared text, for {@code PromptVersionTests}. */

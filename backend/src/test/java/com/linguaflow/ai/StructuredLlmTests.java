@@ -174,6 +174,21 @@ class StructuredLlmTests {
 	}
 
 	@Test
+	void removesInvisibleCharactersFromTheModelsAnswer() {
+		// JSON escapes, so the answer is valid JSON that decodes to a zero-width space, a
+		// right-to-left override and a bell
+		answers.add("""
+				{"translation":"do\\u200Bg\\u202E","gender":"MASCULINE","article":"der",
+				 "examples":[{"sentence":"Der Hund\\u0007 bellt.","translation":null}]}""");
+
+		StructuredResponse<Enrichment> response = enrich();
+
+		assertThat(response.attempts()).as("accepted on the first answer").isEqualTo(1);
+		assertThat(response.value().translation()).isEqualTo("dog");
+		assertThat(response.value().examples().getFirst().sentence()).isEqualTo("Der Hund bellt.");
+	}
+
+	@Test
 	void quotesLongRejectedAnswersShortened() {
 		LlmPrompt retry = StructuredLlm.withFeedback(PROMPT, "x".repeat(10_000), List.of("translation: is missing"));
 		assertThat(retry.user()).contains("x".repeat(StructuredLlm.MAX_QUOTED_ANSWER) + "…")

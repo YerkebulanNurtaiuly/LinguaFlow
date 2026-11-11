@@ -231,7 +231,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **AI-06 — Caching** (S) — _deps: AI-04_
   Cache enrichment results by `(language, normalized_lemma, part_of_speech)` across users to cut cost.
 
-- [ ] **AI-07 — Prompt safety** (S) — _deps: AI-03_
+- [x] **AI-07 — Prompt safety** (S) — _deps: AI-03_
   Treat user input as data (delimiting, length limits), strip control content, never execute model output; content moderation for free-text fields.
 
 - [ ] **AI-08 — Job status for the UI** (S) — _deps: AI-04_

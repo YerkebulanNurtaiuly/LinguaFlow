@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import com.linguaflow.ai.cache.AiCache;
 import com.linguaflow.ai.cache.AiCacheKey;
 import com.linguaflow.ai.prompt.RenderedPrompt;
+import com.linguaflow.ai.prompt.TextSafety;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import org.jspecify.annotations.Nullable;
@@ -22,7 +23,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
 
 /**
  * Asks the model for JSON in the shape of a Java record and only returns answers that
@@ -90,6 +94,7 @@ public class StructuredLlm {
 	 */
 	public <T> StructuredResponse<T> complete(AiCaller caller, RenderedPrompt prompt, Class<T> type,
 			OutputCheck<? super T> check) {
+		logInputFlags(prompt);
 		return complete(caller, prompt.useCase(), prompt.versionTag(), prompt.prompt(), type, check);
 	}
 
@@ -119,7 +124,13 @@ public class StructuredLlm {
 					String.join("; ", problems.list()));
 		}
 		StructuredResponse<T> fresh = complete(caller, prompt, type, check);
-		cache.put(key, fresh.value());
+		if (prompt.suspicious()) {
+			// Don't share what a possibly manipulated prompt produced
+			log.warn("AI {} answer not cached: the prompt input looked like instructions", key.useCase().configKey());
+		}
+		else {
+			cache.put(key, fresh.value());
+		}
 		return fresh;
 	}
 
@@ -169,7 +180,8 @@ public class StructuredLlm {
 			return null;
 		}
 		try {
-			T value = JSON.readValue(json, type);
+			// Model text is data too: drop invisible and control characters from every string (AI-07)
+			T value = JSON.treeToValue(withoutInvisible(JSON.readTree(json)), type);
 			if (value == null) {
 				problems.add("", "the answer was null; reply with a JSON object");
 			}
@@ -201,6 +213,36 @@ public class StructuredLlm {
 			}
 		}
 		return path.toString();
+	}
+
+	/** A copy of {@code node} whose strings have no invisible or control characters. */
+	static JsonNode withoutInvisible(JsonNode node) {
+		if (node.isString()) {
+			String text = node.asString();
+			String cleaned = TextSafety.removeInvisible(text);
+			return cleaned.equals(text) ? node : JSON.getNodeFactory().stringNode(cleaned);
+		}
+		if (node instanceof ObjectNode object) {
+			for (Map.Entry<String, JsonNode> property : object.properties()) {
+				property.setValue(withoutInvisible(property.getValue()));
+			}
+		}
+		else if (node instanceof ArrayNode array) {
+			for (int i = 0; i < array.size(); i++) {
+				array.set(i, withoutInvisible(array.get(i)));
+			}
+		}
+		return node;
+	}
+
+	private static void logInputFlags(RenderedPrompt prompt) {
+		if (prompt.suspicious()) {
+			log.warn("AI {} prompt input looked like instructions to the model; sent as delimited data: {}",
+					prompt.versionTag(), prompt.inputFlags());
+		}
+		else if (!prompt.inputFlags().isEmpty()) {
+			log.info("AI {} prompt input was made safe: {}", prompt.versionTag(), prompt.inputFlags());
+		}
 	}
 
 	/** Some models wrap JSON in a Markdown fence when no schema is enforced. */
