@@ -28,7 +28,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -76,7 +76,7 @@ class VocabularyController {
 			@Parameter(description = "Only words with this tag") @RequestParam(required = false) UUID tagId,
 			@Parameter(description = "Only words in these AI enrichment states, e.g. PENDING_AI")
 			@RequestParam(required = false) List<AiStatus> aiStatus,
-			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+			@SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 		VocabularyFilter filter = new VocabularyFilter(query, toSet(partOfSpeech), toSet(cefrLevel), toSet(status),
 				sessionId, tagId, toSet(aiStatus));
 		var page = vocabulary.list(userId, filter, toEntitySort(pageable));

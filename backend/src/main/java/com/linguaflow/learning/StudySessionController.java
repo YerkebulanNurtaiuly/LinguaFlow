@@ -34,7 +34,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
 import org.springframework.data.web.SortDefault;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
@@ -149,7 +148,7 @@ class StudySessionController {
 			content = @Content(mediaType = "application/problem+json",
 					schema = @Schema(implementation = ApiProblem.class)))
 	PageResponse<SessionResponse> list(@CurrentUserId UUID userId,
-			@PageableDefault @SortDefault.SortDefaults({
+			@SortDefault.SortDefaults({
 					@SortDefault(sort = "studiedOn", direction = Sort.Direction.DESC),
 					@SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) }) Pageable pageable) {
 		var page = sessions.list(userId, toEntitySort(pageable));

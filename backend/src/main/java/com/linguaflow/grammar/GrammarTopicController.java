@@ -30,7 +30,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.data.web.PageableDefault;
+import org.springframework.data.web.SortDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -146,7 +146,7 @@ class GrammarTopicController {
 			@RequestParam(required = false) List<KnowledgeStatus> status,
 			@Parameter(description = "Only topics of this study session") @RequestParam(required = false)
 			UUID sessionId,
-			@PageableDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
+			@SortDefault(sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
 		var page = topics.list(userId, new GrammarTopicFilter(query, toSet(cefrLevel), toSet(status), sessionId),
 				toEntitySort(pageable));
 		return PageResponse.from(new PageImpl<>(page.getContent(), pageable, page.getTotalElements()),
