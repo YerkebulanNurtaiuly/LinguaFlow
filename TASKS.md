@@ -262,7 +262,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **SRS-03 — Review statistics** (S) — _deps: SRS-02_
   Due today, reviewed today, streak, retention rate, forecast for next 7 days.
 
-- [ ] **FE-FC-01 — Flashcard review UI** (L) — _deps: SRS-02, FE-02_
+- [x] **FE-FC-01 — Flashcard review UI** (L) — _deps: SRS-02, FE-02_
   Card flip animation, show answer → grade buttons with next-interval preview, keyboard shortcuts (space, 1–4), progress bar, session summary screen, "type the answer" mode option. Shows article color coding (der/die/das), plural, examples.
 
 - [ ] **FE-FC-02 — Flashcard browser** (S) — _deps: FC-02_

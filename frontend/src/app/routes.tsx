@@ -15,6 +15,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { ReviewPage } from '@/pages/flashcards/ReviewPage'
 import { GrammarPage } from '@/pages/grammar/GrammarPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
 import { SessionPage } from '@/pages/sessions/SessionPage'
@@ -30,6 +31,7 @@ const SECTION_PAGES: Partial<Record<string, ReactNode>> = {
   '/grammar': <GrammarPage />,
   '/sessions': <SessionsPage />,
   '/vocabulary': <VocabularyPage />,
+  '/flashcards': <ReviewPage />,
 }
 
 /**

@@ -30,6 +30,10 @@
   --color-info-soft: var(--lf-info-soft);
   --color-info-soft-fg: var(--lf-info-soft-fg);
   --color-ring: var(--lf-ring);
+  /* German noun genders (FE-FC-01): der blue, die rose, das green */
+  --color-article-der: var(--lf-article-der);
+  --color-article-die: var(--lf-article-die);
+  --color-article-das: var(--lf-article-das);
 }
 
 :root {
@@ -58,6 +62,9 @@
   --lf-info-soft: var(--color-sky-50);
   --lf-info-soft-fg: var(--color-sky-700);
   --lf-ring: var(--color-indigo-500);
+  --lf-article-der: var(--color-blue-700);
+  --lf-article-die: var(--color-rose-700);
+  --lf-article-das: var(--color-emerald-700);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -103,6 +110,9 @@
     --lf-info-soft: color-mix(in oklab, var(--color-sky-500) 18%, transparent);
     --lf-info-soft-fg: var(--color-sky-300);
     --lf-ring: var(--color-indigo-400);
+    --lf-article-der: var(--color-blue-300);
+    --lf-article-die: var(--color-rose-300);
+    --lf-article-das: var(--color-emerald-300);
   }
 }
 
@@ -144,6 +154,9 @@
   --lf-info-soft: color-mix(in oklab, var(--color-sky-500) 18%, transparent);
   --lf-info-soft-fg: var(--color-sky-300);
   --lf-ring: var(--color-indigo-400);
+  --lf-article-der: var(--color-blue-300);
+  --lf-article-die: var(--color-rose-300);
+  --lf-article-das: var(--color-emerald-300);
 }
 
 body {
