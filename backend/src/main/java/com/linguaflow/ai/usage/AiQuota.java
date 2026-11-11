@@ -30,6 +30,9 @@ public class AiQuota {
 
 	}
 
+	/** How a quota refusal's message starts; the job status endpoint (AI-08) recognises a postponed job by it. */
+	public static final String LIMIT_REACHED = "Daily AI limit reached";
+
 	private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH:mm 'UTC'");
 
 	private final AiRequestLog requests;
@@ -60,7 +63,7 @@ public class AiQuota {
 		}
 		Status status = status(caller.userId());
 		if (status.exceeded()) {
-			throw new AiQuotaExceededException("Daily AI limit reached; it resets at "
+			throw new AiQuotaExceededException(LIMIT_REACHED + "; it resets at "
 					+ TIME.format(status.resetsAt().atOffset(ZoneOffset.UTC)), status.resetsAt());
 		}
 	}

@@ -34,6 +34,9 @@
     "description" : "Daily AI limits and what AI calls cost",
     "name" : "AI usage"
   }, {
+    "description" : "Progress of background AI work such as enriching words",
+    "name" : "AI jobs"
+  }, {
     "description" : "Monitor and interact",
     "externalDocs" : {
       "description" : "Spring Boot Actuator Web API Documentation",
@@ -214,6 +217,294 @@
         },
         "summary" : "AI usage summary (admin)",
         "tags" : [ "AI usage" ]
+      }
+    },
+    "/api/ai/jobs" : {
+      "get" : {
+        "description" : "Your AI jobs, newest first. Sortable by createdAt, updatedAt.",
+        "operationId" : "list_5",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Only these statuses (repeatable)",
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DEAD" ]
+            }
+          }
+        }, {
+          "description" : "Only these types (repeatable)",
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "VOCABULARY_ENRICHMENT", "GRAMMAR_EXPLANATION", "EXERCISE_GENERATION", "ANSWER_EVALUATION" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseAiJob"
+                }
+              }
+            },
+            "description" : "One page of jobs"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List AI jobs",
+        "tags" : [ "AI jobs" ]
+      }
+    },
+    "/api/ai/jobs/progress" : {
+      "get" : {
+        "description" : "Counts by status for up to 100 jobs, e.g. the batches of one bulk add. Poll until finished is true.",
+        "operationId" : "progress",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "Job IDs (repeatable, 1–100)",
+          "in" : "query",
+          "name" : "id",
+          "required" : false,
+          "schema" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiJobProgress"
+                }
+              }
+            },
+            "description" : "The counts"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Progress of several AI jobs",
+        "tags" : [ "AI jobs" ]
+      }
+    },
+    "/api/ai/jobs/{id}" : {
+      "get" : {
+        "description" : "Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.",
+        "operationId" : "get_4",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/AiJob"
+                }
+              }
+            },
+            "description" : "The job"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Get an AI job",
+        "tags" : [ "AI jobs" ]
       }
     },
     "/api/ai/usage" : {
@@ -4989,6 +5280,100 @@
         },
         "required" : [ "explanationLanguageCode", "languageCode" ]
       },
+      "AiJob" : {
+        "type" : "object",
+        "description" : "Background AI work, e.g. enriching a batch of words",
+        "properties" : {
+          "attempts" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "finished" : {
+            "type" : "boolean",
+            "description" : "SUCCEEDED, FAILED or DEAD: the job won't change any more"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "maxAttempts" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "nextRunAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When a QUEUED job runs next"
+          },
+          "result" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "What the job produced, once SUCCEEDED; its shape depends on the type"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "QUEUED", "RUNNING", "SUCCEEDED", "FAILED", "DEAD" ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "VOCABULARY_ENRICHMENT", "GRAMMAR_EXPLANATION", "EXERCISE_GENERATION", "ANSWER_EVALUATION" ]
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "waiting" : {
+            "type" : "string",
+            "description" : "Only for a QUEUED job that has already been tried or postponed",
+            "enum" : [ "RETRY", "DAILY_LIMIT" ]
+          }
+        }
+      },
+      "AiJobProgress" : {
+        "type" : "object",
+        "description" : "How far a set of jobs has got, e.g. the batches of one bulk add. Jobs that don't exist or aren't yours are listed in notFound and counted nowhere else.",
+        "properties" : {
+          "dead" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "failed" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "finished" : {
+            "type" : "boolean",
+            "description" : "True once every found job is SUCCEEDED, FAILED or DEAD"
+          },
+          "notFound" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "queued" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "running" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "succeeded" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "AiUsageByDay" : {
         "type" : "object",
         "properties" : {
@@ -5804,6 +6189,39 @@
           "tokensToday" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }
+      },
+      "PageResponseAiJob" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AiJob"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
           }
         }
       },

@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.linguaflow.common.persistence.OwnedRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -42,5 +44,22 @@ public interface AiJobRepository extends OwnedRepository<AiJob> {
 
 	@Query("select j from AiJob j where j.id = :id")
 	Optional<AiJob> findForProcessingById(@Param("id") UUID id);
+
+	/** The user's jobs, filtered (AI-08). */
+	Page<AiJob> findByUserIdAndStatusInAndTypeIn(UUID userId, Collection<AiJobStatus> statuses,
+			Collection<AiJobType> types, Pageable pageable);
+
+	/** A job's ID and status. */
+	interface JobStatus {
+
+		UUID getId();
+
+		AiJobStatus getStatus();
+
+	}
+
+	/** The status of each of the user's jobs among {@code ids}; others' jobs are left out. */
+	@Query("select j.id as id, j.status as status from AiJob j where j.userId = :userId and j.id in :ids")
+	List<JobStatus> findStatusesByUserIdAndIdIn(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);
 
 }

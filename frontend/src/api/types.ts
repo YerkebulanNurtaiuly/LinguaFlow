@@ -98,3 +98,8 @@ export type AttachGrammarRequest = Schemas['AttachGrammarRequest']
 export type MyAiUsage = Schemas['MyAiUsage']
 export type AiUsageSummary = Schemas['AiUsageSummary']
 export type AiUsageTotals = Schemas['AiUsageTotals']
+
+// AI jobs (AI-08)
+export type AiJob = Schemas['AiJob']
+export type AiJobStatus = AiJob['status']
+export type AiJobProgress = Schemas['AiJobProgress']

@@ -58,6 +58,66 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/ai/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List AI jobs
+         * @description Your AI jobs, newest first. Sortable by createdAt, updatedAt.
+         */
+        get: operations["list_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/jobs/progress": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Progress of several AI jobs
+         * @description Counts by status for up to 100 jobs, e.g. the batches of one bulk add. Poll until finished is true.
+         */
+        get: operations["progress"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/ai/jobs/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an AI job
+         * @description Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.
+         */
+        get: operations["get_4"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/usage": {
         parameters: {
             query?: never;
@@ -835,6 +895,57 @@ export interface components {
             /** @enum {string} */
             selfAssessedLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
         };
+        /** @description Background AI work, e.g. enriching a batch of words */
+        AiJob: {
+            /** Format: int32 */
+            attempts?: number;
+            /** Format: date-time */
+            createdAt?: string;
+            /** @description SUCCEEDED, FAILED or DEAD: the job won't change any more */
+            finished?: boolean;
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            maxAttempts?: number;
+            /**
+             * Format: date-time
+             * @description When a QUEUED job runs next
+             */
+            nextRunAt?: string;
+            /** @description What the job produced, once SUCCEEDED; its shape depends on the type */
+            result?: {
+                [key: string]: unknown;
+            };
+            /** @enum {string} */
+            status?: "QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "DEAD";
+            /** @enum {string} */
+            type?: "VOCABULARY_ENRICHMENT" | "GRAMMAR_EXPLANATION" | "EXERCISE_GENERATION" | "ANSWER_EVALUATION";
+            /** Format: date-time */
+            updatedAt?: string;
+            /**
+             * @description Only for a QUEUED job that has already been tried or postponed
+             * @enum {string}
+             */
+            waiting?: "RETRY" | "DAILY_LIMIT";
+        };
+        /** @description How far a set of jobs has got, e.g. the batches of one bulk add. Jobs that don't exist or aren't yours are listed in notFound and counted nowhere else. */
+        AiJobProgress: {
+            /** Format: int32 */
+            dead?: number;
+            /** Format: int32 */
+            failed?: number;
+            /** @description True once every found job is SUCCEEDED, FAILED or DEAD */
+            finished?: boolean;
+            notFound?: string[];
+            /** Format: int32 */
+            queued?: number;
+            /** Format: int32 */
+            running?: number;
+            /** Format: int32 */
+            succeeded?: number;
+            /** Format: int32 */
+            total?: number;
+        };
         AiUsageByDay: {
             /** Format: date */
             day?: string;
@@ -1229,6 +1340,18 @@ export interface components {
             tokenLimit?: number;
             /** Format: int64 */
             tokensToday?: number;
+        };
+        PageResponseAiJob: {
+            content?: components["schemas"]["AiJob"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
         };
         PageResponseGrammarTopic: {
             content?: components["schemas"]["GrammarTopic"][];
@@ -1700,6 +1823,216 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiUsageSummary"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    list_5: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description Only these statuses (repeatable) */
+                status?: ("QUEUED" | "RUNNING" | "SUCCEEDED" | "FAILED" | "DEAD")[];
+                /** @description Only these types (repeatable) */
+                type?: ("VOCABULARY_ENRICHMENT" | "GRAMMAR_EXPLANATION" | "EXERCISE_GENERATION" | "ANSWER_EVALUATION")[];
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of jobs */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseAiJob"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    progress: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description Job IDs (repeatable, 1–100) */
+                id?: string[];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The counts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiJobProgress"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    get_4: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The job */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiJob"];
                 };
             };
             /** @description Invalid request */
