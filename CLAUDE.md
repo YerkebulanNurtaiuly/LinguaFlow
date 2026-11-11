@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project state
 
-LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-03 and INF-05 to INF-09 are done. INF-04 (Docker Compose) is parked, half-finished, on branch `inf-04-docker-compose`:
+LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-09 are done, including INF-04 (Docker Compose):
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
 - `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06), Vocabulary (FE-VOC-01 to 03), Grammar (FE-GRM-01, FE-GRM-02) and Study sessions (FE-SES-01) are built.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
-- Flyway migrations exist up to `V5__grammar_catalog_seed.sql` (V4 is AUTH-07, V5 is GRM-03's catalog seed). Phase 2 has started: VOC-01 (vocabulary service), VOC-02 (vocabulary API), VOC-03 (tags), VOC-04 (bulk input), VOC-05 (AI enrichment), VOC-06 (regenerate and full editing) and VOC-07 (CSV import/export) are done, which completes the vocabulary epic. GRM-01 (grammar topic API), GRM-02 (status lifecycle) and GRM-03 (topic catalog) are done, and so are SES-01 (study sessions) and SES-02 (learning timeline). The AI epic has started: AI-01 (LLM client), AI-02 (structured output), AI-03 (prompt templates), AI-04 (job queue), AI-05 (circuit breaker, quota, cost log), AI-06 (shared result cache), AI-07 (prompt safety) and AI-08 (job status API) are done, which completes the AI epic. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet apart from `ai_jobs` (AI-04), `ai_requests` (AI-05) and `ai_cache` (AI-06); they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use. There's no Docker Compose yet.
+- Flyway migrations exist up to `V5__grammar_catalog_seed.sql` (V4 is AUTH-07, V5 is GRM-03's catalog seed). Phase 2 has started: VOC-01 (vocabulary service), VOC-02 (vocabulary API), VOC-03 (tags), VOC-04 (bulk input), VOC-05 (AI enrichment), VOC-06 (regenerate and full editing) and VOC-07 (CSV import/export) are done, which completes the vocabulary epic. GRM-01 (grammar topic API), GRM-02 (status lifecycle) and GRM-03 (topic catalog) are done, and so are SES-01 (study sessions) and SES-02 (learning timeline). The AI epic has started: AI-01 (LLM client), AI-02 (structured output), AI-03 (prompt templates), AI-04 (job queue), AI-05 (circuit breaker, quota, cost log), AI-06 (shared result cache), AI-07 (prompt safety) and AI-08 (job status API) are done, which completes the AI epic. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet apart from `ai_jobs` (AI-04), `ai_requests` (AI-05) and `ai_cache` (AI-06); they come with their feature tasks (FC-01, EX-01, PRC-02 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use.
 
 - `README.md` describes the product vision, features, and the target architecture.
 - `TASKS.md` is the full implementation backlog. Task IDs look like `INF-02`, `VOC-05`, and so on, and each has deps and a "Done when" check. It also gives the milestones and the critical path. When the user refers to a task ID, look it up there and treat its "Done when" line as the acceptance criteria.
@@ -22,6 +22,22 @@ The project uses **Spring Boot 4.x**, not the 3.x some older planning text assum
 - **springdoc:** must be the 3.x line. Its version is pinned in `backend/pom.xml` as `springdoc.version`.
 
 ## Commands
+
+### Whole stack in Docker (INF-04)
+
+```bash
+docker compose up --build            # PostgreSQL 16 + backend + frontend; app on http://localhost:3000
+docker compose --profile tools up    # also pgAdmin on http://localhost:5050
+docker compose down -v               # stop and delete the database volume
+```
+
+- **Ports:** the frontend's nginx serves the built app and proxies `/api` and `/actuator` to the backend, so the browser sees one origin. Host ports: `FRONTEND_PORT` (3000), `BACKEND_PORT` (8080, Swagger at `/swagger-ui.html`), `DB_PORT` (5432) and `PGADMIN_PORT` (5050). Override them when they're taken, e.g. `DB_PORT=5434 BACKEND_PORT=8082 docker compose up`.
+- **Backend:** it runs the `dev` profile (demo data, API docs) against the `db` service. It reads `backend/.env` through `env_file` (optional), so `AI_API_KEY` reaches it. Compose's `environment` overrides that file's `DB_*` and `FRONTEND_URL`, so a `.env` written for running outside Docker still works.
+- **Secrets:** `backend/.dockerignore` excludes `.env`, so the key never enters a build context or image. The backend image runs as a non-root `app` user, with the heap sized from the container (`MaxRAMPercentage=75`).
+- **Uploads:** nginx allows 3 MB bodies (`client_max_body_size`), above CSV import's 2 MB limit, so too-large files get the backend's `PAYLOAD_TOO_LARGE` problem rather than an nginx page.
+- **Images:** `backend/Dockerfile` builds with the Maven wrapper and runs on a JRE. `frontend/Dockerfile` builds with Node 26 and serves `dist` from nginx with `frontend/nginx.conf`, which adds an SPA fallback and long caching for `/assets`.
+
+### Backend and frontend on their own
 
 Run Maven from `backend/` with the wrapper. In WSL, call `./mvnw`; on Windows, use `mvnw.cmd`. You need:
 - `JAVA_HOME` pointing at a JDK 21. WSL has no system JDK, so set one up or build from Windows/IntelliJ.
@@ -507,7 +523,7 @@ Conventions:
 - **backend:** `./mvnw -B -ntp verify`, with Testcontainers using the runner's Docker.
 - **frontend:** `npm ci`, `format:check`, `lint`, `typecheck`, `test`, `build`.
 
-The frontend job also fails if `src/api/schema.ts` doesn't match `openapi.json`. Run the same commands locally before pushing; unformatted frontend code fails CI. The job that builds Docker images will be added along with INF-04's Dockerfiles.
+The frontend job also fails if `src/api/schema.ts` doesn't match `openapi.json`. Run the same commands locally before pushing; unformatted frontend code fails CI. A third job, **docker**, validates `docker-compose.yml`, builds both images, starts the stack and waits until `/actuator/health` through the frontend's nginx reports UP.
 
 ## Target architecture (from README / TASKS.md)
 

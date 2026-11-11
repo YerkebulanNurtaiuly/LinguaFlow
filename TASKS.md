@@ -28,7 +28,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Vite + React + TypeScript (strict), Tailwind CSS, ESLint + Prettier, React Router, TanStack Query, Axios (or fetch wrapper), Zod + React Hook Form, Vitest + React Testing Library.
   _Done when:_ `npm run dev`, `npm run build`, `npm run lint`, `npm test` all succeed.
 
-- [ ] **INF-04 — Docker Compose for local dev** (S) — _deps: INF-02_
+- [x] **INF-04 — Docker Compose for local dev** (S) — _deps: INF-02_
   `docker-compose.yml` with PostgreSQL 16 (named volume), optional pgAdmin. Backend `Dockerfile` (multi-stage), frontend `Dockerfile` (build → nginx).
   _Done when:_ `docker compose up` starts DB + backend + frontend and they talk to each other.
 
@@ -39,7 +39,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **INF-06 — CI pipeline** (M) — _deps: INF-02, INF-03_
   GitHub Actions: backend build + tests (Testcontainers), frontend lint + type-check + tests + build, Docker image build. Cache Maven/npm.
   _Done when:_ PRs show green/red checks.
-  _Note:_ Docker image build job deferred until INF-04 adds the Dockerfiles.
+  _Note:_ the Docker job (image build and stack smoke test) came with INF-04.
 
 - [x] **INF-07 — Common backend infrastructure** (M) — _deps: INF-02_
   Global exception handler returning RFC 7807 `ProblemDetail`; standard error codes; validation error mapping; pagination/sorting DTO; base auditing entity (`createdAt`, `updatedAt`) via JPA auditing; request logging with correlation ID; CORS config for the frontend origin.
