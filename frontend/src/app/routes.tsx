@@ -15,6 +15,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
+import { FlashcardBrowserPage } from '@/pages/flashcards/FlashcardBrowserPage'
 import { ReviewPage } from '@/pages/flashcards/ReviewPage'
 import { GrammarPage } from '@/pages/grammar/GrammarPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
@@ -110,6 +111,11 @@ export const routes: RouteObject[] = [
                         path: '/grammar/:id',
                         handle: title('Grammar topic'),
                         element: <GrammarTopicPage />,
+                      },
+                      {
+                        path: '/flashcards/browse',
+                        handle: title('All flashcards'),
+                        element: <FlashcardBrowserPage />,
                       },
                       {
                         path: '/vocabulary/add',

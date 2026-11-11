@@ -47,14 +47,17 @@ public class FlashcardService {
 
 	private final SrsStateRepository srsStates;
 
+	private final FlashcardReviewRepository reviews;
+
 	private final VocabularyService vocabulary;
 
 	private final ActiveLanguageService activeLanguages;
 
-	FlashcardService(FlashcardRepository cards, SrsStateRepository srsStates, VocabularyService vocabulary,
-			ActiveLanguageService activeLanguages) {
+	FlashcardService(FlashcardRepository cards, SrsStateRepository srsStates, FlashcardReviewRepository reviews,
+			VocabularyService vocabulary, ActiveLanguageService activeLanguages) {
 		this.cards = cards;
 		this.srsStates = srsStates;
+		this.reviews = reviews;
 		this.vocabulary = vocabulary;
 		this.activeLanguages = activeLanguages;
 	}
@@ -78,6 +81,13 @@ public class FlashcardService {
 	@Transactional(readOnly = true)
 	public CardView get(UUID userId, UUID id) {
 		return views(userId, List.of(cards.requireOwned(id, userId))).getFirst();
+	}
+
+	/** One of the user's cards' reviews (FE-FC-02); 404 when the card is missing or someone else's. */
+	@Transactional(readOnly = true)
+	public Page<FlashcardReview> reviews(UUID userId, UUID id, Pageable pageable) {
+		cards.requireOwned(id, userId);
+		return reviews.findAllByUserIdAndFlashcardId(userId, id, pageable);
 	}
 
 	/** Leaves the card out of reviews, or brings it back. */

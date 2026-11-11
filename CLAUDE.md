@@ -256,6 +256,7 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
     - Empty filters are passed as all values, and an empty `q` as `''`.
     - Words and states for a page are loaded in two batched queries (`VocabularyService.findOwned`, `SrsStateRepository.findAllByUserIdAndIdIn`).
   - **One card:** `GET /{id}` works in any of the user's languages. Another user's card is 404.
+  - **Review history (FE-FC-02):** `GET /{id}/reviews` pages the card's `FlashcardReview`s, newest first (`FlashcardService.reviews`). Only `reviewedAt` is sortable, with the UUIDv7 `id` as tie-break. Another user's card is 404.
   - **Frontend:** the flashcard browser is FE-FC-02, and review is SRS-02 and FE-FC-01.
   - **Tests:** `FlashcardApiTests`.
 - **Scheduling (SRS-01):** `flashcard.SrsScheduler` is a pure, deterministic SM-2 variant (Anki-style, no fuzz, no clock): `review(Card, ReviewGrade, now, zone)` returns the next `Card` (state, ease, interval, repetitions, lapses, dueAt, lastReviewedAt). `SrsState.toCard()` and `apply(card)` convert to and from the entity.
@@ -541,7 +542,13 @@ Conventions:
   - **Article colours:** `GermanText` colours a leading der/die/das with the `text-article-der/die/das` tokens (blue, rose, green; light and dark values in `index.css`). Plurals aren't coloured, since their "die" isn't a gender.
   - **Grade buttons:** each shows its next interval from the queue's `previews` (`formatInterval`: "1 min", "4 days", "2 mo", "1.5 yr").
   - **Tests:** `ReviewPage.test.tsx` and `reviewFormat.test.ts`.
-  - **Browsing cards:** FE-FC-02 will add the flashcard browser to this section.
+  - **Browsing cards:** the "All cards" button (hidden during a session) opens the browser.
+- **Flashcard browser (FE-FC-02):** `pages/flashcards/FlashcardBrowserPage.tsx` at `/flashcards/browse`, a route of its own (not in `NAV_ITEMS`). The data layer is `src/flashcards/` (`flashcardsApi.ts`, and `queries.ts` with `FLASHCARDS_QUERY_KEY`). It reuses `flashcardSchema` and `reviewSchema` from `reviews/reviewsApi.ts`.
+  - **State in the URL** (`browserFilters.ts`): `?q=&direction=&state=&suspended=yes|no&sort=due&page=` (1-based page, default sort newest), with a debounced search like the vocabulary list's.
+  - **Table:** "front → back" with coloured articles, direction, SRS state and a relative due date (`formatDue`). Suspended rows are dimmed and badged, and on narrow screens the state moves under the card.
+  - **Details (`CardDetailsModal`):** front and back, state, due date, interval, repetitions, lapses and last review, plus the review history from `GET /flashcards/{id}/reviews` (latest 100). It has a Suspend/Unsuspend button (`useSetSuspended`, which refreshes the lists and review stats).
+  - **Refreshing:** a review session invalidates `FLASHCARDS_QUERY_KEY` with the stats when it ends.
+  - **Tests:** `FlashcardBrowserPage.test.tsx`.
 - **Crash test:** `errorHandling.test.tsx` crashes the Progress placeholder. Move it again when that section is built.
 - **Settings (FE-06):** `pages/settings/SettingsPage.tsx` has one `SettingsSection` card per area: profile, one per learning language, password, and deleting the account.
   - **Account API:** the calls are in `src/account/accountApi.ts`. `changePassword` stores the new access token, and `deleteAccount` clears the session.

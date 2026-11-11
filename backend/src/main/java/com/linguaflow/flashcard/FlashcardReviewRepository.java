@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import com.linguaflow.common.persistence.OwnedRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,6 +18,9 @@ public interface FlashcardReviewRepository extends OwnedRepository<FlashcardRevi
 	/** The review already stored for this submission, if any. */
 	Optional<FlashcardReview> findByUserIdAndFlashcardIdAndReviewToken(UUID userId, UUID flashcardId,
 			UUID reviewToken);
+
+	/** One card's review history (FE-FC-02). */
+	Page<FlashcardReview> findAllByUserIdAndFlashcardId(UUID userId, UUID flashcardId, Pageable pageable);
 
 	/** Reviews of the user's cards in one language since {@code since}: "reviewed today". */
 	@Query("""

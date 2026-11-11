@@ -109,6 +109,9 @@ export type Flashcard = Schemas['Flashcard']
 export type FlashcardContent = Schemas['FlashcardContent']
 export type FlashcardSrs = Schemas['FlashcardSrs']
 
+// Flashcard review history (FE-FC-02)
+export type PageResponseFlashcardReview = Schemas['PageResponseFlashcardReview']
+
 // Reviews (SRS-02)
 export type ReviewQueue = Schemas['ReviewQueue']
 export type ReviewQueueItem = Schemas['ReviewQueueItem']

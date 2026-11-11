@@ -15,7 +15,7 @@ const srsStates = ['NEW', 'LEARNING', 'REVIEW', 'RELEARNING'] as const
 export const REVIEW_GRADES = ['AGAIN', 'HARD', 'GOOD', 'EASY'] as const
 export type ReviewGrade = (typeof REVIEW_GRADES)[number]
 
-const flashcardSchema = z.object({
+export const flashcardSchema = z.object({
   id: z.string(),
   vocabularyItemId: z.string(),
   lemma: z.string(),
@@ -73,19 +73,21 @@ const queueSchema = z.object({
   nextLearningDueAt: optional(z.string()),
 }) satisfies z.ZodType<ApiReviewQueue>
 
+export const reviewSchema = z.object({
+  id: z.string(),
+  flashcardId: z.string(),
+  grade: z.enum(REVIEW_GRADES),
+  reviewedAt: z.string(),
+  durationMs: optional(z.number()),
+  stateBefore: z.enum(srsStates),
+  intervalBefore: z.number(),
+  intervalAfter: z.number(),
+  easeBefore: z.number(),
+  easeAfter: z.number(),
+})
+
 const resultSchema = z.object({
-  review: z.object({
-    id: z.string(),
-    flashcardId: z.string(),
-    grade: z.enum(REVIEW_GRADES),
-    reviewedAt: z.string(),
-    durationMs: optional(z.number()),
-    stateBefore: z.enum(srsStates),
-    intervalBefore: z.number(),
-    intervalAfter: z.number(),
-    easeBefore: z.number(),
-    easeAfter: z.number(),
-  }),
+  review: reviewSchema,
   card: flashcardSchema,
   replayed: z.boolean(),
 }) satisfies z.ZodType<ApiReviewResult>
@@ -111,6 +113,9 @@ export type Flashcard = z.infer<typeof flashcardSchema>
 export type GradePreview = z.infer<typeof previewSchema>
 export type ReviewQueue = z.infer<typeof queueSchema>
 export type QueueItem = ReviewQueue['cards'][number]
+export type FlashcardReview = z.infer<typeof reviewSchema>
+export const SRS_STATES = srsStates
+export type SrsState = (typeof srsStates)[number]
 export type ReviewResult = z.infer<typeof resultSchema>
 export type ReviewStats = z.infer<typeof statsSchema>
 

@@ -291,6 +291,32 @@ class ReviewApiTests {
 	}
 
 	@Test
+	void listsACardsReviewsNewestFirstToItsOwnerOnly() throws Exception {
+		UUID hund = t2n(word(anna, "Hund", "dog"));
+		UUID katze = t2n(word(anna, "Katze", "cat"));
+		grade(anna, hund, "GOOD", UUID.randomUUID()).andExpect(status().isCreated());
+		clock.advance(Duration.ofMinutes(10));
+		grade(anna, hund, "EASY", UUID.randomUUID()).andExpect(status().isCreated());
+		grade(anna, katze, "AGAIN", UUID.randomUUID()).andExpect(status().isCreated());
+
+		send(anna, get("/api/flashcards/{id}/reviews", hund)).andExpect(status().isOk())
+			.andExpect(jsonPath("$.totalElements").value(2))
+			.andExpect(jsonPath("$.size").value(20))
+			.andExpect(jsonPath("$.content[*].grade", contains("EASY", "GOOD")))
+			.andExpect(jsonPath("$.content[0].stateBefore").value("LEARNING"))
+			.andExpect(jsonPath("$.content[0].durationMs").value(4200));
+		send(anna, get("/api/flashcards/{id}/reviews", hund).param("sort", "reviewedAt,asc"))
+			.andExpect(jsonPath("$.content[*].grade", contains("GOOD", "EASY")));
+		send(anna, get("/api/flashcards/{id}/reviews", hund).param("sort", "grade,asc"))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("sort"));
+
+		com.linguaflow.testsupport.OwnershipAssertions.assertOnlyOwnerCanAccess(mvc,
+				org.springframework.http.HttpMethod.GET, "/api/flashcards/{id}/reviews", hund, anna.accessToken(),
+				ben.accessToken());
+	}
+
+	@Test
 	void concurrentCopiesOfASubmissionAreRecordedOnce() throws Exception {
 		UUID hund = t2n(word(anna, "Hund", "dog"));
 		UUID token = UUID.randomUUID();

@@ -265,7 +265,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-FC-01 — Flashcard review UI** (L) — _deps: SRS-02, FE-02_
   Card flip animation, show answer → grade buttons with next-interval preview, keyboard shortcuts (space, 1–4), progress bar, session summary screen, "type the answer" mode option. Shows article color coding (der/die/das), plural, examples.
 
-- [ ] **FE-FC-02 — Flashcard browser** (S) — _deps: FC-02_
+- [x] **FE-FC-02 — Flashcard browser** (S) — _deps: FC-02_
   Browse/search all cards, suspend, see review history per card.
 
 ### Epic 12: Grammar Exercises (`EX`)

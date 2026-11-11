@@ -137,6 +137,29 @@ public class FlashcardController {
 		return CardResponse.from(flashcards.get(userId, id));
 	}
 
+	@GetMapping("/{id}/reviews")
+	@Operation(summary = "A flashcard's review history",
+			description = "Every grade the card was given, newest first. Sortable by reviewedAt only.")
+	@ApiResponse(responseCode = "200", description = "One page of reviews")
+	PageResponse<ReviewController.ReviewResponse> reviews(@CurrentUserId UUID userId, @PathVariable UUID id,
+			@SortDefault(sort = "reviewedAt", direction = Sort.Direction.DESC) Pageable pageable) {
+		Sort sort = Sort.unsorted();
+		for (Sort.Order order : pageable.getSort()) {
+			if (!order.getProperty().equals("reviewedAt")) {
+				throw new InvalidFieldException("sort",
+						"can't sort by '" + order.getProperty() + "'; use reviewedAt");
+			}
+			sort = sort.and(Sort.by(order));
+		}
+		// UUIDv7 IDs follow time, so they order reviews made in the same instant
+		Sort.Direction tieBreak = sort.isSorted() && sort.iterator().next().isAscending() ? Sort.Direction.ASC
+				: Sort.Direction.DESC;
+		var page = flashcards.reviews(userId, id,
+				PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(), sort.and(Sort.by(tieBreak, "id"))));
+		return PageResponse.from(new PageImpl<>(page.getContent(), pageable, page.getTotalElements()),
+				ReviewController.ReviewResponse::from);
+	}
+
 	@PatchMapping("/{id}")
 	@Operation(summary = "Suspend or unsuspend a flashcard",
 			description = "A suspended card is left out of reviews; its review history is kept.")

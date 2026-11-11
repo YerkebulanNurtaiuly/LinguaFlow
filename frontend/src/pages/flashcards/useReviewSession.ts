@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/components/ui'
+import { FLASHCARDS_QUERY_KEY } from '@/flashcards/queries'
 import { REVIEWS_QUERY_KEY } from '@/reviews/queries'
 import {
   fetchReviewQueue,
@@ -49,8 +50,13 @@ export function useReviewSession() {
     [batch, index],
   )
 
+  // Grades change stats and every graded card's state in the browser
   const refreshStats = useCallback(
-    () => queryClient.invalidateQueries({ queryKey: REVIEWS_QUERY_KEY }),
+    () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: REVIEWS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: FLASHCARDS_QUERY_KEY }),
+      ]),
     [queryClient],
   )
 
