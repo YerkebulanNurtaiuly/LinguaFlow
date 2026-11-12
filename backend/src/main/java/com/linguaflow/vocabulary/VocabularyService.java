@@ -277,6 +277,22 @@ public class VocabularyService {
 	}
 
 	/**
+	 * Applies a progress rule's status (PRG-02), in the caller's transaction. Only rules
+	 * set MASTERED; learners can't (VOC-01).
+	 * @return whether the status changed
+	 */
+	@Transactional
+	public boolean changeStatusByRule(UUID userId, UUID id, KnowledgeStatus status) {
+		VocabularyItem item = items.requireOwned(id, userId);
+		if (item.getStatus() == status) {
+			return false;
+		}
+		item.setStatus(status);
+		items.save(item);
+		return true;
+	}
+
+	/**
 	 * Up to {@code limit} of the user's enriched, translated words in a language, most
 	 * recently changed first; for exercise generation (EX-02).
 	 */

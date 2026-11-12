@@ -173,6 +173,23 @@ public class GrammarTopicService {
 		return topics.search(userId, activeLanguages.requireActive(userId), filter, pageable);
 	}
 
+	/**
+	 * Applies a progress rule's status (PRG-02), in the caller's transaction; the change is
+	 * recorded in the topic's history with {@code reason}.
+	 * @return whether the status changed
+	 * @throws IllegalArgumentException when the rule may not set that status
+	 */
+	@Transactional
+	public boolean changeStatusByRule(UUID userId, UUID id, KnowledgeStatus status, StatusChangeReason reason) {
+		GrammarTopic topic = topics.requireOwned(id, userId);
+		if (topic.getStatus() == status) {
+			return false;
+		}
+		topic.changeStatusByRule(status, reason, clock.instant());
+		topics.save(topic);
+		return true;
+	}
+
 	/** Applies a partial update; a new title is checked for duplicates again. */
 	public GrammarTopic update(UUID userId, UUID id, GrammarTopicChanges changes) {
 		String title = changes.title() == null ? null : cleanTitle(changes.title());

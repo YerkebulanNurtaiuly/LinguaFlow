@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Map;
 
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.DecimalMax;
+import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
@@ -22,7 +24,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("linguaflow")
 public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai ai, Cors cors,
-		@Valid RateLimit rateLimit, App app, Mail mail, Exercises exercises) {
+		@Valid RateLimit rateLimit, App app, Mail mail, Exercises exercises, @Valid Progress progress) {
 
 	public LinguaFlowProperties {
 		if (ai == null) {
@@ -42,6 +44,9 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		}
 		if (exercises == null) {
 			exercises = new Exercises(null);
+		}
+		if (progress == null) {
+			progress = new Progress(null);
 		}
 	}
 
@@ -64,6 +69,42 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		public ActionTokens {
 			emailVerificationTtl = (emailVerificationTtl == null) ? Duration.ofHours(48) : emailVerificationTtl;
 			passwordResetTtl = (passwordResetTtl == null) ? Duration.ofHours(1) : passwordResetTtl;
+		}
+
+	}
+
+	/** Progress tracking (PRG-01, PRG-02). */
+	public record Progress(@Valid Mastery mastery) {
+
+		public Progress {
+			if (mastery == null) {
+				mastery = new Mastery(null, null, null, null, null);
+			}
+		}
+
+	}
+
+	/**
+	 * When practice earns or loses mastery (PRG-02). A grammar topic is MASTERED at
+	 * {@code topicAccuracy} (default 0.85) recent accuracy over at least
+	 * {@code topicMinAttempts} (20) attempts on {@code topicMinDays} (3) different days, and
+	 * goes back to LEARNED below {@code topicDemoteBelow} (0.70). A word is MASTERED once
+	 * its cards' interval reaches {@code wordIntervalDays} (21), and LEARNED again when it
+	 * drops below.
+	 */
+	public record Mastery(@DecimalMin("0") @DecimalMax("1") Double topicAccuracy, @Min(1) Integer topicMinAttempts,
+			@Min(1) Integer topicMinDays, @DecimalMin("0") @DecimalMax("1") Double topicDemoteBelow,
+			@Min(1) Integer wordIntervalDays) {
+
+		public Mastery {
+			topicAccuracy = topicAccuracy == null ? 0.85 : topicAccuracy;
+			topicMinAttempts = topicMinAttempts == null ? 20 : topicMinAttempts;
+			topicMinDays = topicMinDays == null ? 3 : topicMinDays;
+			topicDemoteBelow = topicDemoteBelow == null ? 0.70 : topicDemoteBelow;
+			wordIntervalDays = wordIntervalDays == null ? 21 : wordIntervalDays;
+			if (topicDemoteBelow > topicAccuracy) {
+				throw new IllegalArgumentException("topic-demote-below must not exceed topic-accuracy");
+			}
 		}
 
 	}

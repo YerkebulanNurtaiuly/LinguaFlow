@@ -325,7 +325,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRG-01 — Progress event handling** (M) — _deps: EX-05, SRS-02_
   Listen to review/attempt events (Spring application events, transactional) and update aggregates: per-vocabulary mastery, per-grammar-topic accuracy (rolling window, e.g. last 20 attempts), mistake counters by type.
 
-- [ ] **PRG-02 — Mastery rules** (M) — _deps: PRG-01, GRM-02_
+- [x] **PRG-02 — Mastery rules** (M) — _deps: PRG-01, GRM-02_
   Deterministic rules, e.g. grammar topic → `MASTERED` when ≥ 85% accuracy over ≥ 20 attempts across ≥ 3 different days; demoted to `LEARNED` when accuracy drops below 70%. Vocabulary mastered when SRS interval ≥ 21 days. Thresholds configurable.
 
 - [ ] **PRG-03 — Weak-point analysis** (M) — _deps: PRG-01_

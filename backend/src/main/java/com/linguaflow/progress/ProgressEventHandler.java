@@ -26,10 +26,14 @@ class ProgressEventHandler {
 
 	private final ProgressAggregates aggregates;
 
+	private final MasteryService mastery;
+
 	private final TransactionTemplate tx;
 
-	ProgressEventHandler(ProgressAggregates aggregates, PlatformTransactionManager transactions) {
+	ProgressEventHandler(ProgressAggregates aggregates, MasteryService mastery,
+			PlatformTransactionManager transactions) {
 		this.aggregates = aggregates;
+		this.mastery = mastery;
 		this.tx = new TransactionTemplate(transactions);
 		// Its own transaction: the answer's is already committed
 		this.tx.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
@@ -42,6 +46,7 @@ class ProgressEventHandler {
 				aggregates.refreshTopics(event.userId(), event.grammarTopicIds());
 				aggregates.refreshWords(event.userId(), event.vocabularyItemIds());
 				aggregates.refreshMistakeCounts(event.userId(), event.languageCode());
+				mastery.apply(event.userId(), event.grammarTopicIds(), event.vocabularyItemIds());
 			});
 		}
 		catch (RuntimeException ex) {
@@ -52,8 +57,10 @@ class ProgressEventHandler {
 	@TransactionalEventListener
 	public void onReview(FlashcardReviewedEvent event) {
 		try {
-			tx.executeWithoutResult(
-					status -> aggregates.refreshWords(event.userId(), List.of(event.vocabularyItemId())));
+			tx.executeWithoutResult(status -> {
+				aggregates.refreshWords(event.userId(), List.of(event.vocabularyItemId()));
+				mastery.apply(event.userId(), List.of(), List.of(event.vocabularyItemId()));
+			});
 		}
 		catch (RuntimeException ex) {
 			log.warn("Couldn't update progress after review {}", event.reviewId(), ex);
@@ -69,7 +76,10 @@ class ProgressEventHandler {
 		int users = 0;
 		for (var userId : aggregates.usersWithAnswers()) {
 			try {
-				tx.executeWithoutResult(status -> aggregates.rebuild(userId));
+				tx.executeWithoutResult(status -> {
+					aggregates.rebuild(userId);
+					mastery.apply(userId, null, null);
+				});
 				users++;
 			}
 			catch (RuntimeException ex) {
