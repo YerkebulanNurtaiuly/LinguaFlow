@@ -18,6 +18,7 @@ import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { FlashcardBrowserPage } from '@/pages/flashcards/FlashcardBrowserPage'
 import { ReviewPage } from '@/pages/flashcards/ReviewPage'
 import { GrammarPage } from '@/pages/grammar/GrammarPage'
+import { ExercisePlayerPage } from '@/pages/exercises/ExercisePlayerPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
 import { SessionPage } from '@/pages/sessions/SessionPage'
 import { SessionsPage } from '@/pages/sessions/SessionsPage'
@@ -116,6 +117,11 @@ export const routes: RouteObject[] = [
                         path: '/flashcards/browse',
                         handle: title('All flashcards'),
                         element: <FlashcardBrowserPage />,
+                      },
+                      {
+                        path: '/practice/exercises/:id',
+                        handle: title('Exercises'),
+                        element: <ExercisePlayerPage />,
                       },
                       {
                         path: '/vocabulary/add',

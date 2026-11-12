@@ -1,0 +1,222 @@
+import { z } from 'zod'
+import type {
+  ExerciseAttemptResult as ApiAttemptResult,
+  ExerciseSet as ApiExerciseSet,
+  MistakeExplanation as ApiMistakeExplanation,
+  SubmitAttemptRequest,
+} from '@/api/types'
+import { api } from '@/lib/api'
+
+const optional = <T extends z.ZodType>(schema: T) =>
+  schema.nullish().transform((value) => value ?? undefined)
+
+const instruction = optional(z.string())
+
+const fillBlank = z.object({
+  instruction,
+  text: z.string(),
+  hint: optional(z.string()),
+})
+const multipleChoice = z.object({
+  instruction,
+  question: z.string(),
+  options: z.array(z.string()),
+})
+const translation = z.object({
+  instruction,
+  direction: z.enum(['TARGET_TO_NATIVE', 'NATIVE_TO_TARGET']),
+  text: z.string(),
+})
+const sentenceConstruction = z.object({
+  instruction,
+  task: z.string(),
+  words: z.array(z.string()),
+})
+const errorCorrection = z.object({ instruction, sentence: z.string() })
+const wordOrder = z.object({ instruction, tokens: z.array(z.string()) })
+const transformation = z.object({
+  instruction,
+  sentence: z.string(),
+  task: z.string(),
+})
+
+export const EXERCISE_TYPES = [
+  'FILL_BLANK',
+  'MULTIPLE_CHOICE',
+  'TRANSLATION',
+  'SENTENCE_CONSTRUCTION',
+  'ERROR_CORRECTION',
+  'WORD_ORDER',
+  'TRANSFORMATION',
+] as const
+
+const common = {
+  id: z.string(),
+  position: z.number(),
+  difficulty: optional(z.enum(['EASY', 'MEDIUM', 'HARD'])),
+  grammarTopicIds: z.array(z.string()),
+  vocabularyItemIds: z.array(z.string()),
+  reported: z.boolean(),
+}
+
+/** One exercise, its prompt typed by its type; solutions never come with it. */
+export const exerciseSchema = z.discriminatedUnion('type', [
+  z.object({ ...common, type: z.literal('FILL_BLANK'), prompt: fillBlank }),
+  z.object({
+    ...common,
+    type: z.literal('MULTIPLE_CHOICE'),
+    prompt: multipleChoice,
+  }),
+  z.object({ ...common, type: z.literal('TRANSLATION'), prompt: translation }),
+  z.object({
+    ...common,
+    type: z.literal('SENTENCE_CONSTRUCTION'),
+    prompt: sentenceConstruction,
+  }),
+  z.object({
+    ...common,
+    type: z.literal('ERROR_CORRECTION'),
+    prompt: errorCorrection,
+  }),
+  z.object({ ...common, type: z.literal('WORD_ORDER'), prompt: wordOrder }),
+  z.object({
+    ...common,
+    type: z.literal('TRANSFORMATION'),
+    prompt: transformation,
+  }),
+])
+export type Exercise = z.infer<typeof exerciseSchema>
+export type ExerciseType = Exercise['type']
+
+const exerciseSetSchema = z.object({
+  id: z.string(),
+  languageCode: z.string(),
+  source: z.enum(['MANUAL', 'PRACTICE', 'WEAK_SPOTS']),
+  status: z.enum(['GENERATING', 'READY', 'FAILED']),
+  request: z.object({
+    grammarTopicIds: z.array(z.string()),
+    types: z.array(z.enum(EXERCISE_TYPES)),
+    count: z.number(),
+    difficulty: optional(z.enum(['EASY', 'MEDIUM', 'HARD'])),
+  }),
+  exercises: z.array(exerciseSchema),
+  createdAt: z.string(),
+}) satisfies z.ZodType<ApiExerciseSet>
+export type ExerciseSet = z.infer<typeof exerciseSetSchema>
+
+export const ERROR_TYPES = [
+  'WRONG_CASE',
+  'WRONG_ARTICLE',
+  'WRONG_ENDING',
+  'VERB_FORM',
+  'TENSE',
+  'WORD_ORDER',
+  'PREPOSITION',
+  'WRONG_WORD',
+  'SPELLING',
+  'MISSING_WORD',
+  'EXTRA_WORD',
+  'MEANING',
+  'OTHER',
+] as const
+
+const attemptResultSchema = z.object({
+  attempt: z.object({
+    id: z.string(),
+    exerciseId: z.string(),
+    correct: z.boolean(),
+    score: z.number(),
+    attemptedAt: z.string(),
+  }),
+  correct: z.boolean(),
+  score: z.number(),
+  evaluatedBy: z.enum(['RULES', 'AI']),
+  notes: z.array(z.enum(['CAPITALIZATION', 'UMLAUT_SPELLING', 'ALTERNATIVE'])),
+  parts: z.array(z.boolean()),
+  correctAnswer: z.string(),
+  alternatives: z.array(z.string()),
+  explanation: optional(z.string()),
+  feedback: optional(
+    z.object({
+      errors: z.array(
+        z.object({
+          type: z.enum(ERROR_TYPES),
+          span: optional(z.string()),
+          explanation: z.string(),
+          grammarTopicId: optional(z.string()),
+        }),
+      ),
+      correctedAnswer: optional(z.string()),
+      explanation: z.string(),
+    }),
+  ),
+  mistakes: z.array(
+    z.object({
+      id: z.string(),
+      errorType: z.string(),
+      excerpt: optional(z.string()),
+    }),
+  ),
+}) satisfies z.ZodType<ApiAttemptResult>
+export type AttemptResult = z.infer<typeof attemptResultSchema>
+
+const explanationSchema = z.object({
+  answerIsCorrect: z.boolean(),
+  mistake: z.string(),
+  rule: z.string(),
+  topic: optional(z.string()),
+  grammarTopicId: optional(z.string()),
+  example: optional(
+    z.object({ sentence: z.string(), translation: z.string() }),
+  ),
+  otherErrors: z.array(z.string()),
+  cached: z.boolean(),
+}) satisfies z.ZodType<ApiMistakeExplanation>
+export type MistakeExplanation = z.infer<typeof explanationSchema>
+
+/** The answer in the field the exercise type takes. */
+export type ExerciseAnswer =
+  | { blanks: string[] }
+  | { index: number }
+  | { tokens: string[] }
+  | { text: string }
+
+export async function fetchExerciseSet(id: string): Promise<ExerciseSet> {
+  const { data } = await api.get(`/exercise-sets/${id}`)
+  return exerciseSetSchema.parse(data)
+}
+
+export async function submitAttempt(
+  exerciseId: string,
+  answer: ExerciseAnswer,
+  durationMs?: number,
+): Promise<AttemptResult> {
+  const body: SubmitAttemptRequest = { ...answer, durationMs }
+  const { data } = await api.post(`/exercises/${exerciseId}/attempts`, body)
+  return attemptResultSchema.parse(data)
+}
+
+export async function explainAttempt(
+  exerciseId: string,
+  attemptId: string,
+): Promise<MistakeExplanation> {
+  const { data } = await api.post(
+    `/exercises/${exerciseId}/attempts/${attemptId}/explanation`,
+  )
+  return explanationSchema.parse(data)
+}
+
+export async function reportExercise(
+  exerciseId: string,
+  reason: string | undefined,
+): Promise<Exercise> {
+  const { data } = await api.post(`/exercises/${exerciseId}/report`, {
+    reason: reason?.trim() || undefined,
+  })
+  return exerciseSchema.parse(data)
+}
+
+export async function withdrawReport(exerciseId: string): Promise<Exercise> {
+  const { data } = await api.delete(`/exercises/${exerciseId}/report`)
+  return exerciseSchema.parse(data)
+}
