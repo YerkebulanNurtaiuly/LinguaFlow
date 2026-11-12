@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 LinguaFlow is an AI-assisted language-learning platform (German first), built as a Spring Boot backend and a React + TypeScript + Tailwind frontend. The repo is at an early stage. INF-01 to INF-09 are done, including INF-04 (Docker Compose):
 - `backend/` is a bootstrapped Spring Boot app: Boot 4.1.2, Java 21, base package `com.linguaflow`, with one package per domain module and a temporary `common.config.SecurityConfig`.
-- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06), Vocabulary (FE-VOC-01 to 03), Grammar (FE-GRM-01, FE-GRM-02), Study sessions (FE-SES-01), Flashcards review (FE-FC-01) and the exercise player (FE-EX-01) are built.
+- `frontend/` is a Vite app with the app shell and full route map (FE-01). Sections show placeholders until their feature task builds them; Settings (FE-06), Vocabulary (FE-VOC-01 to 03), Grammar (FE-GRM-01, FE-GRM-02), Study sessions (FE-SES-01), Flashcards review (FE-FC-01) and the exercise player and set builder (FE-EX-01, FE-EX-02) are built.
 - `docs/database/schema.md` is the approved schema design from DB-01. Migrations must follow it, and schema changes update it in the same PR. `docs/technical-specification/` is still a placeholder.
 - Flyway migrations exist up to `V7__review_state_before.sql` (V4 is AUTH-07, V5 is GRM-03's catalog seed, V6 is FC-01's card directions, V7 is SRS-03's review state). Phase 2 has started: VOC-01 (vocabulary service), VOC-02 (vocabulary API), VOC-03 (tags), VOC-04 (bulk input), VOC-05 (AI enrichment), VOC-06 (regenerate and full editing) and VOC-07 (CSV import/export) are done, which completes the vocabulary epic. GRM-01 (grammar topic API), GRM-02 (status lifecycle), GRM-03 (topic catalog) and GRM-04 (AI explanations) are done, and so are SES-01 (study sessions) and SES-02 (learning timeline). The AI epic has started: AI-01 (LLM client), AI-02 (structured output), AI-03 (prompt templates), AI-04 (job queue), AI-05 (circuit breaker, quota, cost log), AI-06 (shared result cache), AI-07 (prompt safety) and AI-08 (job status API) are done, which completes the AI epic. V1 (DB-02) has identity and languages; V2 (DB-03) has vocabulary, tags, grammar topics and catalog, and study sessions; V3 (DB-04) has flashcards and SRS, exercises and attempts, mistakes, practice sessions, progress summary tables, and the AI job, request and cache tables. V3 tables have no entities yet apart from `ai_jobs` (AI-04), `ai_requests` (AI-05), `ai_cache` (AI-06), `flashcards` and `srs_state` (FC-01), `flashcard_reviews` (SRS-02), `exercise_sets`, `exercises` and their link tables (EX-01), and `exercise_attempts` and `mistakes` (EX-05); they come with their feature tasks (PRC-02, PRG-01 and so on). The JPA entities for V2 are in `vocabulary`, `grammar` and `learning`. `User` and `UserRepository` are in the `user` module (AUTH-01), which the `auth` module will use.
 
@@ -661,7 +661,7 @@ Conventions:
   - **Details (`CardDetailsModal`):** front and back, state, due date, interval, repetitions, lapses and last review, plus the review history from `GET /flashcards/{id}/reviews` (latest 100). It has a Suspend/Unsuspend button (`useSetSuspended`, which refreshes the lists and review stats).
   - **Refreshing:** a review session invalidates `FLASHCARDS_QUERY_KEY` with the stats when it ends.
   - **Tests:** `FlashcardBrowserPage.test.tsx`.
-- **Exercise player (FE-EX-01):** `pages/exercises/ExercisePlayerPage.tsx` at `/practice/exercises/:id`, a route of its own (not in `NAV_ITEMS`; FE-EX-02's builder links to it). The data layer is `src/exercises/` (`exercisesApi.ts` and `queries.ts` with `EXERCISES_QUERY_KEY`).
+- **Exercise player (FE-EX-01):** `pages/exercises/ExercisePlayerPage.tsx` at `/practice/exercises/:id`, a route of its own (not in `NAV_ITEMS`; the builder opens it, and its back link goes to the builder). The data layer is `src/exercises/` (`exercisesApi.ts` and `queries.ts` with `EXERCISES_QUERY_KEY`).
   - **Data layer:** `exerciseSchema` is a Zod discriminated union on `type`, so each prompt is typed. It also has `fetchExerciseSet`, `submitAttempt(exerciseId, answer, durationMs)` (an `ExerciseAnswer` is `{blanks} | {index} | {tokens} | {text}`), `explainAttempt`, `reportExercise` and `withdrawReport`.
   - **Set states:** `useExerciseSet` polls every 3 s (`GENERATING_POLL_MS`) while the set is GENERATING, which shows "Writing your exercises…". FAILED, a set whose exercises were all reported, and a 404 each get an empty state. Reported exercises are left out of a run.
   - **Flow:**
@@ -683,6 +683,22 @@ Conventions:
     - "Why is this wrong?" (EX-06) replaces itself with an "Explanation" region and focuses it.
     - "Report a problem" opens a `Modal` with an optional reason (EX-07, initial focus on the reason). Once reported it becomes "Reported · Undo".
   - **Tests:** `ExercisePlayerPage.test.tsx`.
+- **Practice page and set builder (FE-EX-02):**
+  - **Practice page:** `/practice` is `pages/practice/PracticePage.tsx`, for now one card linking to the builder. FE-PRC-01 adds the practice modes.
+  - **Builder:** `pages/exercises/ExerciseBuilderPage.tsx` at `/practice/exercises`, a route of its own.
+  - **The form (RHF + Zod):**
+    - **Topics:** a checklist of the learner's topics (`useGrammarTopics({})`), 1–5. Further boxes disable at five. Above five topics there's a "Find a topic" search, and chosen topics stay visible while searching.
+    - **Formats:** checkboxes, defaulting to the active language's `preferredExerciseTypes`, or else fill-blank, multiple choice, word order and translation.
+    - **Count and difficulty:** a count of 5/10/15/20 (default 10), and difficulty as `RadioCards` ("Match my level" sends none).
+    - **Checkbox values:** RHF hands checkbox groups back as `false`, a string or an array, so the schema runs `z.preprocess(asArray, …)` (with input and output form types).
+    - **No topics:** an empty state linking to /grammar.
+  - **Creating:** `createExerciseSet` POSTs, invalidates `EXERCISES_QUERY_KEY` and navigates to the player, which waits while the set is written.
+    - Server field errors map to `grammarTopicIds`, `types` and `count`.
+    - Anything else (e.g. 503 or 429 from the AI) is a form-level alert.
+  - **Preselecting:** `?topic=<id>` preselects a topic. The grammar topic page's "Practise with exercises" button links there.
+  - **"Your latest sets":** `useExerciseSets` (`GET /exercise-sets`, 10, newest first) shows topic titles, count, date and a status badge, each linking to the player.
+    - It polls every 3 s while a set is GENERATING. Like all TanStack polling, this pauses in a hidden tab and refetches on focus.
+  - **Tests:** `ExerciseBuilderPage.test.tsx`.
 - **Crash test:** `errorHandling.test.tsx` crashes the Progress placeholder. Move it again when that section is built.
 - **Settings (FE-06):** `pages/settings/SettingsPage.tsx` has one `SettingsSection` card per area: profile, one per learning language, password, and deleting the account.
   - **Account API:** the calls are in `src/account/accountApi.ts`. `changePassword` stores the new access token, and `deleteAccount` clears the session.

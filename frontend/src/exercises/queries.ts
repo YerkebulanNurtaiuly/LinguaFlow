@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { fetchExerciseSet } from './exercisesApi'
+import { fetchExerciseSet, fetchExerciseSets } from './exercisesApi'
 
 export const EXERCISES_QUERY_KEY = ['exercises'] as const
 
@@ -13,5 +13,17 @@ export function useExerciseSet(id: string) {
     queryFn: () => fetchExerciseSet(id),
     refetchInterval: (query) =>
       query.state.data?.status === 'GENERATING' ? GENERATING_POLL_MS : false,
+  })
+}
+
+/** The latest sets; polled while one is still being written. */
+export function useExerciseSets() {
+  return useQuery({
+    queryKey: [...EXERCISES_QUERY_KEY, 'sets'],
+    queryFn: () => fetchExerciseSets(),
+    refetchInterval: (query) =>
+      query.state.data?.content.some((set) => set.status === 'GENERATING')
+        ? GENERATING_POLL_MS
+        : false,
   })
 }

@@ -35,7 +35,7 @@ import {
   TYPE_LABELS,
 } from './exerciseText'
 
-const BACK = '/practice'
+const BACK = '/practice/exercises'
 
 /**
  * /practice/exercises/:id: plays an exercise set (FE-EX-01). One exercise at a time:
@@ -52,7 +52,7 @@ export function ExercisePlayerPage() {
         icon={TriangleAlert}
         title="Exercise set not found"
         description="It may have been deleted."
-        action={<ButtonLink to={BACK}>Back to practice</ButtonLink>}
+        action={<ButtonLink to={BACK}>Back to exercises</ButtonLink>}
       />
     ) : (
       <LoadError
@@ -106,7 +106,7 @@ function SetView({ set }: { set: ExerciseSet }) {
             ? 'Try again with other topics or types.'
             : 'Every exercise in this set was reported.'
         }
-        action={<ButtonLink to={BACK}>Back to practice</ButtonLink>}
+        action={<ButtonLink to={BACK}>Back to exercises</ButtonLink>}
       />
     )
   }
@@ -143,7 +143,7 @@ function Session({ exercises }: { exercises: Exercise[] }) {
       <div>
         <ButtonLink to={BACK} variant="ghost" size="sm" className="-ml-3">
           <ArrowLeft className="size-4" aria-hidden="true" />
-          Practice
+          Exercises
         </ButtonLink>
         <div className="mt-2 flex items-center justify-between gap-4 text-sm text-fg-muted">
           <span>
@@ -427,7 +427,7 @@ function Summary({
       <div className="flex flex-wrap gap-2">
         <Button onClick={onRestart}>Try again</Button>
         <ButtonLink to={BACK} variant="secondary">
-          Back to practice
+          Back to exercises
         </ButtonLink>
       </div>
     </div>

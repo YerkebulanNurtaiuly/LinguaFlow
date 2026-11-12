@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import type {
   ExerciseAttemptResult as ApiAttemptResult,
+  CreateExerciseSetRequest,
   ExerciseSet as ApiExerciseSet,
   MistakeExplanation as ApiMistakeExplanation,
   SubmitAttemptRequest,
@@ -219,4 +220,50 @@ export async function reportExercise(
 export async function withdrawReport(exerciseId: string): Promise<Exercise> {
   const { data } = await api.delete(`/exercises/${exerciseId}/report`)
   return exerciseSchema.parse(data)
+}
+
+export const EXERCISE_DIFFICULTIES = ['EASY', 'MEDIUM', 'HARD'] as const
+export type ExerciseDifficulty = (typeof EXERCISE_DIFFICULTIES)[number]
+
+/** What the learner asks for; empty types means their preferred types, or else all. */
+export interface NewExerciseSet {
+  grammarTopicIds: string[]
+  types: ExerciseType[]
+  count: number
+  difficulty?: ExerciseDifficulty
+}
+
+/** Asks the AI for a set; it comes back GENERATING with the job writing it. */
+export async function createExerciseSet(
+  request: NewExerciseSet,
+): Promise<{ exerciseSet: ExerciseSet; aiJobId: string }> {
+  const body: CreateExerciseSetRequest = request
+  const { data } = await api.post('/exercise-sets', body)
+  return z
+    .object({ exerciseSet: exerciseSetSchema, aiJobId: z.string() })
+    .parse(data)
+}
+
+const summarySchema = z.object({
+  id: z.string(),
+  status: z.enum(['GENERATING', 'READY', 'FAILED']),
+  request: exerciseSetSchema.shape.request,
+  exerciseCount: z.number(),
+  createdAt: z.string(),
+})
+export type ExerciseSetSummary = z.infer<typeof summarySchema>
+
+const summaryPageSchema = z.object({
+  content: z.array(summarySchema),
+  totalElements: z.number(),
+})
+
+/** The latest sets of the active language, newest first. */
+export async function fetchExerciseSets(
+  size = 10,
+): Promise<z.infer<typeof summaryPageSchema>> {
+  const { data } = await api.get('/exercise-sets', {
+    params: { page: 0, size },
+  })
+  return summaryPageSchema.parse(data)
 }

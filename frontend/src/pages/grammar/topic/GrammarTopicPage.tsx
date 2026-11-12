@@ -1,4 +1,4 @@
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, PencilLine } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
@@ -99,6 +99,15 @@ export function GrammarTopicPage() {
         {current.description && (
           <p className="mt-2 text-fg-muted">{current.description}</p>
         )}
+        <ButtonLink
+          to={`/practice/exercises?topic=${current.id}`}
+          variant="secondary"
+          size="sm"
+          className="mt-4"
+        >
+          <PencilLine className="size-4" aria-hidden="true" />
+          Practise with exercises
+        </ButtonLink>
       </div>
 
       <TopicStatusSection topic={current} />

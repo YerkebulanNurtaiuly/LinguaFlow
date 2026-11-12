@@ -295,7 +295,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-EX-01 — Exercise player** (L) — _deps: EX-05, FE-02_
   One component per exercise type (drag-and-drop word order, MC, text input with umlaut helper buttons ä ö ü ß), submit/next flow, immediate feedback with explanation, end-of-set summary.
 
-- [ ] **FE-EX-02 — Exercise set builder** (M) — _deps: FE-EX-01, EX-02_
+- [x] **FE-EX-02 — Exercise set builder** (M) — _deps: FE-EX-01, EX-02_
   Pick grammar topics, exercise types, count, difficulty → generating state → start.
 
 ---

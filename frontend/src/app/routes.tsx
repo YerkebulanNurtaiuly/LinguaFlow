@@ -18,8 +18,10 @@ import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { FlashcardBrowserPage } from '@/pages/flashcards/FlashcardBrowserPage'
 import { ReviewPage } from '@/pages/flashcards/ReviewPage'
 import { GrammarPage } from '@/pages/grammar/GrammarPage'
+import { ExerciseBuilderPage } from '@/pages/exercises/ExerciseBuilderPage'
 import { ExercisePlayerPage } from '@/pages/exercises/ExercisePlayerPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
+import { PracticePage } from '@/pages/practice/PracticePage'
 import { SessionPage } from '@/pages/sessions/SessionPage'
 import { SessionsPage } from '@/pages/sessions/SessionsPage'
 import { BulkAddPage } from '@/pages/vocabulary/BulkAddPage'
@@ -34,6 +36,7 @@ const SECTION_PAGES: Partial<Record<string, ReactNode>> = {
   '/sessions': <SessionsPage />,
   '/vocabulary': <VocabularyPage />,
   '/flashcards': <ReviewPage />,
+  '/practice': <PracticePage />,
 }
 
 /**
@@ -117,6 +120,11 @@ export const routes: RouteObject[] = [
                         path: '/flashcards/browse',
                         handle: title('All flashcards'),
                         element: <FlashcardBrowserPage />,
+                      },
+                      {
+                        path: '/practice/exercises',
+                        handle: title('Grammar exercises'),
+                        element: <ExerciseBuilderPage />,
                       },
                       {
                         path: '/practice/exercises/:id',
