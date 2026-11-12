@@ -317,7 +317,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRC-03 — Combined exercises** (M) — _deps: PRC-01, EX-02_
   Prompt variant generating exercises that combine several grammar topics and vocabulary from different sessions.
 
-- [ ] **FE-PRC-01 — Practice hub page** (M) — _deps: PRC-02, FE-FC-01, FE-EX-01_
+- [x] **FE-PRC-01 — Practice hub page** (M) — _deps: PRC-02, FE-FC-01, FE-EX-01_
   Three mode cards with descriptions and item counts, session config, unified player handling both flashcards and exercises, summary with "practice mistakes again".
 
 ### Epic 14: Progress & Analytics (`PRG`)

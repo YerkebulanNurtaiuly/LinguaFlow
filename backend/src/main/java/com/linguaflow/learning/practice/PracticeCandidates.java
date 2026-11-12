@@ -4,6 +4,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -92,6 +93,23 @@ class PracticeCandidates {
 					select id from study_sessions where user_id = ? and language_code = ?
 					 order by studied_on desc, created_at desc, id desc limit 1""",
 					(rs, row) -> rs.getObject("id", UUID.class), userId, languageCode)
+			.stream()
+			.findFirst();
+	}
+
+	/** A lesson's ID, title and date. */
+	record LessonInfo(UUID id, String title, LocalDate studiedOn) {
+	}
+
+	/** The latest study session, as {@link #latestStudySession} orders them, with its title. */
+	Optional<LessonInfo> latestLesson(UUID userId, String languageCode) {
+		return jdbc
+			.query("""
+					select id, title, studied_on from study_sessions where user_id = ? and language_code = ?
+					 order by studied_on desc, created_at desc, id desc limit 1""",
+					(rs, row) -> new LessonInfo(rs.getObject("id", UUID.class), rs.getString("title"),
+							rs.getDate("studied_on").toLocalDate()),
+					userId, languageCode)
 			.stream()
 			.findFirst();
 	}

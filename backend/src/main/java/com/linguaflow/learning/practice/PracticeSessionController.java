@@ -1,6 +1,7 @@
 package com.linguaflow.learning.practice;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -167,6 +168,53 @@ class PracticeSessionController {
 	@ApiResponse(responseCode = "200", description = "The session")
 	SessionResponse get(@CurrentUserId UUID userId, @PathVariable UUID id) {
 		return SessionResponse.from(service.get(userId, id));
+	}
+
+	@Schema(name = "PracticeLesson", description = "A lesson with the material it has")
+	record LessonResponse(UUID id, String title, LocalDate studiedOn,
+			@Schema(description = "Enriched words, which have cards to show") int words, int topics) {
+	}
+
+	@Schema(name = "PracticeOverview", description = "What each practice mode would use")
+	record OverviewResponse(
+			@Schema(description = "The latest lesson, which CURRENT_LESSON practises; null without any") LessonResponse currentLesson,
+			@Schema(description = "Enriched words in the active language") int words,
+			@Schema(description = "Of those, added in the last week or never practised: MIXED's new share") int freshWords,
+			@Schema(description = "Grammar topics in the active language") int topics,
+			@Schema(description = "Your default session length") int practiceSessionLength,
+			@Schema(description = "The latest unfinished session, to continue; null if none") ListedResponse inProgress) {
+
+		static OverviewResponse from(PracticeSessionService.Overview overview) {
+			var lesson = overview.currentLesson();
+			return new OverviewResponse(
+					lesson == null ? null
+							: new LessonResponse(lesson.id(), lesson.title(), lesson.studiedOn(), lesson.words(),
+									lesson.topics()),
+					overview.words(), overview.freshWords(), overview.topics(), overview.practiceSessionLength(),
+					overview.inProgress() == null ? null : ListedResponse.from(overview.inProgress()));
+		}
+
+	}
+
+	@GetMapping("/overview")
+	@Operation(summary = "What there is to practise",
+			description = "Per mode, for the active language: the latest lesson's material, all words and topics, "
+					+ "and the session in progress, if any.")
+	@ApiResponse(responseCode = "200", description = "The overview")
+	OverviewResponse overview(@CurrentUserId UUID userId) {
+		return OverviewResponse.from(service.overview(userId));
+	}
+
+	@PostMapping("/{id}/retry")
+	@ResponseStatus(HttpStatus.CREATED)
+	@Operation(summary = "Practise a session's mistakes again",
+			description = "Starts a new session, in the same mode, with the cards and exercises the completed session "
+					+ "got wrong. No new exercises are written. 409 when the session isn't completed or nothing "
+					+ "was missed.")
+	@ApiResponse(responseCode = "201", description = "The new session")
+	StartedResponse retry(@CurrentUserId UUID userId, @PathVariable UUID id) {
+		var started = service.retry(userId, id);
+		return new StartedResponse(SessionResponse.from(started.view()), started.aiJobId());
 	}
 
 	@PostMapping("/{id}/complete")

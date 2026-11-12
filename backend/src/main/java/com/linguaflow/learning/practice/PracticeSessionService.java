@@ -3,6 +3,7 @@ package com.linguaflow.learning.practice;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -229,10 +230,91 @@ public class PracticeSessionService {
 			.toList();
 		Map<UUID, ReviewService.QueueItem> cards = new LinkedHashMap<>();
 		reviews.items(userId, cardIds).forEach(card -> cards.put(card.view().card().getId(), card));
-		Optional<SetWithExercises> set = exerciseSets.forPracticeSession(userId, session.getId());
+		List<UUID> exerciseIds = list.stream()
+			.filter(item -> item.type() == PracticeItemType.EXERCISE)
+			.map(PracticeItem::refId)
+			.toList();
 		Map<UUID, Exercise> exercises = new LinkedHashMap<>();
-		set.ifPresent(found -> found.exercises().forEach(exercise -> exercises.put(exercise.getId(), exercise)));
+		exerciseSets.exercises(userId, exerciseIds).forEach(exercise -> exercises.put(exercise.getId(), exercise));
+		Optional<SetWithExercises> set = exerciseSets.forPracticeSession(userId, session.getId());
 		return new View(session, list, cards, exercises, set.orElse(null));
+	}
+
+	/**
+	 * What each mode would practise in the active language, for the practice hub
+	 * (FE-PRC-01).
+	 * @param currentLesson the latest lesson, null without any
+	 * @param words enriched words, which have cards to show
+	 * @param freshWords of those, added in the last week or never practised (MIXED's new share)
+	 * @param inProgress the latest unfinished session, to continue
+	 */
+	public record Overview(@Nullable Lesson currentLesson, int words, int freshWords, int topics,
+			int practiceSessionLength, @Nullable Listed inProgress) {
+	}
+
+	/** A lesson with how much material it has. */
+	public record Lesson(UUID id, String title, LocalDate studiedOn, int words, int topics) {
+	}
+
+	@Transactional(readOnly = true)
+	public Overview overview(UUID userId) {
+		String language = activeLanguages.requireActive(userId);
+		Instant now = now();
+		var words = candidates.words(userId, language, null);
+		int fresh = (int) words.stream().filter(word -> PracticeWeights.word(word, now).fresh()).count();
+		int topics = candidates.topics(userId, language, null).size();
+		Lesson lesson = candidates.latestLesson(userId, language)
+			.map(found -> new Lesson(found.id(), found.title(), found.studiedOn(),
+					candidates.words(userId, language, found.id()).size(),
+					candidates.topics(userId, language, found.id()).size()))
+			.orElse(null);
+		Listed inProgress = sessions.findFirstByUserIdAndLanguageCodeAndStatusOrderByStartedAtDesc(userId, language,
+				PracticeSessionStatus.IN_PROGRESS)
+			.map(session -> new Listed(session, items.progress(List.of(session.getId()))
+				.getOrDefault(session.getId(), new PracticeItems.Progress(0, 0))))
+			.orElse(null);
+		return new Overview(lesson, words.size(), fresh, topics,
+				userLanguages.settingsFor(userId, language).practiceSessionLength(), inProgress);
+	}
+
+	/**
+	 * "Practise mistakes again": a new session with the cards and exercises a completed
+	 * session got wrong (its summary's missed items), in the same mode. Cards come first,
+	 * interleaved with the exercises; deleted and reported ones are left out.
+	 * @throws ConflictException unless the session is completed with something missed
+	 */
+	@Transactional
+	public Started retry(UUID userId, UUID id) {
+		PracticeSession original = sessions.requireOwned(id, userId);
+		PracticeSummary summary = original.getSummary();
+		if (original.getStatus() != PracticeSessionStatus.COMPLETED || summary == null) {
+			throw new ConflictException("Complete the session first.");
+		}
+		List<UUID> cards = reviews.items(userId, summary.missedFlashcardIds())
+			.stream()
+			.map(card -> card.view().card().getId())
+			.toList();
+		Map<UUID, Exercise> found = new LinkedHashMap<>();
+		exerciseSets.exercises(userId, summary.missedExerciseIds())
+			.stream()
+			.filter(exercise -> !exercise.isReported())
+			.forEach(exercise -> found.put(exercise.getId(), exercise));
+		List<UUID> exercises = summary.missedExerciseIds().stream().filter(found::containsKey).toList();
+		if (cards.isEmpty() && exercises.isEmpty()) {
+			throw new ConflictException("There are no mistakes left to practise from this session.");
+		}
+		PracticeConfig config = original.getConfig();
+		PracticeSession session = sessions.saveAndFlush(new PracticeSession(userId, original.getLanguageCode(),
+				original.getMode(), original.getStudySessionId(),
+				new PracticeConfig(cards.size() + exercises.size(), !cards.isEmpty(), !exercises.isEmpty(),
+						config.newRatio(), config.seed()),
+				now()));
+		List<PracticeItem> cardItems = cards.stream().map(card -> PracticeItem.flashcard(0, card)).toList();
+		List<PracticeItem> exerciseItems = exercises.stream()
+			.map(exercise -> PracticeItem.exercise(0, exercise))
+			.toList();
+		items.replace(session.getId(), PracticePlan.interleave(cardItems, exerciseItems, 0));
+		return new Started(view(session), null);
 	}
 
 	/**

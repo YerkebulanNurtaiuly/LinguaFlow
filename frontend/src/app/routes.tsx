@@ -22,6 +22,7 @@ import { ExerciseBuilderPage } from '@/pages/exercises/ExerciseBuilderPage'
 import { ExercisePlayerPage } from '@/pages/exercises/ExercisePlayerPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
 import { PracticePage } from '@/pages/practice/PracticePage'
+import { PracticeSessionPage } from '@/pages/practice/PracticeSessionPage'
 import { SessionPage } from '@/pages/sessions/SessionPage'
 import { SessionsPage } from '@/pages/sessions/SessionsPage'
 import { BulkAddPage } from '@/pages/vocabulary/BulkAddPage'
@@ -130,6 +131,11 @@ export const routes: RouteObject[] = [
                         path: '/practice/exercises/:id',
                         handle: title('Exercises'),
                         element: <ExercisePlayerPage />,
+                      },
+                      {
+                        path: '/practice/sessions/:id',
+                        handle: title('Practice session'),
+                        element: <PracticeSessionPage />,
                       },
                       {
                         path: '/vocabulary/add',

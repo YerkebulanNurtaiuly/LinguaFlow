@@ -327,6 +327,27 @@ class PracticeSessionApiTests {
 		assertThat(list.get("content").get(0).get("items").asInt()).isEqualTo(6);
 		assertThat(list.get("content").get(0).get("answered").asInt()).isEqualTo(4);
 		assertThat(list.get("content").get(0).get("status").asString()).isEqualTo("COMPLETED");
+
+		// Practise the mistakes again: the forgotten card and the wrong exercise
+		JsonNode retry = json(mvc
+			.perform(post("/api/practice-sessions/{id}/retry", id).header("Authorization", anna.bearer()))
+			.andExpect(status().isCreated()));
+		assertThat(retry.get("aiJobId").isNull()).isTrue();
+		JsonNode again2 = retry.get("practiceSession");
+		assertThat(again2.get("id").asString()).isNotEqualTo(id);
+		assertThat(again2.get("mode").asString()).isEqualTo("FULL_REVISION");
+		assertThat(again2.get("exerciseSet").isNull()).isTrue();
+		assertThat(pattern(again2.get("items"))).isEqualTo("FE");
+		assertThat(again2.get("items").get(0).get("flashcard").get("card").get("id").asString()).isEqualTo(forgotten);
+		assertThat(again2.get("items").get(1).get("exercise").get("id").asString())
+			.isEqualTo(items.get(1).get("exercise").get("id").asString());
+		// Its answers are tracked like any session's
+		review(anna, forgotten, "GOOD", again2.get("id").asString()).andExpect(status().isCreated());
+		// Only a completed session can be retried
+		mvc.perform(post("/api/practice-sessions/{id}/retry", again2.get("id").asString())
+			.header("Authorization", anna.bearer())).andExpect(status().isConflict());
+		OwnershipAssertions.assertOnlyOwnerCanAccess(mvc, HttpMethod.POST, "/api/practice-sessions/{id}/retry",
+				UUID.fromString(id), anna.accessToken(), ben.accessToken());
 	}
 
 	@Test
@@ -423,6 +444,40 @@ class PracticeSessionApiTests {
 		assertThat(jdbc.queryForObject(
 				"select request ->> 'combined' from exercise_sets where practice_session_id = ?::uuid", String.class, id))
 			.isEqualTo("true");
+	}
+
+	@Test
+	void theOverviewCountsWhatEachModeWouldUse() throws Exception {
+		topic(anna, "Dativ");
+		JsonNode overview = json(mvc.perform(get("/api/practice-sessions/overview").header("Authorization",
+				anna.bearer())).andExpect(status().isOk()));
+		assertThat(overview.get("currentLesson").isNull()).isTrue();
+		assertThat(overview.get("words").asInt()).isEqualTo(6);
+		// Never practised, so all fresh
+		assertThat(overview.get("freshWords").asInt()).isEqualTo(6);
+		assertThat(overview.get("topics").asInt()).isEqualTo(1);
+		assertThat(overview.get("practiceSessionLength").asInt()).isEqualTo(20);
+		assertThat(overview.get("inProgress").isNull()).isTrue();
+
+		UUID lesson = UUID.randomUUID();
+		jdbc.update("insert into study_sessions (id, user_id, language_code, title, studied_on) "
+				+ "values (?, ?, 'de', 'Lektion 4', '2026-11-10')", lesson, anna.id());
+		jdbc.update("insert into session_vocabulary (study_session_id, vocabulary_item_id) values (?, ?)", lesson,
+				words.get(0));
+		String id = started(anna, """
+				{"mode":"CURRENT_LESSON","includeExercises":false}
+				""").get("practiceSession").get("id").asString();
+
+		overview = json(mvc.perform(get("/api/practice-sessions/overview").header("Authorization", anna.bearer()))
+			.andExpect(status().isOk()));
+		JsonNode current = overview.get("currentLesson");
+		assertThat(current.get("id").asString()).isEqualTo(lesson.toString());
+		assertThat(current.get("title").asString()).isEqualTo("Lektion 4");
+		assertThat(current.get("studiedOn").asString()).isEqualTo("2026-11-10");
+		assertThat(current.get("words").asInt()).isEqualTo(1);
+		assertThat(current.get("topics").asInt()).isZero();
+		assertThat(overview.get("inProgress").get("id").asString()).isEqualTo(id);
+		assertThat(overview.get("inProgress").get("items").asInt()).isEqualTo(1);
 	}
 
 }

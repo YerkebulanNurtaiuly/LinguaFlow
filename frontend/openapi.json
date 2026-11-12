@@ -3682,6 +3682,85 @@
         "tags" : [ "Practice" ]
       }
     },
+    "/api/practice-sessions/overview" : {
+      "get" : {
+        "description" : "Per mode, for the active language: the latest lesson's material, all words and topics, and the session in progress, if any.",
+        "operationId" : "overview",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeOverview"
+                }
+              }
+            },
+            "description" : "The overview"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "What there is to practise",
+        "tags" : [ "Practice" ]
+      }
+    },
     "/api/practice-sessions/{id}" : {
       "get" : {
         "description" : "With its items, cards and exercises in order.",
@@ -3853,6 +3932,93 @@
           }
         },
         "summary" : "Complete a practice session",
+        "tags" : [ "Practice" ]
+      }
+    },
+    "/api/practice-sessions/{id}/retry" : {
+      "post" : {
+        "description" : "Starts a new session, in the same mode, with the cards and exercises the completed session got wrong. No new exercises are written. 409 when the session isn't completed or nothing was missed.",
+        "operationId" : "retry",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeSessionStarted"
+                }
+              }
+            },
+            "description" : "The new session"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Practise a session's mistakes again",
         "tags" : [ "Practice" ]
       }
     },
@@ -9470,6 +9636,66 @@
             "type" : "string",
             "description" : "GENERATING until the AI is done; the exercises join the items when READY",
             "enum" : [ "GENERATING", "READY", "FAILED" ]
+          }
+        }
+      },
+      "PracticeLesson" : {
+        "type" : "object",
+        "description" : "A lesson with the material it has",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "studiedOn" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "topics" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "words" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Enriched words, which have cards to show"
+          }
+        }
+      },
+      "PracticeOverview" : {
+        "type" : "object",
+        "description" : "What each practice mode would use",
+        "properties" : {
+          "currentLesson" : {
+            "$ref" : "#/components/schemas/PracticeLesson",
+            "description" : "The latest lesson, which CURRENT_LESSON practises; null without any"
+          },
+          "freshWords" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Of those, added in the last week or never practised: MIXED's new share"
+          },
+          "inProgress" : {
+            "$ref" : "#/components/schemas/PracticeSessionSummary",
+            "description" : "The latest unfinished session, to continue; null if none"
+          },
+          "practiceSessionLength" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Your default session length"
+          },
+          "topics" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Grammar topics in the active language"
+          },
+          "words" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Enriched words in the active language"
           }
         }
       },

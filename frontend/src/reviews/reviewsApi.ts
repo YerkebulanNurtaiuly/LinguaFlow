@@ -51,18 +51,19 @@ const previewSchema = z.object({
   dueAt: z.string(),
 })
 
+/** A card with where each grade would send it (also used by practice sessions). */
+export const queueItemSchema = z.object({
+  card: flashcardSchema,
+  previews: z.object({
+    again: previewSchema,
+    hard: previewSchema,
+    good: previewSchema,
+    easy: previewSchema,
+  }),
+})
+
 const queueSchema = z.object({
-  cards: z.array(
-    z.object({
-      card: flashcardSchema,
-      previews: z.object({
-        again: previewSchema,
-        hard: previewSchema,
-        good: previewSchema,
-        easy: previewSchema,
-      }),
-    }),
-  ),
+  cards: z.array(queueItemSchema),
   dueCount: z.number(),
   newCount: z.number(),
   today: z.string(),

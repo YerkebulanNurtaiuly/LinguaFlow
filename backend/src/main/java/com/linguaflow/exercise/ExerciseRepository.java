@@ -17,6 +17,9 @@ public interface ExerciseRepository extends OwnedRepository<Exercise> {
 	/** A set's exercises in order. */
 	List<Exercise> findAllByUserIdAndExerciseSetIdOrderByPosition(UUID userId, UUID exerciseSetId);
 
+	/** The user's exercises among {@code ids} (FE-PRC-01). */
+	List<Exercise> findAllByUserIdAndIdIn(UUID userId, Collection<UUID> ids);
+
 	/** A set's exercises in order without the reported ones, for practice (EX-07, PRC-01). */
 	List<Exercise> findAllByUserIdAndExerciseSetIdAndReportedAtIsNullOrderByPosition(UUID userId, UUID exerciseSetId);
 

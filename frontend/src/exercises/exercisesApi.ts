@@ -191,8 +191,13 @@ export async function submitAttempt(
   exerciseId: string,
   answer: ExerciseAnswer,
   durationMs?: number,
+  practiceSessionId?: string,
 ): Promise<AttemptResult> {
-  const body: SubmitAttemptRequest = { ...answer, durationMs }
+  const body: SubmitAttemptRequest = {
+    ...answer,
+    durationMs,
+    practiceSessionId,
+  }
   const { data } = await api.post(`/exercises/${exerciseId}/attempts`, body)
   return attemptResultSchema.parse(data)
 }

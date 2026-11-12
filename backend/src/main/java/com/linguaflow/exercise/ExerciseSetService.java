@@ -166,6 +166,23 @@ public class ExerciseSetService {
 		return new SetWithExercises(set, found);
 	}
 
+	/**
+	 * The user's exercises among {@code ids}, with their links loaded; others are left
+	 * out. For practice sessions that reuse exercises (FE-PRC-01).
+	 */
+	@Transactional(readOnly = true)
+	public List<Exercise> exercises(UUID userId, List<UUID> ids) {
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+		List<Exercise> found = exercises.findAllByUserIdAndIdIn(userId, ids);
+		found.forEach(exercise -> {
+			Hibernate.initialize(exercise.getGrammarTopicIdsForLoading());
+			Hibernate.initialize(exercise.getVocabularyItemIdsForLoading());
+		});
+		return found;
+	}
+
 	/** The active language's sets, with their exercise counts. */
 	@Transactional(readOnly = true)
 	public Page<SetSummary> list(UUID userId, Pageable pageable) {
