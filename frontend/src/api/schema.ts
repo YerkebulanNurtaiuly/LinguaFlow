@@ -58,6 +58,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/exercise-reports": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Reported exercises (admin)
+         * @description Every user's reported exercises with their prompts and solutions, latest report first, to tune the generation prompts. Users aren't named.
+         */
+        get: operations["reported"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/ai/jobs": {
         parameters: {
             query?: never;
@@ -379,6 +399,27 @@ export interface paths {
          */
         post: operations["explain"];
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exercises/{id}/report": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a bad exercise
+         * @description Flags the exercise as wrong or unclear. It stays in its set marked as reported, is left out of practice, and the report helps improve how exercises are written. Reporting again updates the reason.
+         */
+        post: operations["report"];
+        /** Take a report back */
+        delete: operations["withdraw"];
         options?: never;
         head?: never;
         patch?: never;
@@ -1303,6 +1344,14 @@ export interface components {
         AttachVocabularyRequest: {
             vocabularyItemIds: string[];
         };
+        BlankSolution: {
+            alternatives: string[];
+            answer: string;
+        };
+        BlanksSolution: components["schemas"]["ExerciseSolution"] & {
+            blanks: components["schemas"]["BlankSolution"][];
+            explanation?: string;
+        };
         BulkVocabularyConfirmRequest: {
             items: components["schemas"]["BulkVocabularyItem"][];
             /** @description Tags to put on every added word */
@@ -1414,6 +1463,11 @@ export interface components {
             currentPassword: string;
             /** @description At least 10 characters, at most 72 bytes */
             newPassword: string;
+        };
+        ChoiceSolution: components["schemas"]["ExerciseSolution"] & {
+            /** Format: int32 */
+            correctIndex: number;
+            explanation?: string;
         };
         CreateExerciseSetRequest: {
             /**
@@ -1608,6 +1662,7 @@ export interface components {
              */
             status?: "GENERATING" | "READY" | "FAILED";
         };
+        ExerciseSolution: unknown;
         /** @description Present for VALIDATION_FAILED: one entry per invalid field */
         FieldError: {
             field?: string;
@@ -1957,6 +2012,18 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
+        PageResponseReportedExercise: {
+            content?: components["schemas"]["ReportedExercise"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
         PageResponseStudySession: {
             content?: components["schemas"]["StudySession"][];
             /** Format: int32 */
@@ -2016,6 +2083,30 @@ export interface components {
             email?: string;
             /** Format: uuid */
             id?: string;
+        };
+        ReportExerciseRequest: {
+            /** @description What's wrong with it, e.g. "two options are correct" */
+            reason?: string;
+        };
+        /** @description A reported exercise with its solution, for prompt tuning */
+        ReportedExercise: {
+            /** Format: date-time */
+            createdAt?: string;
+            /** @enum {string} */
+            difficulty?: "EASY" | "MEDIUM" | "HARD";
+            /** Format: uuid */
+            exerciseSetId?: string;
+            /** Format: uuid */
+            id?: string;
+            languageCode?: string;
+            prompt?: components["schemas"]["FillBlankPrompt"] | components["schemas"]["MultipleChoicePrompt"] | components["schemas"]["TranslationPrompt"] | components["schemas"]["SentenceConstructionPrompt"] | components["schemas"]["ErrorCorrectionPrompt"] | components["schemas"]["WordOrderPrompt"] | components["schemas"]["TransformationPrompt"];
+            /** @description The learner's reason, if they gave one */
+            reportReason?: string;
+            /** Format: date-time */
+            reportedAt?: string;
+            solution?: components["schemas"]["BlanksSolution"] | components["schemas"]["ChoiceSolution"] | components["schemas"]["TextSolution"] | components["schemas"]["TokenOrderSolution"];
+            /** @enum {string} */
+            type?: "FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION";
         };
         ResetPasswordRequest: {
             /** @description At least 10 characters, at most 72 bytes */
@@ -2290,6 +2381,16 @@ export interface components {
              * @example Chapter 3
              */
             name: string;
+        };
+        TextSolution: components["schemas"]["ExerciseSolution"] & {
+            alternatives: string[];
+            answer: string;
+            explanation?: string;
+        };
+        TokenOrderSolution: components["schemas"]["ExerciseSolution"] & {
+            alternatives: string[][];
+            explanation?: string;
+            tokens: string[];
         };
         TokenResponse: {
             accessToken?: string;
@@ -2654,6 +2755,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiUsageSummary"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    reported: {
+        parameters: {
+            query: {
+                /** @description Only these types (repeatable) */
+                type?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[] | null;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of reported exercises */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseReportedExercise"];
                 };
             };
             /** @description Invalid request */
@@ -3993,6 +4163,148 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MistakeExplanation"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    report: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ReportExerciseRequest"];
+            };
+        };
+        responses: {
+            /** @description The exercise, now reported */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Exercise"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    withdraw: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The exercise, no longer reported */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Exercise"];
                 };
             };
             /** @description Invalid request */

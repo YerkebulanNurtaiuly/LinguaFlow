@@ -228,6 +228,96 @@
         "tags" : [ "AI usage" ]
       }
     },
+    "/api/admin/exercise-reports" : {
+      "get" : {
+        "description" : "Every user's reported exercises with their prompts and solutions, latest report first, to tune the generation prompts. Users aren't named.",
+        "operationId" : "reported",
+        "parameters" : [ {
+          "description" : "Only these types (repeatable)",
+          "in" : "query",
+          "name" : "type",
+          "required" : false,
+          "schema" : {
+            "type" : [ "array", "null" ],
+            "items" : {
+              "type" : "string",
+              "enum" : [ "FILL_BLANK", "MULTIPLE_CHOICE", "TRANSLATION", "SENTENCE_CONSTRUCTION", "ERROR_CORRECTION", "WORD_ORDER", "TRANSFORMATION" ]
+            }
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseReportedExercise"
+                }
+              }
+            },
+            "description" : "One page of reported exercises"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Reported exercises (admin)",
+        "tags" : [ "Exercises" ]
+      }
+    },
     "/api/ai/jobs" : {
       "get" : {
         "description" : "Your AI jobs, newest first. Sortable by createdAt, updatedAt.",
@@ -1862,6 +1952,186 @@
           }
         },
         "summary" : "Explain a wrong answer",
+        "tags" : [ "Exercises" ]
+      }
+    },
+    "/api/exercises/{id}/report" : {
+      "delete" : {
+        "operationId" : "withdraw",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exercise"
+                }
+              }
+            },
+            "description" : "The exercise, no longer reported"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Take a report back",
+        "tags" : [ "Exercises" ]
+      },
+      "post" : {
+        "description" : "Flags the exercise as wrong or unclear. It stays in its set marked as reported, is left out of practice, and the report helps improve how exercises are written. Reporting again updates the reason.",
+        "operationId" : "report",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReportExerciseRequest"
+              }
+            }
+          }
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/Exercise"
+                }
+              }
+            },
+            "description" : "The exercise, now reported"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Report a bad exercise",
         "tags" : [ "Exercises" ]
       }
     },
@@ -7091,6 +7361,50 @@
         },
         "required" : [ "vocabularyItemIds" ]
       },
+      "BlankSolution" : {
+        "type" : "object",
+        "properties" : {
+          "alternatives" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 200,
+              "minLength" : 0
+            },
+            "maxItems" : 10,
+            "minItems" : 0
+          },
+          "answer" : {
+            "type" : "string",
+            "maxLength" : 200,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "alternatives", "answer" ]
+      },
+      "BlanksSolution" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/ExerciseSolution"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "blanks" : {
+              "type" : "array",
+              "items" : {
+                "$ref" : "#/components/schemas/BlankSolution"
+              },
+              "maxItems" : 10,
+              "minItems" : 1
+            },
+            "explanation" : {
+              "type" : "string",
+              "maxLength" : 1000,
+              "minLength" : 0
+            }
+          }
+        } ],
+        "required" : [ "blanks" ]
+      },
       "BulkVocabularyConfirmRequest" : {
         "type" : "object",
         "properties" : {
@@ -7318,6 +7632,25 @@
           }
         },
         "required" : [ "currentPassword", "newPassword" ]
+      },
+      "ChoiceSolution" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/ExerciseSolution"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "correctIndex" : {
+              "type" : "integer",
+              "format" : "int32"
+            },
+            "explanation" : {
+              "type" : "string",
+              "maxLength" : 1000,
+              "minLength" : 0
+            }
+          }
+        } ],
+        "required" : [ "correctIndex" ]
       },
       "CreateExerciseSetRequest" : {
         "type" : "object",
@@ -7798,6 +8131,7 @@
           }
         }
       },
+      "ExerciseSolution" : { },
       "FieldError" : {
         "description" : "Present for VALIDATION_FAILED: one entry per invalid field",
         "properties" : {
@@ -8587,6 +8921,39 @@
           }
         }
       },
+      "PageResponseReportedExercise" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ReportedExercise"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "PageResponseStudySession" : {
         "type" : "object",
         "properties" : {
@@ -8728,6 +9095,82 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        }
+      },
+      "ReportExerciseRequest" : {
+        "type" : "object",
+        "properties" : {
+          "reason" : {
+            "type" : "string",
+            "description" : "What's wrong with it, e.g. \"two options are correct\"",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        }
+      },
+      "ReportedExercise" : {
+        "type" : "object",
+        "description" : "A reported exercise with its solution, for prompt tuning",
+        "properties" : {
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "difficulty" : {
+            "type" : "string",
+            "enum" : [ "EASY", "MEDIUM", "HARD" ]
+          },
+          "exerciseSetId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "languageCode" : {
+            "type" : "string"
+          },
+          "prompt" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/FillBlankPrompt"
+            }, {
+              "$ref" : "#/components/schemas/MultipleChoicePrompt"
+            }, {
+              "$ref" : "#/components/schemas/TranslationPrompt"
+            }, {
+              "$ref" : "#/components/schemas/SentenceConstructionPrompt"
+            }, {
+              "$ref" : "#/components/schemas/ErrorCorrectionPrompt"
+            }, {
+              "$ref" : "#/components/schemas/WordOrderPrompt"
+            }, {
+              "$ref" : "#/components/schemas/TransformationPrompt"
+            } ]
+          },
+          "reportReason" : {
+            "type" : "string",
+            "description" : "The learner's reason, if they gave one"
+          },
+          "reportedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "solution" : {
+            "oneOf" : [ {
+              "$ref" : "#/components/schemas/BlanksSolution"
+            }, {
+              "$ref" : "#/components/schemas/ChoiceSolution"
+            }, {
+              "$ref" : "#/components/schemas/TextSolution"
+            }, {
+              "$ref" : "#/components/schemas/TokenOrderSolution"
+            } ]
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "FILL_BLANK", "MULTIPLE_CHOICE", "TRANSLATION", "SENTENCE_CONSTRUCTION", "ERROR_CORRECTION", "WORD_ORDER", "TRANSFORMATION" ]
           }
         }
       },
@@ -9247,6 +9690,71 @@
           }
         },
         "required" : [ "name" ]
+      },
+      "TextSolution" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/ExerciseSolution"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "alternatives" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string",
+                "maxLength" : 500,
+                "minLength" : 0
+              },
+              "maxItems" : 10,
+              "minItems" : 0
+            },
+            "answer" : {
+              "type" : "string",
+              "maxLength" : 500,
+              "minLength" : 0
+            },
+            "explanation" : {
+              "type" : "string",
+              "maxLength" : 1000,
+              "minLength" : 0
+            }
+          }
+        } ],
+        "required" : [ "alternatives", "answer" ]
+      },
+      "TokenOrderSolution" : {
+        "allOf" : [ {
+          "$ref" : "#/components/schemas/ExerciseSolution"
+        }, {
+          "type" : "object",
+          "properties" : {
+            "alternatives" : {
+              "type" : "array",
+              "items" : {
+                "type" : "array",
+                "items" : {
+                  "type" : "string"
+                }
+              },
+              "maxItems" : 5,
+              "minItems" : 0
+            },
+            "explanation" : {
+              "type" : "string",
+              "maxLength" : 1000,
+              "minLength" : 0
+            },
+            "tokens" : {
+              "type" : "array",
+              "items" : {
+                "type" : "string",
+                "minLength" : 1
+              },
+              "maxItems" : 20,
+              "minItems" : 2
+            }
+          }
+        } ],
+        "required" : [ "alternatives", "tokens" ]
       },
       "TokenResponse" : {
         "type" : "object",

@@ -164,4 +164,10 @@ public class Exercise extends AuditableEntity implements OwnedEntity {
 		reportReason = trimmed == null || trimmed.isEmpty() ? null : trimmed;
 	}
 
+	/** Takes a report back (EX-07): the exercise counts as fine again. */
+	public void withdrawReport() {
+		reportedAt = null;
+		reportReason = null;
+	}
+
 }

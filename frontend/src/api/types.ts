@@ -148,3 +148,7 @@ export type ExerciseFeedback = Schemas['ExerciseFeedback']
 export type AnswerError = Schemas['AnswerError']
 export type ExerciseMistake = Schemas['Mistake']
 export type MistakeExplanation = Schemas['MistakeExplanation']
+
+// Exercise reports (EX-07)
+export type ReportExerciseRequest = Schemas['ReportExerciseRequest']
+export type ReportedExercise = Schemas['ReportedExercise']

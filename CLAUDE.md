@@ -379,6 +379,21 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
     - **No user ID** in the key. The exercise belongs to one learner, so entries aren't shared in practice.
   - **Shared helpers:** `AnswerChecker.level` and `AnswerChecker.describe` are package-visible for this.
   - **Tests:** `MistakeExplanationTests`.
+- **Reporting bad exercises (EX-07):** `ExerciseReportController` and `ExerciseReportService`.
+  - **Report:** `POST /api/exercises/{id}/report` with an optional `{reason}` (at most 1000 characters, trimmed; a body may be left out) returns 200 with the `Exercise`, now `reported: true`.
+    - Reporting again keeps the first `reported_at` and takes the new reason (`Exercise.report`).
+    - The first report is logged with the exercise, type and set, never the reason text.
+  - **Take back:** `DELETE /api/exercises/{id}/report` clears it (`withdrawReport`).
+  - **Ownership:** another user's exercise is 404.
+  - **Effect:**
+    - A reported exercise stays in its set (`GET /api/exercise-sets/{id}` marks it `reported`) and keeps its attempts.
+    - Practice must pick exercises with `findAllByUserIdAndExerciseSetIdAndReportedAtIsNullOrderByPosition` (PRC-01).
+    - Generation already lists the latest exercises on the same topics as "don't repeat", reported ones included.
+  - **For prompt tuning:** `GET /api/admin/exercise-reports?type=` (ADMIN only) pages every user's reported exercises, latest report first. Each has its language, type, difficulty, prompt, **solution**, reason and dates, without the user.
+    - The query is the system-wide `ExerciseRepository.findReportedForTuning`, with a `ReportedExercise(exercise, languageCode)` constructor expression and its own count query.
+    - The order is fixed, and `sort` is ignored.
+  - **Schema names:** solution records have OpenAPI names `BlanksSolution`, `BlankSolution`, `ChoiceSolution`, `TextSolution` and `TokenOrderSolution`, so `TextAnswer` never clashes.
+  - **Tests:** `ExerciseReportTests`.
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

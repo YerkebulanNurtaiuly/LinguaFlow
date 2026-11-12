@@ -289,7 +289,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **EX-06 — Explanations for incorrect answers** (S) — _deps: EX-05_
   AI explanation in the user's explanation language, referencing the grammar rule; cached per (exercise, wrong-answer-normalized).
 
-- [ ] **EX-07 — Exercise reporting** (S) — _deps: EX-05_
+- [x] **EX-07 — Exercise reporting** (S) — _deps: EX-05_
   "Report a bad exercise" button → flags exercise, excludes it from future sets, logged for prompt tuning.
 
 - [ ] **FE-EX-01 — Exercise player** (L) — _deps: EX-05, FE-02_

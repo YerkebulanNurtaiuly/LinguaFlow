@@ -5,6 +5,7 @@ import java.util.Collections;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -22,6 +23,7 @@ public sealed interface ExerciseSolution {
 	@Nullable String explanation();
 
 	/** One answer per gap of a fill-in-the-blank text, in order. */
+	@Schema(name = "BlanksSolution")
 	record Blanks(
 			@JsonPropertyDescription("One entry per ___ gap, in the order they appear") @NotNull @Size(min = 1,
 					max = 10) List<@NotNull @Valid Blank> blanks,
@@ -36,6 +38,7 @@ public sealed interface ExerciseSolution {
 	}
 
 	/** The answer for one gap. */
+	@Schema(name = "BlankSolution")
 	record Blank(@JsonPropertyDescription("The word or words that fill the gap") @NotBlank @Size(
 			max = 200) String answer,
 			@JsonPropertyDescription("Other fillings that are just as correct; often empty") @NotNull @Size(
@@ -48,6 +51,7 @@ public sealed interface ExerciseSolution {
 	}
 
 	/** The position of the correct option in a multiple-choice question. */
+	@Schema(name = "ChoiceSolution")
 	record Choice(
 			@JsonPropertyDescription("Zero-based index of the one correct option") @NotNull Integer correctIndex,
 			@JsonPropertyDescription("Why the answer is right, in one or two sentences in the explanation language, or null") @Nullable @Size(
@@ -59,6 +63,7 @@ public sealed interface ExerciseSolution {
 	 * A sentence answer: translation, sentence construction, error correction and
 	 * transformation. For sentence construction it's one model answer among many possible.
 	 */
+	@Schema(name = "TextSolution")
 	record TextAnswer(@JsonPropertyDescription("The best answer, as a full sentence") @NotBlank @Size(
 			max = 500) String answer,
 			@JsonPropertyDescription("Other answers that are just as correct") @NotNull @Size(
@@ -74,6 +79,7 @@ public sealed interface ExerciseSolution {
 	}
 
 	/** The tokens of a word-order exercise in the right order. */
+	@Schema(name = "TokenOrderSolution")
 	record TokenOrder(
 			@JsonPropertyDescription("The prompt's tokens in the correct order") @NotNull @Size(min = 2,
 					max = 20) List<@NotBlank String> tokens,
