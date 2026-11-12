@@ -385,6 +385,36 @@ class MigrationTests {
 			.hasMessageContaining("state_before");
 	}
 
+	// ---- V8: progress counters -----------------------------------------------------------------
+
+	@Test
+	void mistakeCountsArePositive() {
+		UUID user = learner("counts@example.de");
+		assertThatThrownBy(() -> jdbc.update("insert into mistake_counts (user_id, language_code, error_type, mistakes, "
+				+ "last_seen_at) values (?, 'de', 'WRONG_CASE', 0, now())", user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("mistake_counts_mistakes_ck");
+	}
+
+	@Test
+	void mistakeCountsBelongToALearningLanguage() {
+		UUID user = learner("countslang@example.de");
+		assertThatThrownBy(() -> jdbc.update("insert into mistake_counts (user_id, language_code, error_type, mistakes, "
+				+ "last_seen_at) values (?, 'fr', 'WRONG_CASE', 1, now())", user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("mistake_counts_user_language_fk");
+	}
+
+	@Test
+	void wordAccuracyIsAShare() {
+		UUID user = learner("accuracy@example.de");
+		UUID item = insertVocabulary(user, "lampe", "NOUN");
+		assertThatThrownBy(() -> jdbc.update("insert into vocabulary_progress (vocabulary_item_id, user_id, "
+				+ "times_seen, times_correct, recent_accuracy) values (?, ?, 1, 1, 1.5)", item, user))
+			.isInstanceOf(DataIntegrityViolationException.class)
+			.hasMessageContaining("vocabulary_progress_accuracy_ck");
+	}
+
 	@Test
 	void flashcardMustBelongToTheOwnerOfItsWord() {
 		UUID owner = learner("owner@example.de");

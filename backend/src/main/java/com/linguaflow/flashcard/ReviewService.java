@@ -27,6 +27,7 @@ import com.linguaflow.user.LearningSettings;
 import com.linguaflow.user.UserLanguageService;
 import com.linguaflow.user.UserRepository;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.data.domain.Limit;
@@ -92,6 +93,8 @@ public class ReviewService {
 
 	private final PracticeSessionRecorder practice;
 
+	private final ApplicationEventPublisher events;
+
 	private final TransactionTemplate transactions;
 
 	private final Clock clock;
@@ -100,8 +103,9 @@ public class ReviewService {
 
 	ReviewService(FlashcardRepository cards, SrsStateRepository srsStates, FlashcardReviewRepository reviews,
 			FlashcardService flashcards, ActiveLanguageService activeLanguages, UserLanguageService userLanguages,
-			UserRepository users, PracticeSessionRecorder practice, PlatformTransactionManager transactionManager,
-			Clock clock) {
+			UserRepository users, PracticeSessionRecorder practice, ApplicationEventPublisher events,
+			PlatformTransactionManager transactionManager, Clock clock) {
+		this.events = events;
 		this.practice = practice;
 		this.cards = cards;
 		this.srsStates = srsStates;
@@ -307,6 +311,9 @@ public class ReviewService {
 		srsStates.saveAndFlush(srs);
 		FlashcardReview review = reviews.saveAndFlush(new FlashcardReview(card, submission.reviewToken(),
 				submission.grade(), now, submission.durationMs(), before, after, submission.practiceSessionId()));
+		events.publishEvent(new FlashcardReviewedEvent(userId, card.getId(), card.getVocabularyItemId(), review.getId(),
+				submission.grade(), submission.grade() != ReviewGrade.AGAIN, after.intervalDays(), now,
+				submission.practiceSessionId()));
 		return new Result(review, flashcards.views(userId, List.of(card)).getFirst(), false);
 	}
 

@@ -367,10 +367,11 @@ These link exercises to the material they practise. One exercise can combine sev
 
 ### 3.6 Progress aggregates (PRG-01 to PRG-03)
 
-These tables are **derived**: they're rebuilt from `flashcard_reviews` and `exercise_attempts` by the progress event handler. They exist so that weak-point queries and practice selection (PRC-01) don't scan the raw history every time. If they drift, they can be recomputed.
+These tables are **derived**: they're rebuilt from `flashcard_reviews`, `exercise_attempts` and `mistakes` by the progress event handler (PRG-01), which recomputes the affected rows after each review or attempt is committed, and rebuilds everything at startup. They exist so that weak-point queries and practice selection (PRC-01) don't scan the raw history every time. If they drift, they can be recomputed.
 
-- **`grammar_topic_progress`**: PK and FK `grammar_topic_id` **CASCADE**; `user_id`; `attempts_total`, `correct_total`; `recent_accuracy numeric(4,3)` (the last 20 attempts, PRG-01); `practice_days int` (distinct days, for PRG-02); `last_practiced_at`; `weakness_score numeric(6,3)`. **IX** `(user_id, weakness_score DESC)`.
-- **`vocabulary_progress`**: PK and FK `vocabulary_item_id` **CASCADE**; `user_id`; `times_seen`, `times_correct`; `last_practiced_at`; `weakness_score`. **IX** `(user_id, weakness_score DESC)`.
+- **`grammar_topic_progress`**: PK and FK `grammar_topic_id` **CASCADE**; `user_id`; `attempts_total`, `correct_total`; `recent_accuracy numeric(4,3)` (the average score of the last 20 attempts, partial credit counting, PRG-01); `practice_days int` (distinct days in the learner's time zone, for PRG-02); `last_practiced_at`; `weakness_score numeric(6,3)`. **IX** `(user_id, weakness_score DESC)`.
+- **`vocabulary_progress`**: PK and FK `vocabulary_item_id` **CASCADE**; `user_id`; `times_seen`, `times_correct` (reviews of its cards, right meaning any grade but AGAIN, plus attempts at exercises linked to it); `recent_accuracy numeric(4,3)` (the share right of the last 20, V8); `interval_days int` (the longest current interval of its cards, for PRG-02, V8); `last_practiced_at`; `weakness_score`. **IX** `(user_id, weakness_score DESC)`.
+- **`mistake_counts`** (V8): PK `(user_id, language_code, error_type)`, FK `(user_id, language_code)` → user_languages **CASCADE**; `mistakes int` (CK > 0); `last_seen_at`. Counted from `mistakes` per learning language, for PRG-04 and PRG-06.
 
 ### 3.7 AI infrastructure (AI-04 to AI-06)
 
@@ -428,6 +429,7 @@ This table is shared between users. It may only hold **language data**, such as 
 | `V5__grammar_catalog_seed.sql` | GRM-03 | Seed rows for the German topic catalog (52 topics, A1–C1; IDs are `md5('grammar-catalog:de:<slug>')::uuid`) |
 | `V6__card_directions.sql` | FC-01 | `user_languages.card_directions` |
 | `V7__review_state_before.sql` | SRS-03 | `flashcard_reviews.state_before` |
+| `V8__progress_counters.sql` | PRG-01 | `vocabulary_progress.recent_accuracy` and `interval_days`, `mistake_counts` |
 | `R__dev_seed.sql` | DB-05 | Demo data, dev profile only |
 
 Applied migrations are never edited. Every change is a new `V<n>__…` file.

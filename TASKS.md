@@ -322,7 +322,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 14: Progress & Analytics (`PRG`)
 
-- [ ] **PRG-01 — Progress event handling** (M) — _deps: EX-05, SRS-02_
+- [x] **PRG-01 — Progress event handling** (M) — _deps: EX-05, SRS-02_
   Listen to review/attempt events (Spring application events, transactional) and update aggregates: per-vocabulary mastery, per-grammar-topic accuracy (rolling window, e.g. last 20 attempts), mistake counters by type.
 
 - [ ] **PRG-02 — Mastery rules** (M) — _deps: PRG-01, GRM-02_
