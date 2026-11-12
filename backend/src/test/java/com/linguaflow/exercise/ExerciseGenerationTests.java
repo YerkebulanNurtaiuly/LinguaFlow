@@ -418,4 +418,81 @@ class ExerciseGenerationTests {
 			.isEqualTo("SUCCEEDED");
 	}
 
+
+	private UUID lesson(String title, String date, String... lemmas) {
+		UUID id = UUID.randomUUID();
+		jdbc.update("insert into study_sessions (id, user_id, language_code, title, studied_on) "
+				+ "values (?, ?, 'de', ?, ?::date)", id, anna.id(), title, date);
+		for (String lemma : lemmas) {
+			jdbc.update("insert into session_vocabulary (study_session_id, vocabulary_item_id) values (?, ?)", id,
+					words.get(lemma));
+		}
+		return id;
+	}
+
+	/** Exercises naming both topics. */
+	private Function<LlmPrompt, String> combinedAnswers() {
+		return prompt -> {
+			List<Map<String, Object>> items = new ArrayList<>();
+			for (int i = 0; i < requested(prompt); i++) {
+				int n = sentence.incrementAndGet();
+				items.add(Map.of("prompt", Map.of("text", "Gestern habe ich dem Hund Nummer " + n + " ___ Wasser gegeben."),
+						"solution",
+						Map.of("blanks", List.of(Map.of("answer", "das", "alternatives", List.of())), "explanation",
+								"Dativ object in a Perfekt sentence."),
+						"words", List.of("der Hund", "die Katze"), "topics", List.of("Dativ", "Perfekt")));
+			}
+			return batch(items);
+		};
+	}
+
+	@Test
+	void combinedSetsMixTopicsAndLessons() throws Exception {
+		fake().respondTo(AiUseCase.EXERCISE_GENERATION, combinedAnswers());
+		UUID dativ = topic(anna, "Dativ");
+		UUID perfekt = topic(anna, "Perfekt");
+		lesson("Lektion 2", "2026-11-02", "der Hund", "das Kind");
+		lesson("Lektion 5", "2026-11-09", "die Katze");
+
+		JsonNode created = requestSet(anna, """
+				{"grammarTopicIds":["%s","%s"],"types":["FILL_BLANK"],"count":3,"combined":true}
+				""".formatted(dativ, perfekt));
+		assertThat(created.get("exerciseSet").get("request").get("combined").asBoolean()).isTrue();
+		worker.runDueJobs();
+
+		String prompt = fake().calls().getFirst().prompt().user();
+		assertThat(prompt).contains("Combined practice: every exercise must practise at least two of the focus topics")
+			.contains("<lesson_vocabulary>")
+			.contains("- Lektion 2 (2 Nov): das Kind, der Hund")
+			.contains("- Lektion 5 (9 Nov): die Katze");
+		JsonNode set = set(anna, created.get("exerciseSet").get("id").asString());
+		assertThat(set.get("exercises")).hasSize(3)
+			.allSatisfy(exercise -> assertThat(exercise.get("grammarTopicIds")).hasSize(2));
+		assertThat(jdbc.queryForObject("select result ->> 'combined' from ai_jobs where user_id = ?", String.class,
+				anna.id()))
+			.isEqualTo("3");
+	}
+
+	@Test
+	void onlySetsAskedToCombineDoSo() throws Exception {
+		fake().respondTo(AiUseCase.EXERCISE_GENERATION, validAnswers());
+		UUID dativ = topic(anna, "Dativ");
+		UUID perfekt = topic(anna, "Perfekt");
+		lesson("Lektion 2", "2026-11-02", "der Hund");
+		lesson("Lektion 5", "2026-11-09", "die Katze");
+		requestSet(anna, """
+				{"grammarTopicIds":["%s","%s"],"types":["FILL_BLANK"],"count":2}""".formatted(dativ, perfekt));
+		worker.runDueJobs();
+		assertThat(fake().calls().getFirst().prompt().user()).doesNotContain("Combined practice")
+			.doesNotContain("lesson_vocabulary");
+
+		// Combining needs two topics
+		mvc.perform(post("/api/exercise-sets").header("Authorization", anna.bearer())
+			.contentType(MediaType.APPLICATION_JSON)
+			.content("""
+					{"grammarTopicIds":["%s"],"combined":true}""".formatted(dativ)))
+			.andExpect(status().isBadRequest())
+			.andExpect(jsonPath("$.errors[0].field").value("combined"));
+	}
+
 }

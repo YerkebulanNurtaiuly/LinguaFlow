@@ -8005,6 +8005,10 @@
       "CreateExerciseSetRequest" : {
         "type" : "object",
         "properties" : {
+          "combined" : {
+            "type" : "boolean",
+            "description" : "Each exercise practises two or more of the topics at once, with words from different lessons where they fit; needs at least two topics"
+          },
           "count" : {
             "type" : "integer",
             "format" : "int32",
@@ -8424,6 +8428,10 @@
         "type" : "object",
         "description" : "What was asked for",
         "properties" : {
+          "combined" : {
+            "type" : "boolean",
+            "description" : "Each exercise combines several of the topics"
+          },
           "count" : {
             "type" : "integer",
             "format" : "int32"

@@ -44,6 +44,10 @@ public enum PromptVar {
 	RECENT_EXERCISES("recentExercises", Shape.LIST, 500, 30),
 	/** How hard the exercises should be, e.g. "easy: short, simple sentences" (EX-02). */
 	DIFFICULTY("difficulty", Shape.LINE, 200, 0),
+	/** Set (to anything) for combined exercises: each practises several topics at once (PRC-03). */
+	COMBINE("combine", Shape.LINE, 10, 0),
+	/** Practice words grouped by lesson, one "Lesson: word, word" line each (PRC-03). */
+	LESSON_VOCABULARY("lessonVocabulary", Shape.LIST, 500, 20),
 
 	/** The exercise format, e.g. TRANSLATION. */
 	EXERCISE_TYPE("exerciseType", Shape.LINE, 40, 0),

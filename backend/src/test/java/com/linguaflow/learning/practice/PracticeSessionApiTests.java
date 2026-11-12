@@ -256,6 +256,10 @@ class PracticeSessionApiTests {
 		String setId = ready.get("exerciseSet").get("id").asString();
 		assertThat(jdbc.queryForObject("select source from exercise_sets where id = ?::uuid", String.class, setId))
 			.isEqualTo("PRACTICE");
+		// One topic: nothing to combine (PRC-03)
+		assertThat(jdbc.queryForObject("select request ->> 'combined' from exercise_sets where id = ?::uuid", String.class,
+				setId))
+			.isEqualTo("false");
 		assertThat(jdbc.queryForObject("select practice_session_id::text from exercise_sets where id = ?::uuid",
 				String.class, setId))
 			.isEqualTo(id);
@@ -406,6 +410,19 @@ class PracticeSessionApiTests {
 		assertThat(session.get("config").get("length").asInt()).isEqualTo(5);
 		// No topic, so no exercises: all five are cards
 		assertThat(pattern(session.get("items"))).isEqualTo("FFFFF");
+	}
+
+	@Test
+	void sessionsWithSeveralTopicsAskForCombinedExercises() throws Exception {
+		scriptExercises();
+		topic(anna, "Dativ");
+		topic(anna, "Perfekt");
+		String id = started(anna, """
+				{"mode":"FULL_REVISION","length":6}
+				""").get("practiceSession").get("id").asString();
+		assertThat(jdbc.queryForObject(
+				"select request ->> 'combined' from exercise_sets where practice_session_id = ?::uuid", String.class, id))
+			.isEqualTo("true");
 	}
 
 }

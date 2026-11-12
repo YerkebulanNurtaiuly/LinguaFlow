@@ -61,9 +61,16 @@ public class ExerciseSetService {
 	 * What the learner asks for.
 	 * @param types empty means the learner's preferred types, or else every type
 	 * @param count null means {@value #DEFAULT_COUNT}
+	 * @param combined each exercise combines several of the topics (PRC-03); needs two or more
 	 */
 	public record NewExerciseSet(List<UUID> grammarTopicIds, @Nullable List<ExerciseType> types,
-			@Nullable Integer count, @Nullable ExerciseDifficulty difficulty) {
+			@Nullable Integer count, @Nullable ExerciseDifficulty difficulty, boolean combined) {
+
+		public NewExerciseSet(List<UUID> grammarTopicIds, @Nullable List<ExerciseType> types, @Nullable Integer count,
+				@Nullable ExerciseDifficulty difficulty) {
+			this(grammarTopicIds, types, count, difficulty, false);
+		}
+
 	}
 
 	/** A set just asked for, and the job writing it. */
@@ -100,12 +107,15 @@ public class ExerciseSetService {
 		if (types.isEmpty()) {
 			types = userLanguages.settingsFor(userId, language).preferredExerciseTypes();
 		}
+		if (request.combined() && topicIds.size() < 2) {
+			throw new InvalidFieldException("combined", "needs at least two grammar topics");
+		}
 		int count = request.count() == null ? DEFAULT_COUNT : request.count();
 		if (count < 1 || count > MAX_COUNT) {
 			throw new InvalidFieldException("count", "must be between 1 and " + MAX_COUNT);
 		}
 		ExerciseSet set = sets.save(new ExerciseSet(userId, language, ExerciseSetSource.MANUAL,
-				new ExerciseSetRequest(topicIds, types, count, request.difficulty()), null));
+				new ExerciseSetRequest(topicIds, types, count, request.difficulty(), List.of(), request.combined()), null));
 		UUID jobId = aiJobs
 			.enqueue(AiJobType.EXERCISE_GENERATION, userId, Map.of(ExerciseGenerator.SET_ID, set.getId().toString()))
 			.getId();
@@ -126,7 +136,8 @@ public class ExerciseSetService {
 		}
 		List<ExerciseType> types = userLanguages.settingsFor(userId, languageCode).preferredExerciseTypes();
 		ExerciseSet set = sets.save(new ExerciseSet(userId, languageCode, ExerciseSetSource.PRACTICE,
-				new ExerciseSetRequest(grammarTopicIds, types, count, null, vocabularyItemIds), practiceSessionId));
+				new ExerciseSetRequest(grammarTopicIds, types, count, null, vocabularyItemIds, grammarTopicIds.size() > 1),
+				practiceSessionId));
 		UUID jobId = aiJobs
 			.enqueue(AiJobType.EXERCISE_GENERATION, userId, Map.of(ExerciseGenerator.SET_ID, set.getId().toString()))
 			.getId();

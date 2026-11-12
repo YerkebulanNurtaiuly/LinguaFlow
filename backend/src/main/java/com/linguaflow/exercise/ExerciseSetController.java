@@ -53,17 +53,19 @@ public class ExerciseSetController {
 			@Schema(description = "Exercise formats; empty or absent means your preferred formats, or else all") @Nullable List<@NotNull ExerciseType> types,
 			@Schema(description = "How many exercises; defaults to 10", example = "10") @Nullable @Min(1) @Max(
 					ExerciseSetService.MAX_COUNT) Integer count,
-			@Nullable ExerciseDifficulty difficulty) {
+			@Nullable ExerciseDifficulty difficulty,
+			@Schema(description = "Each exercise practises two or more of the topics at once, with words from different lessons where they fit; needs at least two topics") @Nullable Boolean combined) {
 	}
 
 	@Schema(name = "ExerciseSetRequest", description = "What was asked for")
 	record RequestResponse(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
 			ExerciseDifficulty difficulty,
-			@Schema(description = "Words practised first; set by practice sessions, empty otherwise") List<UUID> vocabularyItemIds) {
+			@Schema(description = "Words practised first; set by practice sessions, empty otherwise") List<UUID> vocabularyItemIds,
+			@Schema(description = "Each exercise combines several of the topics") boolean combined) {
 
 		static RequestResponse from(ExerciseSetRequest request) {
 			return new RequestResponse(request.grammarTopicIds(), request.types(), request.count(),
-					request.difficulty(), request.vocabularyItemIds());
+					request.difficulty(), request.vocabularyItemIds(), request.combined());
 		}
 
 	}
@@ -126,7 +128,7 @@ public class ExerciseSetController {
 	@ApiResponse(responseCode = "202", description = "The set, still generating, and its job")
 	CreatedResponse create(@CurrentUserId UUID userId, @Valid @RequestBody CreateRequest request) {
 		var requested = service.create(userId, new ExerciseSetService.NewExerciseSet(request.grammarTopicIds(),
-				request.types(), request.count(), request.difficulty()));
+				request.types(), request.count(), request.difficulty(), Boolean.TRUE.equals(request.combined())));
 		return new CreatedResponse(ExerciseSetResponse.from(requested.set(), List.of()), requested.aiJobId());
 	}
 

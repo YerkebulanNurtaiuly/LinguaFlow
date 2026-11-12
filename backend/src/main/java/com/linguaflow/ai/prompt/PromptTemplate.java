@@ -3,6 +3,7 @@ package com.linguaflow.ai.prompt;
 import static com.linguaflow.ai.prompt.PromptVar.ACCEPTED_ANSWERS;
 import static com.linguaflow.ai.prompt.PromptVar.CEFR_LEVEL;
 import static com.linguaflow.ai.prompt.PromptVar.COUNT;
+import static com.linguaflow.ai.prompt.PromptVar.COMBINE;
 import static com.linguaflow.ai.prompt.PromptVar.DIFFICULTY;
 import static com.linguaflow.ai.prompt.PromptVar.ERRORS;
 import static com.linguaflow.ai.prompt.PromptVar.EXERCISE;
@@ -11,6 +12,7 @@ import static com.linguaflow.ai.prompt.PromptVar.EXPLANATION_LANGUAGE;
 import static com.linguaflow.ai.prompt.PromptVar.FOCUS_TOPICS;
 import static com.linguaflow.ai.prompt.PromptVar.INSTRUCTION;
 import static com.linguaflow.ai.prompt.PromptVar.KNOWN_VOCABULARY;
+import static com.linguaflow.ai.prompt.PromptVar.LESSON_VOCABULARY;
 import static com.linguaflow.ai.prompt.PromptVar.LEARNER_ANSWER;
 import static com.linguaflow.ai.prompt.PromptVar.LEARNER_TOPICS;
 import static com.linguaflow.ai.prompt.PromptVar.PART_OF_SPEECH;
@@ -81,8 +83,8 @@ public enum PromptTemplate {
 
 	/** An exercise generation template; they all take the same variables. */
 	PromptTemplate(String id) {
-		this(id, AiUseCase.EXERCISE_GENERATION, 2, Set.of(COUNT),
-				Set.of(CEFR_LEVEL, DIFFICULTY, FOCUS_TOPICS, PRACTICE_VOCABULARY, KNOWN_VOCABULARY, RECENT_EXERCISES));
+		this(id, AiUseCase.EXERCISE_GENERATION, 3, Set.of(COUNT), Set.of(CEFR_LEVEL, DIFFICULTY, FOCUS_TOPICS,
+				PRACTICE_VOCABULARY, LESSON_VOCABULARY, COMBINE, KNOWN_VOCABULARY, RECENT_EXERCISES));
 	}
 
 	PromptTemplate(String id, AiUseCase useCase, int version, Set<PromptVar> required, Set<PromptVar> optional) {

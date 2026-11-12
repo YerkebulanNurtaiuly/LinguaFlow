@@ -1534,6 +1534,8 @@ export interface components {
             explanation?: string;
         };
         CreateExerciseSetRequest: {
+            /** @description Each exercise practises two or more of the topics at once, with words from different lessons where they fit; needs at least two topics */
+            combined?: boolean;
             /**
              * Format: int32
              * @description How many exercises; defaults to 10
@@ -1699,6 +1701,8 @@ export interface components {
         };
         /** @description What was asked for */
         ExerciseSetRequest: {
+            /** @description Each exercise combines several of the topics */
+            combined?: boolean;
             /** Format: int32 */
             count?: number;
             /** @enum {string} */

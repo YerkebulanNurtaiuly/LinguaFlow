@@ -141,6 +141,16 @@ class ExerciseMappingTests {
 	}
 
 	@Test
+	void theWholeRequestSurvivesTheDatabase() {
+		ExerciseSetRequest request = new ExerciseSetRequest(List.of(UUID.randomUUID(), UUID.randomUUID()),
+				List.of(ExerciseType.WORD_ORDER), 5, null, List.of(UUID.randomUUID()), true);
+		ExerciseSet set = sets.saveAndFlush(
+				new ExerciseSet(userId, "de", ExerciseSetSource.PRACTICE, request, null));
+		em.clear();
+		assertThat(sets.requireOwned(set.getId(), userId).getRequest()).isEqualTo(request);
+	}
+
+	@Test
 	void reportingKeepsTheFirstTimeAndTheLatestReason() {
 		ExerciseSet set = sets.saveAndFlush(ExerciseSetRepositoryTests.newSet(userId, 1));
 		Exercise exercise = exercises.saveAndFlush(new Exercise(set, 0,

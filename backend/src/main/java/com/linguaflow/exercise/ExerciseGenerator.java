@@ -30,6 +30,7 @@ import com.linguaflow.common.domain.CefrLevel;
 import com.linguaflow.common.domain.ExerciseType;
 import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.common.error.ApiException;
+import com.linguaflow.common.practice.WordLessons;
 import com.linguaflow.grammar.GrammarTopicService;
 import com.linguaflow.grammar.GrammarTopicSummary;
 import com.linguaflow.grammar.TitleNormalizer;
@@ -118,9 +119,13 @@ class ExerciseGenerator implements AiJobHandler {
 
 	private final ApplicationEventPublisher events;
 
+	private final WordLessons lessons;
+
 	ExerciseGenerator(ExerciseSetRepository sets, ExerciseRepository exercises, GrammarTopicService topics,
 			VocabularyService vocabulary, UserLanguageService userLanguages, StructuredLlm llm, PromptLibrary prompts,
-			Validator validator, PlatformTransactionManager transactions, ApplicationEventPublisher events) {
+			Validator validator, PlatformTransactionManager transactions, ApplicationEventPublisher events,
+			WordLessons lessons) {
+		this.lessons = lessons;
 		this.events = events;
 		this.sets = sets;
 		this.exercises = exercises;
@@ -136,7 +141,7 @@ class ExerciseGenerator implements AiJobHandler {
 	/** Everything the prompts need, read up front. */
 	record Material(UUID userId, String languageCode, String explanationLanguage, ExerciseSetRequest request,
 			List<GrammarTopicSummary> topics, List<KnownWord> practiceWords, List<KnownWord> knownWords,
-			String cefrLevel, List<String> recentExercises) {
+			String cefrLevel, List<String> recentExercises, boolean combine, List<String> lessonVocabulary) {
 	}
 
 	/** An exercise that passed every check, with its links resolved. */
@@ -184,8 +189,13 @@ class ExerciseGenerator implements AiJobHandler {
 		}
 		log.info("Generated {} of {} exercises for set {} (job {}, {} dropped)", ordered.size(),
 				material.request().count(), setId, job.getId(), dropped);
-		return Map.of("exerciseSetId", setId.toString(), "exercises", ordered.size(), "requested",
-				material.request().count(), "dropped", dropped);
+		Map<String, Object> result = new LinkedHashMap<>(Map.of("exerciseSetId", setId.toString(), "exercises",
+				ordered.size(), "requested", material.request().count(), "dropped", dropped));
+		if (material.combine()) {
+			// How many really practise two or more topics (PRC-03)
+			result.put("combined", ordered.stream().filter(exercise -> exercise.grammarTopicIds().size() > 1).count());
+		}
+		return result;
 	}
 
 	@Override
@@ -226,8 +236,34 @@ class ExerciseGenerator implements AiJobHandler {
 					.stream()
 					.map(exercise -> exercise.content().summary())
 					.toList());
+		// Combined exercises (PRC-03) need two topics to combine
+		boolean combine = set.getRequest().combined() && setTopics.size() > 1;
+		List<String> byLesson = combine
+				? byLesson(practice, lessons.latestLessons(userId, practice.stream().map(KnownWord::id).toList()))
+				: List.of();
 		return new Material(userId, language, explanationLanguage, set.getRequest(), setTopics, practice, known,
-				level(userId, language, setTopics), recent == null ? List.of() : recent);
+				level(userId, language, setTopics), recent == null ? List.of() : recent, combine, byLesson);
+	}
+
+	/**
+	 * The practice words grouped by their latest lesson, one "Lesson: word, word" line each,
+	 * in the words' order; empty unless they come from two or more lessons.
+	 */
+	static List<String> byLesson(List<KnownWord> words, Map<UUID, String> lessonOf) {
+		Map<String, List<String>> groups = new LinkedHashMap<>();
+		for (KnownWord word : words) {
+			String lesson = lessonOf.get(word.id());
+			if (lesson != null) {
+				groups.computeIfAbsent(lesson, key -> new ArrayList<>()).add(word.lemma());
+			}
+		}
+		if (groups.size() < 2) {
+			return List.of();
+		}
+		return groups.entrySet()
+			.stream()
+			.map(group -> group.getKey() + ": " + String.join(", ", group.getValue()))
+			.toList();
 	}
 
 	/** The highest level among the topics, or else the learner's own estimate. */
@@ -316,6 +352,8 @@ class ExerciseGenerator implements AiJobHandler {
 							material.practiceWords().stream().map(ExerciseGenerator::describe).toList())
 					.set(PromptVar.KNOWN_VOCABULARY,
 							material.knownWords().stream().map(ExerciseGenerator::describe).toList())
+					.set(PromptVar.LESSON_VOCABULARY, material.lessonVocabulary())
+					.set(PromptVar.COMBINE, material.combine() ? "yes" : null)
 					.set(PromptVar.RECENT_EXERCISES, recent.stream().limit(RECENT_EXERCISES).toList()));
 	}
 

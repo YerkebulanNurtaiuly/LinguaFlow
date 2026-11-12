@@ -3,6 +3,7 @@ package com.linguaflow.exercise;
 import java.util.List;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.linguaflow.common.domain.ExerciseType;
 import org.jspecify.annotations.Nullable;
 
@@ -13,10 +14,14 @@ import org.jspecify.annotations.Nullable;
  * @param difficulty null means the generator chooses
  * @param vocabularyItemIds words to practise first (a practice session's selection,
  * PRC-02); empty means the generator picks the learner's words still being learned
+ * @param combined each exercise practises several of the topics at once, with words from
+ * different lessons where they fit (PRC-03)
  */
 public record ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
-		@Nullable ExerciseDifficulty difficulty, List<UUID> vocabularyItemIds) {
+		@Nullable ExerciseDifficulty difficulty, List<UUID> vocabularyItemIds, boolean combined) {
 
+	// The canonical constructor, so reading the stored JSON keeps every field
+	@JsonCreator
 	public ExerciseSetRequest {
 		grammarTopicIds = grammarTopicIds == null ? List.of() : List.copyOf(grammarTopicIds);
 		types = types == null ? List.of() : List.copyOf(types);
@@ -28,7 +33,7 @@ public record ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> 
 
 	public ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
 			@Nullable ExerciseDifficulty difficulty) {
-		this(grammarTopicIds, types, count, difficulty, List.of());
+		this(grammarTopicIds, types, count, difficulty, List.of(), false);
 	}
 
 }
