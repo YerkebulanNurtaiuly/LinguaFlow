@@ -232,13 +232,13 @@ public class AnswerChecker {
 		};
 	}
 
-	private static String describe(GrammarTopicSummary topic) {
+	static String describe(GrammarTopicSummary topic) {
 		return topic.description() == null || topic.description().isBlank() ? topic.title()
 				: topic.title() + ": " + topic.description();
 	}
 
 	/** The highest level among the exercise's topics, or else the learner's own estimate. */
-	private @Nullable String level(UUID userId, String language, List<GrammarTopicSummary> exerciseTopics) {
+	@Nullable String level(UUID userId, String language, List<GrammarTopicSummary> exerciseTopics) {
 		Optional<CefrLevel> topicLevel = exerciseTopics.stream()
 			.map(GrammarTopicSummary::cefrLevel)
 			.filter(Objects::nonNull)

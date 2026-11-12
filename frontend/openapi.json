@@ -1770,6 +1770,101 @@
         "tags" : [ "Exercises" ]
       }
     },
+    "/api/exercises/{id}/attempts/{attemptId}/explanation" : {
+      "post" : {
+        "description" : "Asks the AI why the attempt's answer was wrong, referencing the grammar rule. The same wrong answer to the same exercise is explained from the cache. 409 when the answer was right; 429 AI_QUOTA_EXCEEDED or 503 AI_UNAVAILABLE when the AI can't answer.",
+        "operationId" : "explain",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "attemptId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/MistakeExplanation"
+                }
+              }
+            },
+            "description" : "The explanation"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Explain a wrong answer",
+        "tags" : [ "Exercises" ]
+      }
+    },
     "/api/flashcards" : {
       "get" : {
         "description" : "Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).",
@@ -8175,6 +8270,58 @@
           "id" : {
             "type" : "string",
             "format" : "uuid"
+          }
+        }
+      },
+      "MistakeExplanation" : {
+        "type" : "object",
+        "description" : "Why an answer was wrong, in your explanation language",
+        "properties" : {
+          "answerIsCorrect" : {
+            "type" : "boolean",
+            "description" : "True when the answer turned out to be fine after all"
+          },
+          "cached" : {
+            "type" : "boolean",
+            "description" : "Served from the cache: the same wrong answer was explained before"
+          },
+          "example" : {
+            "$ref" : "#/components/schemas/MistakeExplanationExample",
+            "description" : "A new example using the rule; null when the answer is fine"
+          },
+          "grammarTopicId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "That topic among the exercise's topics, if it is one"
+          },
+          "mistake" : {
+            "type" : "string",
+            "description" : "What exactly is wrong, quoting your answer"
+          },
+          "otherErrors" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "rule" : {
+            "type" : "string",
+            "description" : "The rule behind it"
+          },
+          "topic" : {
+            "type" : "string",
+            "description" : "The grammar topic the rule belongs to, as the AI named it"
+          }
+        }
+      },
+      "MistakeExplanationExample" : {
+        "type" : "object",
+        "properties" : {
+          "sentence" : {
+            "type" : "string"
+          },
+          "translation" : {
+            "type" : "string"
           }
         }
       },

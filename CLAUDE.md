@@ -365,6 +365,20 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **`GET`** pages an exercise's attempts, newest first. Only `attemptedAt` is sortable, with the UUIDv7 `id` as tie-break.
   - **Not yet:** `practice_session_id` stays null until PRC-02. There's no idempotency key, so each POST is a new attempt.
   - **Tests:** `ExerciseAttemptApiTests` (with `@RecordApplicationEvents`) and the repository contracts.
+- **Mistake explanations (EX-06):** `POST /api/exercises/{id}/attempts/{attemptId}/explanation` (`MistakeExplainer.explain`) returns 200 `MistakeExplanation`. It's written on request only, since each one is an AI call.
+  - **Errors:** the attempt must be the user's attempt at that exercise (404 otherwise). A correct attempt is 409 `CONFLICT`. AI failures are 429 or 503 (`AiErrors.toApiException`).
+  - **The call:** the `mistake-explanation` v1 template (unchanged), synchronous, with `AiCaller.user`. It gets:
+    - the exercise as the learner saw it (`exerciseText`: a gap text with its hint, a question with "Options: a / b", or "Put in order: …"; open types as in `AnswerChecker.exercise`);
+    - the correct answer from `AnswerEvaluator`;
+    - the learner's answer as one text (`answerText`: a gap text with their words filled in, "(nothing)" for an empty gap, the option chosen, or their order);
+    - the AI judge's errors from the attempt's feedback, as `TYPE: "span" — explanation`;
+    - the exercise's topics and the level.
+  - **Answer record (`MistakeExplanation`):** `{answerIsCorrect, mistake, rule, topic, example{sentence, translation}, otherErrors}`. The response adds `grammarTopicId` (the topic matched by normalized title among the exercise's topics, or else the exercise's only topic) and `cached`.
+  - **Cache (schema.md Q5):** `completeCached`, keyed by the `MISTAKE_EXPLANATION` use case, language, prompt version, explanation language, exercise ID and normalized answer (`AnswerNormalizer.ignoringCase`). So asking again, or repeating the same wrong answer, is free.
+    - **Never cached:** answers over 100 normalized characters, and prompts with `PERSONAL_DATA_REDACTED`. Those always call the AI.
+    - **No user ID** in the key. The exercise belongs to one learner, so entries aren't shared in practice.
+  - **Shared helpers:** `AnswerChecker.level` and `AnswerChecker.describe` are package-visible for this.
+  - **Tests:** `MistakeExplanationTests`.
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

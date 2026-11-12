@@ -286,7 +286,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **EX-05 — Attempt submission API** (S) — _deps: EX-03, EX-04_
   `POST /api/exercises/{id}/attempts` → result, explanation, correct answer. Persist attempt and mistakes; emit `ExerciseAttemptedEvent` for the progress module.
 
-- [ ] **EX-06 — Explanations for incorrect answers** (S) — _deps: EX-05_
+- [x] **EX-06 — Explanations for incorrect answers** (S) — _deps: EX-05_
   AI explanation in the user's explanation language, referencing the grammar rule; cached per (exercise, wrong-answer-normalized).
 
 - [ ] **EX-07 — Exercise reporting** (S) — _deps: EX-05_

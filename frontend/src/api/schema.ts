@@ -364,6 +364,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exercises/{id}/attempts/{attemptId}/explanation": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Explain a wrong answer
+         * @description Asks the AI why the attempt's answer was wrong, referencing the grammar rule. The same wrong answer to the same exercise is explained from the cache. 409 when the answer was right; 429 AI_QUOTA_EXCEEDED or 503 AI_UNAVAILABLE when the AI can't answer.
+         */
+        post: operations["explain"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flashcards": {
         parameters: {
             query?: never;
@@ -1817,6 +1837,31 @@ export interface components {
             grammarTopicId?: string;
             /** Format: uuid */
             id?: string;
+        };
+        /** @description Why an answer was wrong, in your explanation language */
+        MistakeExplanation: {
+            /** @description True when the answer turned out to be fine after all */
+            answerIsCorrect?: boolean;
+            /** @description Served from the cache: the same wrong answer was explained before */
+            cached?: boolean;
+            /** @description A new example using the rule; null when the answer is fine */
+            example?: components["schemas"]["MistakeExplanationExample"];
+            /**
+             * Format: uuid
+             * @description That topic among the exercise's topics, if it is one
+             */
+            grammarTopicId?: string;
+            /** @description What exactly is wrong, quoting your answer */
+            mistake?: string;
+            otherErrors?: string[];
+            /** @description The rule behind it */
+            rule?: string;
+            /** @description The grammar topic the rule belongs to, as the AI named it */
+            topic?: string;
+        };
+        MistakeExplanationExample: {
+            sentence?: string;
+            translation?: string;
         };
         MultipleChoicePrompt: components["schemas"]["ExercisePrompt"] & {
             instruction?: string;
@@ -3878,6 +3923,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ExerciseAttemptResult"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    explain: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+                attemptId: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The explanation */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakeExplanation"];
                 };
             };
             /** @description Invalid request */

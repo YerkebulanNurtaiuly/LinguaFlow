@@ -47,8 +47,11 @@ class ExerciseAttemptController {
 
 	private final AttemptService attempts;
 
-	ExerciseAttemptController(AttemptService attempts) {
+	private final MistakeExplainer explainer;
+
+	ExerciseAttemptController(AttemptService attempts, MistakeExplainer explainer) {
 		this.attempts = attempts;
+		this.explainer = explainer;
 	}
 
 	@Schema(name = "SubmitAttemptRequest",
@@ -165,6 +168,42 @@ class ExerciseAttemptController {
 					mistake.getGrammarTopicId());
 		}
 
+	}
+
+	@Schema(name = "MistakeExplanation", description = "Why an answer was wrong, in your explanation language")
+	record ExplanationResponse(
+			@Schema(description = "True when the answer turned out to be fine after all") boolean answerIsCorrect,
+			@Schema(description = "What exactly is wrong, quoting your answer") String mistake,
+			@Schema(description = "The rule behind it") String rule,
+			@Schema(description = "The grammar topic the rule belongs to, as the AI named it") String topic,
+			@Schema(description = "That topic among the exercise's topics, if it is one") UUID grammarTopicId,
+			@Schema(description = "A new example using the rule; null when the answer is fine") ExampleResponse example,
+			List<String> otherErrors,
+			@Schema(description = "Served from the cache: the same wrong answer was explained before") boolean cached) {
+
+		static ExplanationResponse from(MistakeExplainer.Explained explained) {
+			MistakeExplanation explanation = explained.explanation();
+			return new ExplanationResponse(explanation.answerIsCorrect(), explanation.mistake(), explanation.rule(),
+					explanation.topic(), explained.grammarTopicId(),
+					explanation.example() == null ? null
+							: new ExampleResponse(explanation.example().sentence(), explanation.example().translation()),
+					explanation.otherErrors(), explained.cached());
+		}
+
+	}
+
+	@Schema(name = "MistakeExplanationExample")
+	record ExampleResponse(String sentence, String translation) {
+	}
+
+	@PostMapping("/{attemptId}/explanation")
+	@Operation(summary = "Explain a wrong answer",
+			description = "Asks the AI why the attempt's answer was wrong, referencing the grammar rule. The same wrong "
+					+ "answer to the same exercise is explained from the cache. 409 when the answer was right; 429 "
+					+ "AI_QUOTA_EXCEEDED or 503 AI_UNAVAILABLE when the AI can't answer.")
+	@ApiResponse(responseCode = "200", description = "The explanation")
+	ExplanationResponse explain(@CurrentUserId UUID userId, @PathVariable UUID id, @PathVariable UUID attemptId) {
+		return ExplanationResponse.from(explainer.explain(userId, id, attemptId));
 	}
 
 	@PostMapping
