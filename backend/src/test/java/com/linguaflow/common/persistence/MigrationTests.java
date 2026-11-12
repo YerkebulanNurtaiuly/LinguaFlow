@@ -11,6 +11,7 @@ import com.linguaflow.exercise.ExerciseDifficulty;
 import com.linguaflow.exercise.ExerciseSetSource;
 import com.linguaflow.exercise.ExerciseSetStatus;
 import com.linguaflow.flashcard.ReviewGrade;
+import com.linguaflow.learning.practice.PracticeMode;
 import com.linguaflow.flashcard.SrsState;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
@@ -308,6 +309,11 @@ class MigrationTests {
 		assertCheckMatches("exercises_difficulty_ck", ExerciseDifficulty.values());
 		assertCheckMatches("exercise_sets_source_ck", ExerciseSetSource.values());
 		assertCheckMatches("exercise_sets_status_ck", ExerciseSetStatus.values());
+	}
+
+	@Test
+	void practiceModesMatchTheDatabaseCheck() {
+		assertCheckMatches("practice_sessions_mode_ck", PracticeMode.values());
 	}
 
 	private void assertCheckMatches(String constraint, Enum<?>[] values) {

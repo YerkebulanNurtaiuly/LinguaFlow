@@ -394,6 +394,27 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
     - The order is fixed, and `sort` is ignored.
   - **Schema names:** solution records have OpenAPI names `BlanksSolution`, `BlankSolution`, `ChoiceSolution`, `TextSolution` and `TokenOrderSolution`, so `TextAnswer` never clashes.
   - **Tests:** `ExerciseReportTests`.
+- **Practice material selection (PRC-01):** package `learning.practice`. `MaterialSelectionService.select(userId, Request(mode, studySessionId, Limits(words, topics, newRatio), seed))` returns the chosen word and topic IDs (plus the lesson for CURRENT_LESSON) in the active language. There's no API; PRC-02 stores the seed in `practice_sessions.config`.
+  - **Modes (`PracticeMode`, matching `practice_sessions_mode_ck`):**
+    - CURRENT_LESSON: the given lesson, or the latest by `studied_on` then creation. Without any lesson it's 409 `NO_STUDY_SESSION` (new `ErrorCode`); another user's lesson is 404.
+    - MIXED: `newRatio` (default `DEFAULT_NEW_RATIO` 0.6) from fresh material, the rest older; when one pool runs short, the other fills.
+    - FULL_REVISION: everything.
+    - WEAK_SPOTS: weakest first, for PRG-06.
+  - **Candidates (`PracticeCandidates`):** a JdbcTemplate read model across tables, scoped by user and language. Only READY words.
+    - **Per word:** lowest ease, most lapses, whether a card is (re)learning, last review, earliest due date over its cards, and its last exercise attempt (via `exercise_vocabulary`).
+    - **Per topic:** attempt count, the average score of the latest 20 attempts (`RECENT_ATTEMPTS`), and the last attempt (via `exercise_grammar_topics`).
+  - **Scores (`PracticeWeights`, pure, all 0–1):**
+    - **Fresh:** added within 7 days or never practised.
+    - **Word weakness:** 0.4 × ease below 2.5 (1.3 = full) + 0.3 × min(lapses, 4)/4 + 0.3 if (re)learning; never reviewed = 0.5.
+    - **Topic weakness:** 1 − recent score, or 0.5 without attempts.
+    - **Mastery:** MASTERED halves weakness.
+    - **Staleness:** days since practice over 30, capped at 1; never practised = 1.
+    - **Word dueness:** 1 when due, falling to 0 a week ahead; never reviewed = 0.5. Topic dueness is its staleness.
+  - **Picking (`MaterialSelector`, pure):** Efraimidis–Spirakis weighted sampling without replacement. Candidates are sorted by ID and each draws u from `Random(seed ^ pool)`, with key ln(u)/weight; the largest keys win. So the same seed and candidates give the same picks in any input order, and nothing with a positive weight is ruled out.
+    - **Weights:** CURRENT_LESSON 0.5 + 0.5w; MIXED fresh 1 and older 0.1 + 0.5w + 0.4·staleness; FULL_REVISION 0.1 + 0.5w + 0.4·dueness; WEAK_SPOTS 0.02 + w².
+    - Words and topics use separate random streams.
+  - **Reproducibility:** depends on the material and the clock too, since staleness and dueness use `Clock`.
+  - **Tests:** `MaterialSelectorTests` (seeded reproducibility, order independence, ratios and fill, weighting bias over many seeds), `PracticeWeightsTests` (table-driven) and `MaterialSelectionServiceTests` (the SQL and the modes on PostgreSQL).
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

@@ -304,7 +304,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 13: Practice Modes (`PRC`)
 
-- [ ] **PRC-01 — Material selection engine** (L) — _deps: SES-01, SRS-02, EX-02_
+- [x] **PRC-01 — Material selection engine** (L) — _deps: SES-01, SRS-02, EX-02_
   Deterministic service choosing vocabulary + grammar for a practice session by mode:
     - **Current Lesson** — material from the latest (or chosen) study session.
     - **Mixed Practice** — configurable ratio (default 60% new / 40% older), older material weighted by weakness and time since last practice.
