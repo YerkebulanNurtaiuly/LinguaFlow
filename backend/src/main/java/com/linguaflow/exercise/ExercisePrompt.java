@@ -6,6 +6,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonPropertyDescription;
 import com.linguaflow.common.domain.CardDirection;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -29,6 +30,7 @@ public sealed interface ExercisePrompt {
 	@Nullable String instruction();
 
 	/** A sentence with one or more gaps to fill in. */
+	@Schema(name = "FillBlankPrompt")
 	record FillBlank(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,
@@ -40,6 +42,7 @@ public sealed interface ExercisePrompt {
 	}
 
 	/** A question with 2–6 options, exactly one of them correct. */
+	@Schema(name = "MultipleChoicePrompt")
 	record MultipleChoice(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,
@@ -56,6 +59,7 @@ public sealed interface ExercisePrompt {
 	}
 
 	/** A sentence to translate, into or out of the learned language. */
+	@Schema(name = "TranslationPrompt")
 	record Translation(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,
@@ -65,6 +69,7 @@ public sealed interface ExercisePrompt {
 	}
 
 	/** A task to express in a German sentence that uses the given words. */
+	@Schema(name = "SentenceConstructionPrompt")
 	record SentenceConstruction(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,
@@ -81,6 +86,7 @@ public sealed interface ExercisePrompt {
 	}
 
 	/** A German sentence with a mistake to correct. */
+	@Schema(name = "ErrorCorrectionPrompt")
 	record ErrorCorrection(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,
@@ -90,6 +96,7 @@ public sealed interface ExercisePrompt {
 	}
 
 	/** Shuffled tokens to put in the right order. */
+	@Schema(name = "WordOrderPrompt")
 	record WordOrder(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,
@@ -104,6 +111,7 @@ public sealed interface ExercisePrompt {
 	}
 
 	/** A German sentence to change as the task says (tense, voice, case, word order…). */
+	@Schema(name = "TransformationPrompt")
 	record Transformation(
 			@JsonPropertyDescription("Optional instruction in the explanation language, or null") @Nullable @Size(
 					max = 300) String instruction,

@@ -136,6 +136,15 @@ public class Exercise extends AuditableEntity implements OwnedEntity {
 		return Set.copyOf(vocabularyItemIds);
 	}
 
+	/** The live collections, for loading them inside a transaction. */
+	Set<UUID> getGrammarTopicIdsForLoading() {
+		return grammarTopicIds;
+	}
+
+	Set<UUID> getVocabularyItemIdsForLoading() {
+		return vocabularyItemIds;
+	}
+
 	public boolean isReported() {
 		return reportedAt != null;
 	}

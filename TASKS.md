@@ -273,7 +273,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **EX-01 — Exercise domain model** (M) — _deps: DB-04_
   Polymorphic exercise types with JSON prompt/solution schemas: `FILL_BLANK`, `MULTIPLE_CHOICE`, `TRANSLATION`, `SENTENCE_CONSTRUCTION`, `ERROR_CORRECTION`, `WORD_ORDER`, `TRANSFORMATION`. Each links to grammar topic(s) and vocabulary item(s) used.
 
-- [ ] **EX-02 — AI exercise generation** (L) — _deps: EX-01, AI-03, GRM-01, VOC-05_
+- [x] **EX-02 — AI exercise generation** (L) — _deps: EX-01, AI-03, GRM-01, VOC-05_
   `POST /api/exercise-sets` with `{grammarTopicIds, types, count, difficulty}`. Backend picks vocabulary the user knows, builds prompt, validates each generated exercise (schema, solution present, MC options unique with exactly one correct, word-order tokens match solution), drops invalid ones and tops up.
   _Done when:_ a 10-exercise set for "Dativ" uses only (or mostly) the user's own words.
 

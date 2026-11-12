@@ -72,6 +72,17 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 	List<String> findRecentLemmas(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			Pageable page);
 
+	/** The user's enriched words with a translation, most recently changed first (EX-02). */
+	@Query("""
+			select new com.linguaflow.vocabulary.KnownWord(v.id, v.lemma, v.normalizedLemma, v.translation, v.status)
+			from VocabularyItem v
+			where v.userId = :userId and v.languageCode = :languageCode
+			  and v.aiStatus = com.linguaflow.vocabulary.AiStatus.READY
+			  and v.translation is not null and trim(v.translation) <> ''
+			order by v.updatedAt desc, v.id""")
+	List<KnownWord> findKnownWords(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			Pageable page);
+
 	/** The user's words among {@code ids}, in any language (FC-02). */
 	@Query("select v from VocabularyItem v where v.userId = :userId and v.id in :ids")
 	List<VocabularyItem> findOwnedByIds(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);

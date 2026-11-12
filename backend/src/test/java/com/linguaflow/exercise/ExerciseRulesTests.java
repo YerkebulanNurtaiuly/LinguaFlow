@@ -70,7 +70,7 @@ class ExerciseRulesTests {
 		WordOrder prompt = new WordOrder(null, List.of("dem", "Ich", "Hund", "gebe", "Wasser"));
 		assertThat(problems(ExerciseType.WORD_ORDER, prompt,
 				new TokenOrder(List.of("Ich", "gebe", "den", "Hund", "Wasser"),
-						List.of(List.of("Wasser", "gebe", "ich", "dem", "Hund")), null)))
+						List.of(List.of("Wasser", "gebe", "ich", "den", "Hund")), null)))
 			.containsExactly("solution.tokens: must use exactly the prompt's tokens, each as often as in the prompt",
 					"solution.alternatives[0]: must use exactly the prompt's tokens");
 		// A token used twice must appear twice

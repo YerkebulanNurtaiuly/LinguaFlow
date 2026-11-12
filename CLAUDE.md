@@ -282,7 +282,7 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Retention:** `{days: 30, reviews, remembered, rate}` over reviews of cards that were in REVIEW, remembered meaning any grade but AGAIN (Anki's "true retention"); `rate` is null without reviews. It needs `flashcard_reviews.state_before` (V7), which every review now records.
   - **Forecast:** 7 entries from today, counting cards falling due on each local day; overdue cards count for today.
   - **Tests:** `ReviewApiTests` and the table-driven `ReviewStreakTests`.
-- **Exercise model (EX-01):** package `exercise`, entities `ExerciseSet` and `Exercise` (both `OwnedEntity`, with `ExerciseSetRepository` and `ExerciseRepository`). There's no API yet; EX-02 adds it.
+- **Exercise model (EX-01):** package `exercise`, entities `ExerciseSet` and `Exercise` (both `OwnedEntity`, with `ExerciseSetRepository` and `ExerciseRepository`). The API is EX-02's.
   - **Sets:** `ExerciseSet(userId, languageCode, source, request, practiceSessionId)` starts `GENERATING`; `markReady()` or `markFailed()` ends it, once. `request` is the JSON record `ExerciseSetRequest {grammarTopicIds, types, count, difficulty}`. The enums `ExerciseSetSource`, `ExerciseSetStatus` and `ExerciseDifficulty` match their CHECKs (`MigrationTests`).
   - **Typed content:** `ExerciseContent(type, prompt, solution)`. The prompt is a record of the sealed `ExercisePrompt` and the solution one of the sealed `ExerciseSolution`, paired per type by `ExerciseFormat.of(type)`; any other pairing is an `IllegalArgumentException`.
     - **Pairs:** FILL_BLANK is `FillBlank` (text with `___` gaps, hint) with `Blanks` (one `Blank {answer, alternatives}` per gap). MULTIPLE_CHOICE is `MultipleChoice` (question, 2–6 options) with `Choice {correctIndex}`. WORD_ORDER is `WordOrder` (shuffled tokens) with `TokenOrder {tokens, alternatives}`, where each alternative is another full order. TRANSLATION (`direction` as a `CardDirection`, text), SENTENCE_CONSTRUCTION (task, words to use), ERROR_CORRECTION (sentence) and TRANSFORMATION (sentence, task) share `TextAnswer {answer, alternatives}`.
@@ -292,11 +292,36 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Rules (`ExerciseRules`):** EX-02's output check (`check(content, problems)`, with JSON paths). The `Exercise` constructor refuses content that breaks them.
     - FILL_BLANK: as many gaps (three or more underscores) as blanks.
     - MULTIPLE_CHOICE: options distinct ignoring case and spacing, and `correctIndex` in range.
-    - WORD_ORDER: the solution and every alternative use exactly the prompt's tokens, and the prompt isn't already solved.
+    - WORD_ORDER: the solution uses exactly the prompt's tokens, every alternative too ignoring case (another order may move a capitalized first word), and the prompt isn't already solved. Tokens keep their capitalization and carry punctuation ("Hause.").
     - ERROR_CORRECTION and TRANSFORMATION: the answer differs from the sentence.
     - SENTENCE_CONSTRUCTION: the words are distinct.
   - **Reporting (EX-07):** `report(reason, at)` keeps the first time and the latest reason.
   - **Tests:** `ExerciseRulesTests`, `ExerciseFormatTests`, `ExerciseMappingTests` and the repository contracts. `ExerciseSamples` has one valid exercise per type.
+- **Exercise generation (EX-02):** `ExerciseSetController` and `ExerciseSetService` serve `/api/exercise-sets`; `ExerciseGenerator` is the `EXERCISE_GENERATION` job handler.
+  - **Endpoints:**
+    - `POST` `{grammarTopicIds, types, count, difficulty}` returns 202 `{exerciseSet, aiJobId}`. The set is saved as GENERATING in the active language, and its job is queued in the same transaction.
+    - A paged list (newest first, sortable by `createdAt` only), with `exerciseCount`.
+    - `GET /{id}` returns the set with its exercises in order, **without solutions**. `prompt` is a `oneOf` of the `…Prompt` schemas.
+    - `DELETE /{id}` deletes the set and its exercises. A job whose set is gone is skipped.
+  - **Request rules:**
+    - **Topics:** 1–5 of the learner's topics in the active language. Anything else is a 400 on `grammarTopicIds`.
+    - **Types:** empty or absent means the learner's `preferredExerciseTypes`, or else all types.
+    - **Count:** 1–20, default 10.
+  - **Material:** the learner's enriched, translated words (`VocabularyService.knownWords`, most recent first). Up to 50 NEW or LEARNING words are practice words, topped up to `count × 2` with the others. Up to 100 more go in as known words. Words are listed as "der Hund (dog)".
+    - **Topics:** listed as "Title: description", read through `GrammarTopicService.summaries`.
+    - **Level:** the highest topic level, or else the learner's self-assessed level.
+    - **Recent exercises:** up to 30 of the learner's latest exercises on the same topics (`ExerciseRepository.findRecentOnTopics`, `ExerciseContent.summary()`), so they aren't repeated.
+  - **Generation:**
+    - The count is split over the types (10 over three is 4, 3, 3), with one call per type.
+    - The answer records are in `GeneratedExercises`: one batch record per type, with items `{prompt, solution, words, topics}`. Items aren't cascaded by Bean Validation, so one bad item doesn't redo the batch.
+    - Each item is validated on its own (Bean Validation, then `ExerciseRules`). Repeats are dropped, and so are copies of recent exercises.
+    - Missing exercises are asked for again, at most `ROUNDS` (3) calls per type, each listing what's already made. An answer still invalid after StructuredLlm's retry counts as an empty round.
+  - **Links:** the model's `words` are matched back by normalized lemma, ignoring a trailing "(translation)". Its `topics` are matched by normalized title; an exercise naming none is linked to all the set's topics.
+  - **Saving:** the exercises are saved with types interleaved, and the set becomes READY in one transaction. With no usable exercise it becomes FAILED, and `onGiveUp` also marks it FAILED.
+  - **Job result:** `{exerciseSetId, exercises, requested, dropped}`.
+  - **Not shared:** the prompts carry the learner's words, so nothing goes through the AI cache.
+  - **Templates:** the exercise templates are now **v2** (partials `exercise-rules-v2` and `exercise-request-v2`), written for the EX-01 records' field paths. They add the `DIFFICULTY` variable ("easy: short, simple sentences…"). The v1 files stay as released.
+  - **Tests:** `ExerciseGenerationTests` (the done-when: a 10-exercise Dativ set built from the learner's own words), and `ExerciseGeneratorTests`.
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

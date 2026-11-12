@@ -1,6 +1,7 @@
 package com.linguaflow.grammar;
 
 import java.time.Clock;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -115,6 +116,16 @@ public class GrammarTopicService {
 			.orElseGet(() -> new ExplanationRequest(aiJobs
 				.enqueue(AiJobType.GRAMMAR_EXPLANATION, userId, Map.of(GrammarExplanationHandler.TOPIC_ID, id.toString()))
 				.getId(), false));
+	}
+
+	/**
+	 * The user's topics among {@code ids} in {@code languageCode}; others' topics, other
+	 * languages and unknown IDs are left out. For other modules, e.g. exercise generation
+	 * (EX-02).
+	 */
+	@Transactional(readOnly = true)
+	public List<GrammarTopicSummary> summaries(UUID userId, String languageCode, Collection<UUID> ids) {
+		return ids.isEmpty() ? List.of() : topics.findSummaries(userId, languageCode, ids);
 	}
 
 	/**

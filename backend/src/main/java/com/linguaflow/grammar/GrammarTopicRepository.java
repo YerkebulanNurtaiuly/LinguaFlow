@@ -32,6 +32,15 @@ public interface GrammarTopicRepository extends OwnedRepository<GrammarTopic>, G
 	List<UUID> findOwnedIds(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("ids") Collection<UUID> ids);
 
+	/** The user's topics among {@code ids} in a language, by title (EX-02). */
+	@Query("""
+			select new com.linguaflow.grammar.GrammarTopicSummary(t.id, t.title, t.normalizedTitle, t.description, t.cefrLevel)
+			from GrammarTopic t
+			where t.userId = :userId and t.languageCode = :languageCode and t.id in :ids
+			order by t.title, t.id""")
+	List<GrammarTopicSummary> findSummaries(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("ids") Collection<UUID> ids);
+
 	/** What identifies each of the user's topics in a language, for matching against the catalog. */
 	@Query("""
 			select new com.linguaflow.grammar.GrammarTopicKey(t.id, t.catalogTopicId, t.normalizedTitle)

@@ -3,6 +3,7 @@ package com.linguaflow.ai.prompt;
 import static com.linguaflow.ai.prompt.PromptVar.ACCEPTED_ANSWERS;
 import static com.linguaflow.ai.prompt.PromptVar.CEFR_LEVEL;
 import static com.linguaflow.ai.prompt.PromptVar.COUNT;
+import static com.linguaflow.ai.prompt.PromptVar.DIFFICULTY;
 import static com.linguaflow.ai.prompt.PromptVar.ERRORS;
 import static com.linguaflow.ai.prompt.PromptVar.EXERCISE;
 import static com.linguaflow.ai.prompt.PromptVar.EXERCISE_TYPE;
@@ -79,8 +80,8 @@ public enum PromptTemplate {
 
 	/** An exercise generation template; they all take the same variables. */
 	PromptTemplate(String id) {
-		this(id, AiUseCase.EXERCISE_GENERATION, 1, Set.of(COUNT),
-				Set.of(CEFR_LEVEL, FOCUS_TOPICS, PRACTICE_VOCABULARY, KNOWN_VOCABULARY, RECENT_EXERCISES));
+		this(id, AiUseCase.EXERCISE_GENERATION, 2, Set.of(COUNT),
+				Set.of(CEFR_LEVEL, DIFFICULTY, FOCUS_TOPICS, PRACTICE_VOCABULARY, KNOWN_VOCABULARY, RECENT_EXERCISES));
 	}
 
 	PromptTemplate(String id, AiUseCase useCase, int version, Set<PromptVar> required, Set<PromptVar> optional) {

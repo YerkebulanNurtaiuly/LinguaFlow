@@ -275,6 +275,15 @@ public class VocabularyService {
 		return items.findRecentLemmas(userId, languageCode, PageRequest.of(0, limit));
 	}
 
+	/**
+	 * Up to {@code limit} of the user's enriched, translated words in a language, most
+	 * recently changed first; for exercise generation (EX-02).
+	 */
+	@Transactional(readOnly = true)
+	public List<KnownWord> knownWords(UUID userId, String languageCode, int limit) {
+		return items.findKnownWords(userId, languageCode, PageRequest.of(0, limit));
+	}
+
 	/** A word sent back to the AI, and the job doing it (VOC-06). */
 	public record Regenerated(VocabularyItem item, UUID aiJobId) {
 	}

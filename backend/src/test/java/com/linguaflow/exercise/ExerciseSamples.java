@@ -47,7 +47,7 @@ final class ExerciseSamples {
 			case WORD_ORDER -> new ExerciseContent(type,
 					new WordOrder(null, List.of("dem", "Ich", "Hund", "gebe", "Wasser", ".")),
 					new TokenOrder(List.of("Ich", "gebe", "dem", "Hund", "Wasser", "."),
-							List.of(List.of("Wasser", "gebe", "Ich", "dem", "Hund", ".")), null));
+							List.of(List.of("Wasser", "gebe", "ich", "dem", "Hund", ".")), null));
 			case TRANSFORMATION -> new ExerciseContent(type,
 					new Transformation(null, "Ich schenke den Kindern Bücher.", "Replace the people with a pronoun."),
 					new TextAnswer("Ich schenke ihnen Bücher.", List.of(), null));

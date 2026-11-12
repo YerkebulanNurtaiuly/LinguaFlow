@@ -69,7 +69,7 @@ export interface paths {
          * List AI jobs
          * @description Your AI jobs, newest first. Sortable by createdAt, updatedAt.
          */
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -109,7 +109,7 @@ export interface paths {
          * Get an AI job
          * @description Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.
          */
-        get: operations["get_5"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -292,6 +292,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exercise-sets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List exercise sets
+         * @description The active language's sets, newest first.
+         */
+        get: operations["list_4"];
+        put?: never;
+        /**
+         * Ask for an exercise set
+         * @description Saves the set as GENERATING and queues the AI. It practises the chosen topics with your own words; each exercise is checked, and bad ones are replaced. Follow the job, then reload the set.
+         */
+        post: operations["create_4"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/exercise-sets/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get an exercise set
+         * @description With its exercises in order, without solutions.
+         */
+        get: operations["get_5"];
+        put?: never;
+        post?: never;
+        /**
+         * Delete an exercise set
+         * @description With its exercises.
+         */
+        delete: operations["delete_4"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flashcards": {
         parameters: {
             query?: never;
@@ -303,7 +351,7 @@ export interface paths {
          * List flashcards
          * @description Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).
          */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -388,7 +436,7 @@ export interface paths {
          * List suggested grammar topics
          * @description The catalog of the active language, by level then title, with the topics you already have marked. Repeat cefrLevel for several levels.
          */
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1311,6 +1359,20 @@ export interface components {
             /** @description At least 10 characters, at most 72 bytes */
             newPassword: string;
         };
+        CreateExerciseSetRequest: {
+            /**
+             * Format: int32
+             * @description How many exercises; defaults to 10
+             * @example 10
+             */
+            count?: number;
+            /** @enum {string} */
+            difficulty?: "EASY" | "MEDIUM" | "HARD";
+            /** @description 1 to 5 of your grammar topics in the active language */
+            grammarTopicIds: string[];
+            /** @description Exercise formats; empty or absent means your preferred formats, or else all */
+            types?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
+        };
         /** @description Only the title is required */
         CreateGrammarTopicRequest: {
             /** @enum {string} */
@@ -1370,10 +1432,87 @@ export interface components {
             /** @description Current password, to confirm */
             password: string;
         };
+        ErrorCorrectionPrompt: components["schemas"]["ExercisePrompt"] & {
+            instruction?: string;
+            sentence: string;
+        };
+        /** @description One exercise, without its solution */
+        Exercise: {
+            /** @enum {string} */
+            difficulty?: "EASY" | "MEDIUM" | "HARD";
+            grammarTopicIds?: string[];
+            /** Format: uuid */
+            id?: string;
+            /** Format: int32 */
+            position?: number;
+            /** @description Its shape depends on the type */
+            prompt?: components["schemas"]["FillBlankPrompt"] | components["schemas"]["MultipleChoicePrompt"] | components["schemas"]["TranslationPrompt"] | components["schemas"]["SentenceConstructionPrompt"] | components["schemas"]["ErrorCorrectionPrompt"] | components["schemas"]["WordOrderPrompt"] | components["schemas"]["TransformationPrompt"];
+            /** @description Reported as a bad exercise */
+            reported?: boolean;
+            /** @enum {string} */
+            type?: "FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION";
+            vocabularyItemIds?: string[];
+        };
+        ExercisePrompt: unknown;
+        ExerciseSet: {
+            /** Format: date-time */
+            createdAt?: string;
+            exercises?: components["schemas"]["Exercise"][];
+            /** Format: uuid */
+            id?: string;
+            languageCode?: string;
+            request?: components["schemas"]["ExerciseSetRequest"];
+            /** @enum {string} */
+            source?: "MANUAL" | "PRACTICE" | "WEAK_SPOTS";
+            /** @enum {string} */
+            status?: "GENERATING" | "READY" | "FAILED";
+        };
+        ExerciseSetCreated: {
+            /**
+             * Format: uuid
+             * @description Follow it with GET /api/ai/jobs/{id}, then reload the set
+             */
+            aiJobId?: string;
+            exerciseSet?: components["schemas"]["ExerciseSet"];
+        };
+        /** @description What was asked for */
+        ExerciseSetRequest: {
+            /** Format: int32 */
+            count?: number;
+            /** @enum {string} */
+            difficulty?: "EASY" | "MEDIUM" | "HARD";
+            grammarTopicIds?: string[];
+            types?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
+        };
+        ExerciseSetSummary: {
+            /** Format: date-time */
+            createdAt?: string;
+            /**
+             * Format: int64
+             * @description May be fewer than requested when some generated exercises failed the checks
+             */
+            exerciseCount?: number;
+            /** Format: uuid */
+            id?: string;
+            languageCode?: string;
+            request?: components["schemas"]["ExerciseSetRequest"];
+            /** @enum {string} */
+            source?: "MANUAL" | "PRACTICE" | "WEAK_SPOTS";
+            /**
+             * @description GENERATING until the AI is done, then READY or FAILED
+             * @enum {string}
+             */
+            status?: "GENERATING" | "READY" | "FAILED";
+        };
         /** @description Present for VALIDATION_FAILED: one entry per invalid field */
         FieldError: {
             field?: string;
             message?: string;
+        };
+        FillBlankPrompt: components["schemas"]["ExercisePrompt"] & {
+            hint?: string;
+            instruction?: string;
+            text: string;
         };
         /** @description One direction of one word, with what it shows and where it stands in review */
         Flashcard: {
@@ -1585,6 +1724,11 @@ export interface components {
             /** @example demo-password-123 */
             password: string;
         };
+        MultipleChoicePrompt: components["schemas"]["ExercisePrompt"] & {
+            instruction?: string;
+            options: string[];
+            question: string;
+        };
         /** @description The caller's AI usage today (UTC) and the daily limits */
         MyAiUsage: {
             /** @description Whether today's allowance is used up; new AI work waits until resetsAt */
@@ -1604,6 +1748,18 @@ export interface components {
         };
         PageResponseAiJob: {
             content?: components["schemas"]["AiJob"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageResponseExerciseSetSummary: {
+            content?: components["schemas"]["ExerciseSetSummary"][];
             /** Format: int32 */
             page?: number;
             /** Format: int32 */
@@ -1860,6 +2016,11 @@ export interface components {
              */
             today?: string;
         };
+        SentenceConstructionPrompt: components["schemas"]["ExercisePrompt"] & {
+            instruction?: string;
+            task: string;
+            words: string[];
+        };
         SettingsUpdate: {
             /** @description Flashcard directions to review; at least one */
             cardDirections?: ("TARGET_TO_NATIVE" | "NATIVE_TO_TARGET")[];
@@ -1972,6 +2133,17 @@ export interface components {
             expiresIn?: number;
             /** @example Bearer */
             tokenType?: string;
+        };
+        TransformationPrompt: components["schemas"]["ExercisePrompt"] & {
+            instruction?: string;
+            sentence: string;
+            task: string;
+        };
+        TranslationPrompt: components["schemas"]["ExercisePrompt"] & {
+            /** @enum {string} */
+            direction: "TARGET_TO_NATIVE" | "NATIVE_TO_TARGET";
+            instruction?: string;
+            text: string;
         };
         UpdateFlashcardRequest: {
             /** @description True leaves the card out of reviews */
@@ -2222,6 +2394,10 @@ export interface components {
              */
             wordCount?: number;
         };
+        WordOrderPrompt: components["schemas"]["ExercisePrompt"] & {
+            instruction?: string;
+            tokens: string[];
+        };
     };
     responses: never;
     parameters: never;
@@ -2357,7 +2533,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query: {
                 userId: string;
@@ -2498,7 +2674,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_6: {
         parameters: {
             query: {
                 userId: string;
@@ -3208,7 +3384,282 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_4: {
+        parameters: {
+            query: {
+                userId: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of sets */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseExerciseSetSummary"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    create_4: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateExerciseSetRequest"];
+            };
+        };
+        responses: {
+            /** @description The set, still generating, and its job */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseSetCreated"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    get_5: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The set */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseSet"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    delete_4: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Deleted */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    list_6: {
         parameters: {
             query: {
                 userId: string;
@@ -3661,7 +4112,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query: {
                 userId: string;

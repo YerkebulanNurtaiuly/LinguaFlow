@@ -40,6 +40,8 @@ public enum PromptVar {
 	PRACTICE_VOCABULARY("practiceVocabulary", Shape.LIST, 200, 50),
 	/** Recent exercises on the same material, so new ones don't repeat them. */
 	RECENT_EXERCISES("recentExercises", Shape.LIST, 500, 30),
+	/** How hard the exercises should be, e.g. "easy: short, simple sentences" (EX-02). */
+	DIFFICULTY("difficulty", Shape.LINE, 200, 0),
 
 	/** The exercise format, e.g. TRANSLATION. */
 	EXERCISE_TYPE("exerciseType", Shape.LINE, 40, 0),

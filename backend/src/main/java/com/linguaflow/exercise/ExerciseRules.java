@@ -22,8 +22,9 @@ import org.jspecify.annotations.Nullable;
  * <li>Fill in the blank: as many {@code ___} gaps as answers.</li>
  * <li>Multiple choice: distinct options (ignoring case and spacing), and the correct
  * index points at one of them.</li>
- * <li>Word order: the solution and each alternative use exactly the prompt's tokens, and
- * the prompt isn't already in the solved order.</li>
+ * <li>Word order: the solution uses exactly the prompt's tokens, each alternative too
+ * (ignoring case, since another order may move a capitalized first word), and the prompt
+ * isn't already in the solved order.</li>
  * <li>Error correction and transformation: the answer differs from the given
  * sentence.</li>
  * <li>Sentence construction: the required words are distinct.</li>
@@ -112,9 +113,11 @@ public final class ExerciseRules {
 		else if (prompt.tokens().equals(solution.tokens()) && expected.size() > 1) {
 			problems.add("prompt.tokens", "must be shuffled, not already in the correct order");
 		}
+		// Another order may move a capitalized first word, so alternatives ignore case
+		Map<String, Integer> expectedIgnoringCase = counts(lowerCase(prompt.tokens()));
 		for (int i = 0; i < solution.alternatives().size(); i++) {
 			List<String> alternative = solution.alternatives().get(i);
-			if (alternative != null && !counts(alternative).equals(expected)) {
+			if (alternative != null && !counts(lowerCase(alternative)).equals(expectedIgnoringCase)) {
 				problems.add("solution.alternatives[" + i + "]", "must use exactly the prompt's tokens");
 			}
 		}
@@ -135,6 +138,10 @@ public final class ExerciseRules {
 				problems.add(path + "[" + i + "]", message + " an earlier entry; each must be different");
 			}
 		}
+	}
+
+	private static List<String> lowerCase(List<String> tokens) {
+		return tokens.stream().map(token -> token == null ? null : token.toLowerCase(Locale.ROOT)).toList();
 	}
 
 	private static Map<String, Integer> counts(List<String> tokens) {

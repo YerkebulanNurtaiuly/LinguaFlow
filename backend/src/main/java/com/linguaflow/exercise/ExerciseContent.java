@@ -41,6 +41,22 @@ public record ExerciseContent(ExerciseType type, ExercisePrompt prompt, Exercise
 				JSON.convertValue(solution, format.solutionType()));
 	}
 
+	/**
+	 * One line naming what the exercise asks, e.g. "Ich gebe ___ Mann ___ Buch." or
+	 * "Ich / gebe / dem / Hund / Wasser."; for "don't repeat these" lists (EX-02).
+	 */
+	public String summary() {
+		return switch (prompt) {
+			case ExercisePrompt.FillBlank p -> p.text();
+			case ExercisePrompt.MultipleChoice p -> p.question();
+			case ExercisePrompt.Translation p -> p.text();
+			case ExercisePrompt.SentenceConstruction p -> p.task() + " (" + String.join(", ", p.words()) + ")";
+			case ExercisePrompt.ErrorCorrection p -> p.sentence();
+			case ExercisePrompt.WordOrder p -> String.join(" ", ((ExerciseSolution.TokenOrder) solution).tokens());
+			case ExercisePrompt.Transformation p -> p.sentence() + " (" + p.task() + ")";
+		};
+	}
+
 	Map<String, Object> promptJson() {
 		return JSON.convertValue(prompt, MAP);
 	}
