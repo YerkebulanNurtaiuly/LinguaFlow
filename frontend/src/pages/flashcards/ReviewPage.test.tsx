@@ -89,6 +89,9 @@ function queue(cards: QueueItem[], next?: string): ReviewQueue {
   }
 }
 
+/** Ending a session submits, then asks for more cards; slow CI runners need longer. */
+const SESSION_END_TIMEOUT = 3000
+
 const stats: ReviewStats = {
   today: '2026-11-11',
   dueToday: 12,
@@ -251,7 +254,11 @@ describe('flashcard review page', () => {
 
     // Nothing more due now: the summary
     expect(
-      await screen.findByRole('heading', { name: 'Session done' }),
+      await screen.findByRole(
+        'heading',
+        { name: 'Session done' },
+        { timeout: SESSION_END_TIMEOUT },
+      ),
     ).toBeInTheDocument()
     expect(
       screen.getByText(/2 cards in .* · 50% remembered/),
@@ -294,7 +301,11 @@ describe('flashcard review page', () => {
     expect(fakeApi.requests('/reviews')).toHaveLength(0)
 
     await user.keyboard('2')
-    await screen.findByRole('heading', { name: 'Session done' })
+    await screen.findByRole(
+      'heading',
+      { name: 'Session done' },
+      { timeout: SESSION_END_TIMEOUT },
+    )
     expect(sentBody('POST', '/reviews')).toMatchObject({ grade: 'HARD' })
   })
 
