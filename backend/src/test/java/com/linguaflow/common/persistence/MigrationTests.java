@@ -7,6 +7,9 @@ import java.util.UUID;
 import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.domain.ExerciseType;
+import com.linguaflow.exercise.ExerciseDifficulty;
+import com.linguaflow.exercise.ExerciseSetSource;
+import com.linguaflow.exercise.ExerciseSetStatus;
 import com.linguaflow.flashcard.ReviewGrade;
 import com.linguaflow.flashcard.SrsState;
 import org.flywaydb.core.Flyway;
@@ -298,6 +301,22 @@ class MigrationTests {
 		for (SrsState.State state : SrsState.State.values()) {
 			assertThat(states).contains("'" + state.name() + "'");
 		}
+	}
+
+	@Test
+	void exerciseEnumsMatchTheDatabaseChecks() {
+		assertCheckMatches("exercises_difficulty_ck", ExerciseDifficulty.values());
+		assertCheckMatches("exercise_sets_source_ck", ExerciseSetSource.values());
+		assertCheckMatches("exercise_sets_status_ck", ExerciseSetStatus.values());
+	}
+
+	private void assertCheckMatches(String constraint, Enum<?>[] values) {
+		String check = jdbc.queryForObject(
+				"select pg_get_constraintdef(oid) from pg_constraint where conname = ?", String.class, constraint);
+		for (Enum<?> value : values) {
+			assertThat(check).as(constraint).contains("'" + value.name() + "'");
+		}
+		assertThat(check.split("'", -1).length / 2).as(constraint + " values").isEqualTo(values.length);
 	}
 
 	// ---- V6: card directions -------------------------------------------------------------------

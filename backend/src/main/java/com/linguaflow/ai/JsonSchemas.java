@@ -33,12 +33,12 @@ import org.jspecify.annotations.Nullable;
  * them.</li>
  * </ul>
  */
-final class JsonSchemas {
+public final class JsonSchemas {
 
 	private JsonSchemas() {
 	}
 
-	static Map<String, Object> forRecord(Class<?> type) {
+	public static Map<String, Object> forRecord(Class<?> type) {
 		if (!type.isRecord()) {
 			throw new IllegalArgumentException(type.getName() + " is not a record");
 		}

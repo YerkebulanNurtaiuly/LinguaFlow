@@ -270,7 +270,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 12: Grammar Exercises (`EX`)
 
-- [ ] **EX-01 — Exercise domain model** (M) — _deps: DB-04_
+- [x] **EX-01 — Exercise domain model** (M) — _deps: DB-04_
   Polymorphic exercise types with JSON prompt/solution schemas: `FILL_BLANK`, `MULTIPLE_CHOICE`, `TRANSLATION`, `SENTENCE_CONSTRUCTION`, `ERROR_CORRECTION`, `WORD_ORDER`, `TRANSFORMATION`. Each links to grammar topic(s) and vocabulary item(s) used.
 
 - [ ] **EX-02 — AI exercise generation** (L) — _deps: EX-01, AI-03, GRM-01, VOC-05_
