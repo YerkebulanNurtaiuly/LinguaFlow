@@ -83,6 +83,16 @@ public interface VocabularyItemRepository extends OwnedRepository<VocabularyItem
 	List<KnownWord> findKnownWords(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			Pageable page);
 
+	/** Like {@link #findKnownWords}, only among {@code ids} (PRC-02). */
+	@Query("""
+			select new com.linguaflow.vocabulary.KnownWord(v.id, v.lemma, v.normalizedLemma, v.translation, v.status)
+			from VocabularyItem v
+			where v.userId = :userId and v.languageCode = :languageCode and v.id in :ids
+			  and v.aiStatus = com.linguaflow.vocabulary.AiStatus.READY
+			  and v.translation is not null and trim(v.translation) <> ''""")
+	List<KnownWord> findKnownWordsByIdIn(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
+			@Param("ids") Collection<UUID> ids);
+
 	/** The user's words among {@code ids}, in any language (FC-02). */
 	@Query("select v from VocabularyItem v where v.userId = :userId and v.id in :ids")
 	List<VocabularyItem> findOwnedByIds(@Param("userId") UUID userId, @Param("ids") Collection<UUID> ids);

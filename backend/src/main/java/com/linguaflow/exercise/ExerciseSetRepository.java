@@ -15,6 +15,9 @@ public interface ExerciseSetRepository extends OwnedRepository<ExerciseSet> {
 	/** The user's sets in one language (EX-02). */
 	Page<ExerciseSet> findAllByUserIdAndLanguageCode(UUID userId, String languageCode, Pageable pageable);
 
+	/** The set generated for a practice session (PRC-02). */
+	Optional<ExerciseSet> findFirstByUserIdAndPracticeSessionIdOrderByCreatedAtDesc(UUID userId, UUID practiceSessionId);
+
 	/** A set for the generation worker (EX-02); system-wide, the job knows the owner. */
 	@Query("select s from ExerciseSet s where s.id = :id")
 	Optional<ExerciseSet> findForGenerationById(@Param("id") UUID id);

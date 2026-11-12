@@ -64,7 +64,8 @@ class ExerciseAttemptController {
 			@Schema(description = "The prompt's tokens in the chosen order") @Nullable @Size(
 					max = 30) List<@Size(max = 100) String> tokens,
 			@Schema(description = "The written answer") @Nullable @Size(max = 1000) String text,
-			@Schema(description = "How long answering took") @Nullable @Min(0) @Max(MAX_DURATION_MS) Integer durationMs) {
+			@Schema(description = "How long answering took") @Nullable @Min(0) @Max(MAX_DURATION_MS) Integer durationMs,
+			@Schema(description = "The practice session the exercise was shown in, if any; its item is marked answered") @Nullable UUID practiceSessionId) {
 
 		/** The answer in the shape {@code type} takes. */
 		ExerciseAnswer answerFor(ExerciseType type) {
@@ -215,7 +216,8 @@ class ExerciseAttemptController {
 	@ApiResponse(responseCode = "201", description = "The graded attempt")
 	ResultResponse submit(@CurrentUserId UUID userId, @PathVariable UUID id, @Valid @RequestBody SubmitRequest request) {
 		ExerciseType type = attempts.typeOf(userId, id);
-		return ResultResponse.from(attempts.submit(userId, id, request.answerFor(type), request.durationMs()));
+		return ResultResponse.from(attempts.submit(userId, id, request.answerFor(type), request.durationMs(),
+				request.practiceSessionId()));
 	}
 
 	@GetMapping

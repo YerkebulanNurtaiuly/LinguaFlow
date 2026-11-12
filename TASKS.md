@@ -311,7 +311,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
     - **Full Revision** — entire history, weighted by weakness and SRS due-ness.
       _Done when:_ selection is reproducible given a seed and fully unit-tested.
 
-- [ ] **PRC-02 — Practice session API** (M) — _deps: PRC-01_
+- [x] **PRC-02 — Practice session API** (M) — _deps: PRC-01_
   `POST /api/practice-sessions {mode, studySessionId?, length, includeFlashcards, includeExercises}` → ordered list of items (flashcards + generated exercises interleaved). `POST .../complete` stores summary.
 
 - [ ] **PRC-03 — Combined exercises** (M) — _deps: PRC-01, EX-02_

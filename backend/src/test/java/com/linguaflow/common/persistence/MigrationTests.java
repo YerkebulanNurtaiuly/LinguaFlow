@@ -11,7 +11,9 @@ import com.linguaflow.exercise.ExerciseDifficulty;
 import com.linguaflow.exercise.ExerciseSetSource;
 import com.linguaflow.exercise.ExerciseSetStatus;
 import com.linguaflow.flashcard.ReviewGrade;
+import com.linguaflow.learning.practice.PracticeItemType;
 import com.linguaflow.learning.practice.PracticeMode;
+import com.linguaflow.learning.practice.PracticeSessionStatus;
 import com.linguaflow.flashcard.SrsState;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.MigrationInfo;
@@ -314,6 +316,12 @@ class MigrationTests {
 	@Test
 	void practiceModesMatchTheDatabaseCheck() {
 		assertCheckMatches("practice_sessions_mode_ck", PracticeMode.values());
+	}
+
+	@Test
+	void practiceStatusesAndItemTypesMatchTheDatabaseChecks() {
+		assertCheckMatches("practice_sessions_status_ck", PracticeSessionStatus.values());
+		assertCheckMatches("practice_session_items_type_ck", PracticeItemType.values());
 	}
 
 	private void assertCheckMatches(String constraint, Enum<?>[] values) {

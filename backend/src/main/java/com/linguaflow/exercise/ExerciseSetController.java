@@ -38,7 +38,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/exercise-sets")
 @Tag(name = "Exercises", description = "Grammar exercises written for your topics and words")
-class ExerciseSetController {
+public class ExerciseSetController {
 
 	private final ExerciseSetService service;
 
@@ -58,11 +58,12 @@ class ExerciseSetController {
 
 	@Schema(name = "ExerciseSetRequest", description = "What was asked for")
 	record RequestResponse(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
-			ExerciseDifficulty difficulty) {
+			ExerciseDifficulty difficulty,
+			@Schema(description = "Words practised first; set by practice sessions, empty otherwise") List<UUID> vocabularyItemIds) {
 
 		static RequestResponse from(ExerciseSetRequest request) {
 			return new RequestResponse(request.grammarTopicIds(), request.types(), request.count(),
-					request.difficulty());
+					request.difficulty(), request.vocabularyItemIds());
 		}
 
 	}
@@ -100,7 +101,7 @@ class ExerciseSetController {
 	}
 
 	@Schema(name = "Exercise", description = "One exercise, without its solution")
-	record ExerciseResponse(UUID id, int position, ExerciseType type, ExerciseDifficulty difficulty,
+	public record ExerciseResponse(UUID id, int position, ExerciseType type, ExerciseDifficulty difficulty,
 			@Schema(description = "Its shape depends on the type",
 					oneOf = { ExercisePrompt.FillBlank.class, ExercisePrompt.MultipleChoice.class,
 							ExercisePrompt.Translation.class, ExercisePrompt.SentenceConstruction.class,
@@ -109,7 +110,7 @@ class ExerciseSetController {
 			Set<UUID> grammarTopicIds, Set<UUID> vocabularyItemIds,
 			@Schema(description = "Reported as a bad exercise") boolean reported) {
 
-		static ExerciseResponse from(Exercise exercise) {
+		public static ExerciseResponse from(Exercise exercise) {
 			return new ExerciseResponse(exercise.getId(), exercise.getPosition(), exercise.getType(),
 					exercise.getDifficulty(), exercise.content().prompt(), exercise.getGrammarTopicIds(),
 					exercise.getVocabularyItemIds(), exercise.isReported());

@@ -61,6 +61,9 @@
   }, {
     "description" : "The grammar topics you study and how well you know them",
     "name" : "Grammar"
+  }, {
+    "description" : "Practice runs mixing flashcards and exercises",
+    "name" : "Practice"
   } ],
   "paths" : {
     "/actuator" : {
@@ -321,7 +324,7 @@
     "/api/ai/jobs" : {
       "get" : {
         "description" : "Your AI jobs, newest first. Sortable by createdAt, updatedAt.",
-        "operationId" : "list_7",
+        "operationId" : "list_8",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -522,7 +525,7 @@
     "/api/ai/jobs/{id}" : {
       "get" : {
         "description" : "Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.",
-        "operationId" : "get_6",
+        "operationId" : "get_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -1336,7 +1339,7 @@
     "/api/exercise-sets" : {
       "get" : {
         "description" : "The active language's sets, newest first.",
-        "operationId" : "list_4",
+        "operationId" : "list_5",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -1587,7 +1590,7 @@
       },
       "get" : {
         "description" : "With its exercises in order, without solutions.",
-        "operationId" : "get_5",
+        "operationId" : "get_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -2138,7 +2141,7 @@
     "/api/flashcards" : {
       "get" : {
         "description" : "Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).",
-        "operationId" : "list_6",
+        "operationId" : "list_7",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -2548,7 +2551,7 @@
     "/api/grammar-topics" : {
       "get" : {
         "description" : "Topics of the active language, newest first by default. Repeating a filter means any of them. Sortable by: createdAt, updatedAt, title, cefrLevel, status.",
-        "operationId" : "list_3",
+        "operationId" : "list_4",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -2782,7 +2785,7 @@
     "/api/grammar-topics/catalog" : {
       "get" : {
         "description" : "The catalog of the active language, by level then title, with the topics you already have marked. Repeat cefrLevel for several levels.",
-        "operationId" : "list_5",
+        "operationId" : "list_6",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -3504,6 +3507,353 @@
         },
         "summary" : "List all languages and what they can be used for",
         "tags" : [ "Languages" ]
+      }
+    },
+    "/api/practice-sessions" : {
+      "get" : {
+        "description" : "The active language's sessions, newest first.",
+        "operationId" : "list_3",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponsePracticeSessionSummary"
+                }
+              }
+            },
+            "description" : "One page of sessions"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "List practice sessions",
+        "tags" : [ "Practice" ]
+      },
+      "post" : {
+        "description" : "Chooses words and grammar topics by mode, shows one flashcard per chosen word, and asks the AI for exercises on the chosen topics (a third of the session when both are included). Cards are available at once; the exercises join the items, interleaved, when the set is READY.",
+        "operationId" : "start",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/StartPracticeSessionRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeSessionStarted"
+                }
+              }
+            },
+            "description" : "The session and the job writing its exercises"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Start a practice session",
+        "tags" : [ "Practice" ]
+      }
+    },
+    "/api/practice-sessions/{id}" : {
+      "get" : {
+        "description" : "With its items, cards and exercises in order.",
+        "operationId" : "get_5",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeSession"
+                }
+              }
+            },
+            "description" : "The session"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Get a practice session",
+        "tags" : [ "Practice" ]
+      }
+    },
+    "/api/practice-sessions/{id}/complete" : {
+      "post" : {
+        "description" : "Stores a summary of the reviews and attempts made in it. Completing it again returns it unchanged.",
+        "operationId" : "complete",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PracticeSession"
+                }
+              }
+            },
+            "description" : "The completed session with its summary"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Complete a practice session",
+        "tags" : [ "Practice" ]
       }
     },
     "/api/reviews" : {
@@ -7282,7 +7632,7 @@
           "code" : {
             "type" : "string",
             "description" : "Stable machine-readable error code",
-            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "NO_STUDY_SESSION", "VOCABULARY_DUPLICATE", "TAG_NAME_TAKEN", "GRAMMAR_TOPIC_DUPLICATE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "AI_QUOTA_EXCEEDED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE", "AI_UNAVAILABLE" ]
+            "enum" : [ "VALIDATION_FAILED", "MALFORMED_REQUEST", "BAD_REQUEST", "INVALID_TOKEN", "UNAUTHORIZED", "INVALID_CREDENTIALS", "INVALID_REFRESH_TOKEN", "FORBIDDEN", "ACCOUNT_DISABLED", "NOT_FOUND", "METHOD_NOT_ALLOWED", "NOT_ACCEPTABLE", "CONFLICT", "EMAIL_TAKEN", "NO_ACTIVE_LANGUAGE", "NO_STUDY_SESSION", "NOTHING_TO_PRACTISE", "VOCABULARY_DUPLICATE", "TAG_NAME_TAKEN", "GRAMMAR_TOPIC_DUPLICATE", "PAYLOAD_TOO_LARGE", "UNSUPPORTED_MEDIA_TYPE", "TOO_MANY_REQUESTS", "AI_QUOTA_EXCEEDED", "INTERNAL_ERROR", "SERVICE_UNAVAILABLE", "AI_UNAVAILABLE" ]
           },
           "correlationId" : {
             "type" : "string",
@@ -8094,6 +8444,14 @@
             "items" : {
               "type" : "string",
               "enum" : [ "FILL_BLANK", "MULTIPLE_CHOICE", "TRANSLATION", "SENTENCE_CONSTRUCTION", "ERROR_CORRECTION", "WORD_ORDER", "TRANSFORMATION" ]
+            }
+          },
+          "vocabularyItemIds" : {
+            "type" : "array",
+            "description" : "Words practised first; set by practice sessions, empty otherwise",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
             }
           }
         }
@@ -8921,6 +9279,39 @@
           }
         }
       },
+      "PageResponsePracticeSessionSummary" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/PracticeSessionSummary"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
       "PageResponseReportedExercise" : {
         "type" : "object",
         "properties" : {
@@ -9053,6 +9444,282 @@
           }
         },
         "required" : [ "email" ]
+      },
+      "PracticeExerciseSet" : {
+        "type" : "object",
+        "description" : "The exercise set written for the session",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "requested" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Exercises asked for"
+          },
+          "status" : {
+            "type" : "string",
+            "description" : "GENERATING until the AI is done; the exercises join the items when READY",
+            "enum" : [ "GENERATING", "READY", "FAILED" ]
+          }
+        }
+      },
+      "PracticeSession" : {
+        "type" : "object",
+        "properties" : {
+          "completedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "config" : {
+            "$ref" : "#/components/schemas/PracticeSessionConfig"
+          },
+          "exerciseSet" : {
+            "$ref" : "#/components/schemas/PracticeExerciseSet",
+            "description" : "Null when the session has no exercises"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "items" : {
+            "type" : "array",
+            "description" : "In order; exercises are added, interleaved with the open cards, once written",
+            "items" : {
+              "$ref" : "#/components/schemas/PracticeSessionItem"
+            }
+          },
+          "languageCode" : {
+            "type" : "string"
+          },
+          "mode" : {
+            "type" : "string",
+            "enum" : [ "CURRENT_LESSON", "MIXED", "FULL_REVISION", "WEAK_SPOTS" ]
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "IN_PROGRESS", "COMPLETED", "ABANDONED" ]
+          },
+          "studySessionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "CURRENT_LESSON: the lesson practised"
+          },
+          "summary" : {
+            "$ref" : "#/components/schemas/PracticeSummary",
+            "description" : "Set when the session is completed"
+          }
+        }
+      },
+      "PracticeSessionConfig" : {
+        "type" : "object",
+        "description" : "How the session was set up",
+        "properties" : {
+          "includeExercises" : {
+            "type" : "boolean"
+          },
+          "includeFlashcards" : {
+            "type" : "boolean"
+          },
+          "length" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "newRatio" : {
+            "type" : "number",
+            "format" : "double"
+          },
+          "seed" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Makes the material selection reproducible"
+          }
+        }
+      },
+      "PracticeSessionItem" : {
+        "type" : "object",
+        "description" : "One step: exactly one of flashcard and exercise is set, matching type",
+        "properties" : {
+          "answeredAt" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "When it was first answered in this session; null while open"
+          },
+          "exercise" : {
+            "$ref" : "#/components/schemas/Exercise",
+            "description" : "The exercise, without its solution; answer it with POST /api/exercises/{id}/attempts and this session's ID"
+          },
+          "flashcard" : {
+            "$ref" : "#/components/schemas/ReviewQueueItem",
+            "description" : "The card with where each grade would send it; grade it with POST /api/reviews and this session's ID"
+          },
+          "position" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "FLASHCARD", "EXERCISE" ]
+          }
+        }
+      },
+      "PracticeSessionStarted" : {
+        "type" : "object",
+        "properties" : {
+          "aiJobId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The job writing the exercises; null without exercises"
+          },
+          "practiceSession" : {
+            "$ref" : "#/components/schemas/PracticeSession"
+          }
+        }
+      },
+      "PracticeSessionSummary" : {
+        "type" : "object",
+        "description" : "A session in a list",
+        "properties" : {
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Items answered"
+          },
+          "completedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "items" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Items in the session"
+          },
+          "mode" : {
+            "type" : "string",
+            "enum" : [ "CURRENT_LESSON", "MIXED", "FULL_REVISION", "WEAK_SPOTS" ]
+          },
+          "startedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "IN_PROGRESS", "COMPLETED", "ABANDONED" ]
+          },
+          "studySessionId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
+      "PracticeSummary" : {
+        "type" : "object",
+        "properties" : {
+          "answeredItems" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Items answered at least once"
+          },
+          "durationMs" : {
+            "type" : "integer",
+            "format" : "int64",
+            "description" : "Time spent answering, summed over every answer that reported it"
+          },
+          "exercises" : {
+            "$ref" : "#/components/schemas/PracticeSummaryExercises"
+          },
+          "flashcards" : {
+            "$ref" : "#/components/schemas/PracticeSummaryFlashcards"
+          },
+          "items" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Items in the session"
+          },
+          "missedExerciseIds" : {
+            "type" : "array",
+            "description" : "Exercises whose latest answer wasn't right, in session order",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          },
+          "missedFlashcardIds" : {
+            "type" : "array",
+            "description" : "Cards whose latest grade was AGAIN, in session order",
+            "items" : {
+              "type" : "string",
+              "format" : "uuid"
+            }
+          }
+        }
+      },
+      "PracticeSummaryExercises" : {
+        "type" : "object",
+        "properties" : {
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "averageScore" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "Mean latest score, 0–1; null when none was answered"
+          },
+          "correct" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Answered exercises whose latest answer was right"
+          },
+          "items" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PracticeSummaryFlashcards" : {
+        "type" : "object",
+        "properties" : {
+          "again" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Every review in the session, repeats included"
+          },
+          "answered" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "easy" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "good" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "hard" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "items" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "remembered" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Answered cards whose latest grade wasn't AGAIN"
+          }
+        }
       },
       "RegistrationRequest" : {
         "type" : "object",
@@ -9486,6 +10153,45 @@
           }
         }
       },
+      "StartPracticeSessionRequest" : {
+        "type" : "object",
+        "properties" : {
+          "includeExercises" : {
+            "type" : "boolean",
+            "description" : "Add AI-written exercises on the chosen grammar topics; defaults to true"
+          },
+          "includeFlashcards" : {
+            "type" : "boolean",
+            "description" : "Show flashcards; defaults to true"
+          },
+          "length" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Items wanted, 5–200; absent means your practiceSessionLength setting",
+            "example" : 20,
+            "maximum" : 200,
+            "minimum" : 5
+          },
+          "mode" : {
+            "type" : "string",
+            "enum" : [ "CURRENT_LESSON", "MIXED", "FULL_REVISION", "WEAK_SPOTS" ]
+          },
+          "newRatio" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "MIXED only: the share of fresh material, 0–1; defaults to 0.6",
+            "example" : 0.6,
+            "maximum" : 1,
+            "minimum" : 0
+          },
+          "studySessionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "CURRENT_LESSON only: the lesson to practise; absent means the latest"
+          }
+        },
+        "required" : [ "mode" ]
+      },
       "StudySession" : {
         "type" : "object",
         "properties" : {
@@ -9633,6 +10339,11 @@
             "maximum" : 10,
             "minimum" : 0
           },
+          "practiceSessionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The practice session the exercise was shown in, if any; its item is marked answered"
+          },
           "text" : {
             "type" : "string",
             "description" : "The written answer",
@@ -9669,6 +10380,11 @@
           "grade" : {
             "type" : "string",
             "enum" : [ "AGAIN", "HARD", "GOOD", "EASY" ]
+          },
+          "practiceSessionId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "The practice session the card was shown in, if any; its item is marked answered"
           },
           "reviewToken" : {
             "type" : "string",

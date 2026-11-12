@@ -41,7 +41,7 @@ public class FlashcardReview implements OwnedEntity {
 	@Column(name = "user_id", nullable = false, updatable = false)
 	private UUID userId;
 
-	/** Set once practice sessions (PRC-02) record their reviews. */
+	/** The practice session it was made in (PRC-02); a plain ID. */
 	@Column(name = "practice_session_id", updatable = false)
 	private @Nullable UUID practiceSessionId;
 
@@ -77,6 +77,13 @@ public class FlashcardReview implements OwnedEntity {
 
 	FlashcardReview(Flashcard card, UUID reviewToken, ReviewGrade grade, Instant reviewedAt,
 			@Nullable Integer durationMs, SrsScheduler.Card before, SrsScheduler.Card after) {
+		this(card, reviewToken, grade, reviewedAt, durationMs, before, after, null);
+	}
+
+	FlashcardReview(Flashcard card, UUID reviewToken, ReviewGrade grade, Instant reviewedAt,
+			@Nullable Integer durationMs, SrsScheduler.Card before, SrsScheduler.Card after,
+			@Nullable UUID practiceSessionId) {
+		this.practiceSessionId = practiceSessionId;
 		this.flashcardId = Objects.requireNonNull(card.getId());
 		this.userId = card.getUserId();
 		this.reviewToken = Objects.requireNonNull(reviewToken);

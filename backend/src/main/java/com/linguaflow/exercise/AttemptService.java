@@ -13,6 +13,7 @@ import com.linguaflow.ai.AiErrors;
 import com.linguaflow.ai.LlmException;
 import com.linguaflow.common.domain.ExerciseType;
 import com.linguaflow.common.error.InvalidFieldException;
+import com.linguaflow.common.practice.PracticeSessionRecorder;
 import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.Page;
@@ -50,13 +51,16 @@ public class AttemptService {
 
 	private final ApplicationEventPublisher events;
 
+	private final PracticeSessionRecorder practice;
+
 	private final Clock clock;
 
 	private final TransactionTemplate tx;
 
 	AttemptService(AnswerChecker checker, ExerciseRepository exercises, ExerciseSetRepository sets,
-			ExerciseAttemptRepository attempts, MistakeRepository mistakes, ApplicationEventPublisher events, Clock clock,
-			PlatformTransactionManager transactions) {
+			ExerciseAttemptRepository attempts, MistakeRepository mistakes, ApplicationEventPublisher events,
+			PracticeSessionRecorder practice, Clock clock, PlatformTransactionManager transactions) {
+		this.practice = practice;
 		this.checker = checker;
 		this.exercises = exercises;
 		this.sets = sets;
@@ -77,6 +81,18 @@ public class AttemptService {
 	 * type takes
 	 */
 	public Result submit(UUID userId, UUID exerciseId, ExerciseAnswer answer, @Nullable Integer durationMs) {
+		return submit(userId, exerciseId, answer, durationMs, null);
+	}
+
+	/**
+	 * @param practiceSessionId the practice session (PRC-02) the exercise was shown in, if
+	 * any; it's checked before the answer is graded, and its item is marked answered
+	 */
+	public Result submit(UUID userId, UUID exerciseId, ExerciseAnswer answer, @Nullable Integer durationMs,
+			@Nullable UUID practiceSessionId) {
+		if (practiceSessionId != null) {
+			practice.requireOpen(userId, practiceSessionId);
+		}
 		Evaluation evaluation;
 		try {
 			evaluation = checker.check(userId, exerciseId, answer);
@@ -92,15 +108,18 @@ public class AttemptService {
 			Exercise exercise = exercises.requireOwned(exerciseId, userId);
 			ExerciseSet set = sets.requireOwned(exercise.getExerciseSetId(), userId);
 			ExerciseContent content = exercise.content();
+			if (practiceSessionId != null) {
+				practice.recordExercise(userId, practiceSessionId, exercise.getId(), now);
+			}
 			ExerciseAttempt attempt = attempts.saveAndFlush(new ExerciseAttempt(exercise, answer, evaluation, now,
-					durationMs));
+					durationMs, practiceSessionId));
 			List<Mistake> found = new ArrayList<>();
 			for (Mistake mistake : mistakesOf(attempt, exercise, content, answer, evaluation, now)) {
 				found.add(mistakes.save(mistake));
 			}
 			events.publishEvent(new ExerciseAttemptedEvent(userId, set.getLanguageCode(), exercise.getId(),
 					attempt.getId(), exercise.getType(), evaluation.correct(), evaluation.score(),
-					exercise.getGrammarTopicIds(), exercise.getVocabularyItemIds(), now));
+					exercise.getGrammarTopicIds(), exercise.getVocabularyItemIds(), now, practiceSessionId));
 			return new Result(attempt, evaluation, content, found);
 		}));
 	}

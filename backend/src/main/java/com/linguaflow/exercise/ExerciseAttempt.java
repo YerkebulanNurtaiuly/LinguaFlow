@@ -45,7 +45,7 @@ public class ExerciseAttempt implements OwnedEntity {
 	@Column(name = "user_id", nullable = false, updatable = false)
 	private UUID userId;
 
-	/** Set once practice sessions (PRC-02) record their attempts. */
+	/** The practice session it was made in (PRC-02); a plain ID. */
 	@Column(name = "practice_session_id", updatable = false)
 	private @Nullable UUID practiceSessionId;
 
@@ -78,6 +78,13 @@ public class ExerciseAttempt implements OwnedEntity {
 	/** @throws IllegalArgumentException for an evaluation that didn't decide */
 	public ExerciseAttempt(Exercise exercise, ExerciseAnswer answer, Evaluation evaluation, Instant attemptedAt,
 			@Nullable Integer durationMs) {
+		this(exercise, answer, evaluation, attemptedAt, durationMs, null);
+	}
+
+	/** @throws IllegalArgumentException for an evaluation that didn't decide */
+	public ExerciseAttempt(Exercise exercise, ExerciseAnswer answer, Evaluation evaluation, Instant attemptedAt,
+			@Nullable Integer durationMs, @Nullable UUID practiceSessionId) {
+		this.practiceSessionId = practiceSessionId;
 		if (!evaluation.decided()) {
 			throw new IllegalArgumentException("Only a decided evaluation can be stored");
 		}

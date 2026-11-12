@@ -4,15 +4,19 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import com.linguaflow.common.domain.CardDirection;
 import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.learning.practice.PracticeWeights.TopicStats;
 import com.linguaflow.learning.practice.PracticeWeights.WordStats;
 import org.jspecify.annotations.Nullable;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -98,6 +102,34 @@ class PracticeCandidates {
 				"select count(*) from study_sessions where id = ? and user_id = ? and language_code = ?", Integer.class,
 				studySessionId, userId, languageCode);
 		return found != null && found > 0;
+	}
+
+	/** A card that can be practised, with what decides which of a word's cards to show. */
+	record CardOption(UUID id, UUID vocabularyItemId, CardDirection direction, @Nullable Instant dueAt) {
+	}
+
+	/**
+	 * The reviewable cards of the given words (PRC-02): the user's, not suspended, in one
+	 * of {@code directions}, and their word has a translation, as for the review queue.
+	 */
+	List<CardOption> cards(UUID userId, Collection<UUID> vocabularyItemIds, Collection<CardDirection> directions) {
+		if (vocabularyItemIds.isEmpty() || directions.isEmpty()) {
+			return List.of();
+		}
+		MapSqlParameterSource params = new MapSqlParameterSource().addValue("userId", userId)
+			.addValue("ids", vocabularyItemIds)
+			.addValue("directions", directions.stream().map(Enum::name).toList());
+		return new NamedParameterJdbcTemplate(jdbc).query("""
+				select f.id, f.vocabulary_item_id, f.direction, s.due_at
+				  from flashcards f
+				  join srs_state s on s.flashcard_id = f.id and s.user_id = f.user_id
+				  join vocabulary_items v on v.id = f.vocabulary_item_id and v.user_id = f.user_id
+				 where f.user_id = :userId and f.vocabulary_item_id in (:ids) and not f.suspended
+				   and f.direction in (:directions)
+				   and v.translation is not null and trim(v.translation) <> ''
+				""", params, (rs, n) -> new CardOption(rs.getObject("id", UUID.class),
+				rs.getObject("vocabulary_item_id", UUID.class), CardDirection.valueOf(rs.getString("direction")),
+				instant(rs, "due_at")));
 	}
 
 	private WordStats word(ResultSet rs, int row) throws SQLException {

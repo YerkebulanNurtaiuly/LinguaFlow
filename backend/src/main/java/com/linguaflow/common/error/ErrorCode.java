@@ -25,6 +25,7 @@ public enum ErrorCode {
 	EMAIL_TAKEN(HttpStatus.CONFLICT, "Email already registered"),
 	NO_ACTIVE_LANGUAGE(HttpStatus.CONFLICT, "No active language"),
 	NO_STUDY_SESSION(HttpStatus.CONFLICT, "No study session"),
+	NOTHING_TO_PRACTISE(HttpStatus.CONFLICT, "Nothing to practise"),
 	VOCABULARY_DUPLICATE(HttpStatus.CONFLICT, "Vocabulary item already exists"),
 	TAG_NAME_TAKEN(HttpStatus.CONFLICT, "Tag name already used"),
 	GRAMMAR_TOPIC_DUPLICATE(HttpStatus.CONFLICT, "Grammar topic already exists"),

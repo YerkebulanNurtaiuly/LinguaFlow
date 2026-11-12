@@ -60,10 +60,10 @@ public class ReviewController {
 	}
 
 	@Schema(name = "ReviewQueueItem")
-	record QueueItemResponse(CardResponse card,
+	public record QueueItemResponse(CardResponse card,
 			@Schema(description = "Where each grade would send the card") GradePreviews previews) {
 
-		static QueueItemResponse from(ReviewService.QueueItem item) {
+		public static QueueItemResponse from(ReviewService.QueueItem item) {
 			var previews = item.previews();
 			return new QueueItemResponse(CardResponse.from(item.view()),
 					new GradePreviews(GradePreview.from(previews.get(ReviewGrade.AGAIN)),
@@ -92,7 +92,8 @@ public class ReviewController {
 	@Schema(name = "SubmitReviewRequest")
 	record SubmitRequest(@NotNull UUID flashcardId, @NotNull ReviewGrade grade,
 			@Schema(description = "Made by the client for each answer; resending it changes nothing") @NotNull UUID reviewToken,
-			@Schema(description = "How long the answer took, in milliseconds") @PositiveOrZero @Max(3_600_000) @Nullable Integer durationMs) {
+			@Schema(description = "How long the answer took, in milliseconds") @PositiveOrZero @Max(3_600_000) @Nullable Integer durationMs,
+			@Schema(description = "The practice session the card was shown in, if any; its item is marked answered") @Nullable UUID practiceSessionId) {
 	}
 
 	@Schema(name = "ReviewResult")
@@ -185,7 +186,7 @@ public class ReviewController {
 	@ApiResponse(responseCode = "200", description = "Already recorded with this token")
 	ResponseEntity<ResultResponse> submit(@CurrentUserId UUID userId, @Valid @RequestBody SubmitRequest request) {
 		ReviewService.Result result = reviews.submit(userId, new ReviewService.Submission(request.flashcardId(),
-				request.grade(), request.reviewToken(), request.durationMs()));
+				request.grade(), request.reviewToken(), request.durationMs(), request.practiceSessionId()));
 		return ResponseEntity.status(result.replayed() ? HttpStatus.OK : HttpStatus.CREATED)
 			.body(ResultResponse.from(result));
 	}

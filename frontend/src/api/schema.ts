@@ -89,7 +89,7 @@ export interface paths {
          * List AI jobs
          * @description Your AI jobs, newest first. Sortable by createdAt, updatedAt.
          */
-        get: operations["list_7"];
+        get: operations["list_8"];
         put?: never;
         post?: never;
         delete?: never;
@@ -129,7 +129,7 @@ export interface paths {
          * Get an AI job
          * @description Poll every few seconds until finished is true. A QUEUED job with waiting set is retrying after a temporary problem (RETRY) or waiting for the daily AI allowance (DAILY_LIMIT), until nextRunAt.
          */
-        get: operations["get_6"];
+        get: operations["get_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -323,7 +323,7 @@ export interface paths {
          * List exercise sets
          * @description The active language's sets, newest first.
          */
-        get: operations["list_4"];
+        get: operations["list_5"];
         put?: never;
         /**
          * Ask for an exercise set
@@ -347,7 +347,7 @@ export interface paths {
          * Get an exercise set
          * @description With its exercises in order, without solutions.
          */
-        get: operations["get_5"];
+        get: operations["get_6"];
         put?: never;
         post?: never;
         /**
@@ -436,7 +436,7 @@ export interface paths {
          * List flashcards
          * @description Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).
          */
-        get: operations["list_6"];
+        get: operations["list_7"];
         put?: never;
         post?: never;
         delete?: never;
@@ -497,7 +497,7 @@ export interface paths {
          * List grammar topics
          * @description Topics of the active language, newest first by default. Repeating a filter means any of them. Sortable by: createdAt, updatedAt, title, cefrLevel, status.
          */
-        get: operations["list_3"];
+        get: operations["list_4"];
         put?: never;
         /**
          * Add a grammar topic
@@ -521,7 +521,7 @@ export interface paths {
          * List suggested grammar topics
          * @description The catalog of the active language, by level then title, with the topics you already have marked. Repeat cefrLevel for several levels.
          */
-        get: operations["list_5"];
+        get: operations["list_6"];
         put?: never;
         post?: never;
         delete?: never;
@@ -626,6 +626,70 @@ export interface paths {
         get: operations["listLanguages"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List practice sessions
+         * @description The active language's sessions, newest first.
+         */
+        get: operations["list_3"];
+        put?: never;
+        /**
+         * Start a practice session
+         * @description Chooses words and grammar topics by mode, shows one flashcard per chosen word, and asks the AI for exercises on the chosen topics (a third of the session when both are included). Cards are available at once; the exercises join the items, interleaved, when the set is READY.
+         */
+        post: operations["start"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions/{id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a practice session
+         * @description With its items, cards and exercises in order.
+         */
+        get: operations["get_5"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/practice-sessions/{id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Complete a practice session
+         * @description Stores a summary of the reviews and attempts made in it. Completing it again returns it unchanged.
+         */
+        post: operations["complete"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1305,7 +1369,7 @@ export interface components {
              * @description Stable machine-readable error code
              * @enum {string}
              */
-            code: "VALIDATION_FAILED" | "MALFORMED_REQUEST" | "BAD_REQUEST" | "INVALID_TOKEN" | "UNAUTHORIZED" | "INVALID_CREDENTIALS" | "INVALID_REFRESH_TOKEN" | "FORBIDDEN" | "ACCOUNT_DISABLED" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "CONFLICT" | "EMAIL_TAKEN" | "NO_ACTIVE_LANGUAGE" | "NO_STUDY_SESSION" | "VOCABULARY_DUPLICATE" | "TAG_NAME_TAKEN" | "GRAMMAR_TOPIC_DUPLICATE" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "TOO_MANY_REQUESTS" | "AI_QUOTA_EXCEEDED" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE" | "AI_UNAVAILABLE";
+            code: "VALIDATION_FAILED" | "MALFORMED_REQUEST" | "BAD_REQUEST" | "INVALID_TOKEN" | "UNAUTHORIZED" | "INVALID_CREDENTIALS" | "INVALID_REFRESH_TOKEN" | "FORBIDDEN" | "ACCOUNT_DISABLED" | "NOT_FOUND" | "METHOD_NOT_ALLOWED" | "NOT_ACCEPTABLE" | "CONFLICT" | "EMAIL_TAKEN" | "NO_ACTIVE_LANGUAGE" | "NO_STUDY_SESSION" | "NOTHING_TO_PRACTISE" | "VOCABULARY_DUPLICATE" | "TAG_NAME_TAKEN" | "GRAMMAR_TOPIC_DUPLICATE" | "PAYLOAD_TOO_LARGE" | "UNSUPPORTED_MEDIA_TYPE" | "TOO_MANY_REQUESTS" | "AI_QUOTA_EXCEEDED" | "INTERNAL_ERROR" | "SERVICE_UNAVAILABLE" | "AI_UNAVAILABLE";
             /** @description ID of the request; quote it when reporting problems */
             correlationId: string;
             /** @example One or more fields are invalid */
@@ -1641,6 +1705,8 @@ export interface components {
             difficulty?: "EASY" | "MEDIUM" | "HARD";
             grammarTopicIds?: string[];
             types?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
+            /** @description Words practised first; set by practice sessions, empty otherwise */
+            vocabularyItemIds?: string[];
         };
         ExerciseSetSummary: {
             /** Format: date-time */
@@ -2012,6 +2078,18 @@ export interface components {
             /** Format: int32 */
             totalPages?: number;
         };
+        PageResponsePracticeSessionSummary: {
+            content?: components["schemas"]["PracticeSessionSummary"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
         PageResponseReportedExercise: {
             content?: components["schemas"]["ReportedExercise"][];
             /** Format: int32 */
@@ -2061,6 +2139,170 @@ export interface components {
              * @example anna@example.de
              */
             email: string;
+        };
+        /** @description The exercise set written for the session */
+        PracticeExerciseSet: {
+            /** Format: uuid */
+            id?: string;
+            /**
+             * Format: int32
+             * @description Exercises asked for
+             */
+            requested?: number;
+            /**
+             * @description GENERATING until the AI is done; the exercises join the items when READY
+             * @enum {string}
+             */
+            status?: "GENERATING" | "READY" | "FAILED";
+        };
+        PracticeSession: {
+            /** Format: date-time */
+            completedAt?: string;
+            config?: components["schemas"]["PracticeSessionConfig"];
+            /** @description Null when the session has no exercises */
+            exerciseSet?: components["schemas"]["PracticeExerciseSet"];
+            /** Format: uuid */
+            id?: string;
+            /** @description In order; exercises are added, interleaved with the open cards, once written */
+            items?: components["schemas"]["PracticeSessionItem"][];
+            languageCode?: string;
+            /** @enum {string} */
+            mode?: "CURRENT_LESSON" | "MIXED" | "FULL_REVISION" | "WEAK_SPOTS";
+            /** Format: date-time */
+            startedAt?: string;
+            /** @enum {string} */
+            status?: "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
+            /**
+             * Format: uuid
+             * @description CURRENT_LESSON: the lesson practised
+             */
+            studySessionId?: string;
+            /** @description Set when the session is completed */
+            summary?: components["schemas"]["PracticeSummary"];
+        };
+        /** @description How the session was set up */
+        PracticeSessionConfig: {
+            includeExercises?: boolean;
+            includeFlashcards?: boolean;
+            /** Format: int32 */
+            length?: number;
+            /** Format: double */
+            newRatio?: number;
+            /**
+             * Format: int64
+             * @description Makes the material selection reproducible
+             */
+            seed?: number;
+        };
+        /** @description One step: exactly one of flashcard and exercise is set, matching type */
+        PracticeSessionItem: {
+            /**
+             * Format: date-time
+             * @description When it was first answered in this session; null while open
+             */
+            answeredAt?: string;
+            /** @description The exercise, without its solution; answer it with POST /api/exercises/{id}/attempts and this session's ID */
+            exercise?: components["schemas"]["Exercise"];
+            /** @description The card with where each grade would send it; grade it with POST /api/reviews and this session's ID */
+            flashcard?: components["schemas"]["ReviewQueueItem"];
+            /** Format: int32 */
+            position?: number;
+            /** @enum {string} */
+            type?: "FLASHCARD" | "EXERCISE";
+        };
+        PracticeSessionStarted: {
+            /**
+             * Format: uuid
+             * @description The job writing the exercises; null without exercises
+             */
+            aiJobId?: string;
+            practiceSession?: components["schemas"]["PracticeSession"];
+        };
+        /** @description A session in a list */
+        PracticeSessionSummary: {
+            /**
+             * Format: int32
+             * @description Items answered
+             */
+            answered?: number;
+            /** Format: date-time */
+            completedAt?: string;
+            /** Format: uuid */
+            id?: string;
+            /**
+             * Format: int32
+             * @description Items in the session
+             */
+            items?: number;
+            /** @enum {string} */
+            mode?: "CURRENT_LESSON" | "MIXED" | "FULL_REVISION" | "WEAK_SPOTS";
+            /** Format: date-time */
+            startedAt?: string;
+            /** @enum {string} */
+            status?: "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
+            /** Format: uuid */
+            studySessionId?: string;
+        };
+        PracticeSummary: {
+            /**
+             * Format: int32
+             * @description Items answered at least once
+             */
+            answeredItems?: number;
+            /**
+             * Format: int64
+             * @description Time spent answering, summed over every answer that reported it
+             */
+            durationMs?: number;
+            exercises?: components["schemas"]["PracticeSummaryExercises"];
+            flashcards?: components["schemas"]["PracticeSummaryFlashcards"];
+            /**
+             * Format: int32
+             * @description Items in the session
+             */
+            items?: number;
+            /** @description Exercises whose latest answer wasn't right, in session order */
+            missedExerciseIds?: string[];
+            /** @description Cards whose latest grade was AGAIN, in session order */
+            missedFlashcardIds?: string[];
+        };
+        PracticeSummaryExercises: {
+            /** Format: int32 */
+            answered?: number;
+            /**
+             * Format: double
+             * @description Mean latest score, 0–1; null when none was answered
+             */
+            averageScore?: number;
+            /**
+             * Format: int32
+             * @description Answered exercises whose latest answer was right
+             */
+            correct?: number;
+            /** Format: int32 */
+            items?: number;
+        };
+        PracticeSummaryFlashcards: {
+            /**
+             * Format: int32
+             * @description Every review in the session, repeats included
+             */
+            again?: number;
+            /** Format: int32 */
+            answered?: number;
+            /** Format: int32 */
+            easy?: number;
+            /** Format: int32 */
+            good?: number;
+            /** Format: int32 */
+            hard?: number;
+            /** Format: int32 */
+            items?: number;
+            /**
+             * Format: int32
+             * @description Answered cards whose latest grade wasn't AGAIN
+             */
+            remembered?: number;
         };
         RegistrationRequest: {
             /** @example Anna */
@@ -2288,6 +2530,31 @@ export interface components {
             direction?: string;
             property?: string;
         };
+        StartPracticeSessionRequest: {
+            /** @description Add AI-written exercises on the chosen grammar topics; defaults to true */
+            includeExercises?: boolean;
+            /** @description Show flashcards; defaults to true */
+            includeFlashcards?: boolean;
+            /**
+             * Format: int32
+             * @description Items wanted, 5–200; absent means your practiceSessionLength setting
+             * @example 20
+             */
+            length?: number;
+            /** @enum {string} */
+            mode: "CURRENT_LESSON" | "MIXED" | "FULL_REVISION" | "WEAK_SPOTS";
+            /**
+             * Format: double
+             * @description MIXED only: the share of fresh material, 0–1; defaults to 0.6
+             * @example 0.6
+             */
+            newRatio?: number;
+            /**
+             * Format: uuid
+             * @description CURRENT_LESSON only: the lesson to practise; absent means the latest
+             */
+            studySessionId?: string;
+        };
         StudySession: {
             /** @description New words and topics join the active session */
             active?: boolean;
@@ -2354,6 +2621,11 @@ export interface components {
              * @description Zero-based index of the chosen option
              */
             index?: number;
+            /**
+             * Format: uuid
+             * @description The practice session the exercise was shown in, if any; its item is marked answered
+             */
+            practiceSessionId?: string;
             /** @description The written answer */
             text?: string;
             /** @description The prompt's tokens in the chosen order */
@@ -2369,6 +2641,11 @@ export interface components {
             flashcardId: string;
             /** @enum {string} */
             grade: "AGAIN" | "HARD" | "GOOD" | "EASY";
+            /**
+             * Format: uuid
+             * @description The practice session the card was shown in, if any; its item is marked answered
+             */
+            practiceSessionId?: string;
             /**
              * Format: uuid
              * @description Made by the client for each answer; resending it changes nothing
@@ -2873,7 +3150,7 @@ export interface operations {
             };
         };
     };
-    list_7: {
+    list_8: {
         parameters: {
             query: {
                 userId: string;
@@ -3014,7 +3291,7 @@ export interface operations {
             };
         };
     };
-    get_6: {
+    get_7: {
         parameters: {
             query: {
                 userId: string;
@@ -3724,7 +4001,7 @@ export interface operations {
             };
         };
     };
-    list_4: {
+    list_5: {
         parameters: {
             query: {
                 userId: string;
@@ -3863,7 +4140,7 @@ export interface operations {
             };
         };
     };
-    get_5: {
+    get_6: {
         parameters: {
             query: {
                 userId: string;
@@ -4354,7 +4631,7 @@ export interface operations {
             };
         };
     };
-    list_6: {
+    list_7: {
         parameters: {
             query: {
                 userId: string;
@@ -4644,7 +4921,7 @@ export interface operations {
             };
         };
     };
-    list_3: {
+    list_4: {
         parameters: {
             query: {
                 userId: string;
@@ -4807,7 +5084,7 @@ export interface operations {
             };
         };
     };
-    list_5: {
+    list_6: {
         parameters: {
             query: {
                 userId: string;
@@ -5338,6 +5615,283 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["LanguageResponse"][];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    list_3: {
+        parameters: {
+            query: {
+                userId: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of sessions */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponsePracticeSessionSummary"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    start: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StartPracticeSessionRequest"];
+            };
+        };
+        responses: {
+            /** @description The session and the job writing its exercises */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeSessionStarted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    get_5: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The session */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeSession"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    complete: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The completed session with its summary */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PracticeSession"];
                 };
             };
             /** @description Invalid request */

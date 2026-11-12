@@ -152,3 +152,15 @@ export type MistakeExplanation = Schemas['MistakeExplanation']
 // Exercise reports (EX-07)
 export type ReportExerciseRequest = Schemas['ReportExerciseRequest']
 export type ReportedExercise = Schemas['ReportedExercise']
+
+// Practice sessions (PRC-02)
+export type StartPracticeSessionRequest = Schemas['StartPracticeSessionRequest']
+export type PracticeSessionStarted = Schemas['PracticeSessionStarted']
+export type PracticeSession = Schemas['PracticeSession']
+export type PracticeSessionItem = Schemas['PracticeSessionItem']
+export type PracticeSessionConfig = Schemas['PracticeSessionConfig']
+export type PracticeExerciseSet = Schemas['PracticeExerciseSet']
+export type PracticeSummary = Schemas['PracticeSummary']
+export type PracticeSessionSummary = Schemas['PracticeSessionSummary']
+export type PracticeSessionPage = Schemas['PageResponsePracticeSessionSummary']
+export type PracticeMode = PracticeSession['mode']

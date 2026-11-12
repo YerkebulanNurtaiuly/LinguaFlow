@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -109,6 +110,37 @@ public class ExerciseSetService {
 			.enqueue(AiJobType.EXERCISE_GENERATION, userId, Map.of(ExerciseGenerator.SET_ID, set.getId().toString()))
 			.getId();
 		return new Requested(set, jobId);
+	}
+
+	/**
+	 * Saves a GENERATING set for a practice session (PRC-02) and queues its generation, in
+	 * the caller's transaction. The material comes from the practice selection, so it's
+	 * the user's own; the formats are the learner's preferred ones.
+	 * @param vocabularyItemIds words to practise first
+	 */
+	@Transactional
+	public Requested createForPractice(UUID userId, String languageCode, UUID practiceSessionId,
+			List<UUID> grammarTopicIds, List<UUID> vocabularyItemIds, int count) {
+		if (grammarTopicIds.isEmpty() || grammarTopicIds.size() > MAX_TOPICS || count < 1 || count > MAX_COUNT) {
+			throw new IllegalArgumentException("1 to " + MAX_TOPICS + " topics and 1 to " + MAX_COUNT + " exercises");
+		}
+		List<ExerciseType> types = userLanguages.settingsFor(userId, languageCode).preferredExerciseTypes();
+		ExerciseSet set = sets.save(new ExerciseSet(userId, languageCode, ExerciseSetSource.PRACTICE,
+				new ExerciseSetRequest(grammarTopicIds, types, count, null, vocabularyItemIds), practiceSessionId));
+		UUID jobId = aiJobs
+			.enqueue(AiJobType.EXERCISE_GENERATION, userId, Map.of(ExerciseGenerator.SET_ID, set.getId().toString()))
+			.getId();
+		return new Requested(set, jobId);
+	}
+
+	/**
+	 * The set generated for a practice session, with its exercises in order (reported
+	 * ones included); empty when the session asked for none.
+	 */
+	@Transactional(readOnly = true)
+	public Optional<SetWithExercises> forPracticeSession(UUID userId, UUID practiceSessionId) {
+		return sets.findFirstByUserIdAndPracticeSessionIdOrderByCreatedAtDesc(userId, practiceSessionId)
+			.map(set -> get(userId, set.getId()));
 	}
 
 	@Transactional(readOnly = true)

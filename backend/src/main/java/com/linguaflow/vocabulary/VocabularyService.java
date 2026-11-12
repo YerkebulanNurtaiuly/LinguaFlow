@@ -10,6 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import com.linguaflow.common.domain.KnowledgeStatus;
 import com.linguaflow.common.error.ConflictException;
@@ -282,6 +283,21 @@ public class VocabularyService {
 	@Transactional(readOnly = true)
 	public List<KnownWord> knownWords(UUID userId, String languageCode, int limit) {
 		return items.findKnownWords(userId, languageCode, PageRequest.of(0, limit));
+	}
+
+	/**
+	 * The user's enriched, translated words among {@code ids}, in the order given; for a
+	 * practice session's exercises (PRC-02).
+	 */
+	@Transactional(readOnly = true)
+	public List<KnownWord> knownWords(UUID userId, String languageCode, List<UUID> ids) {
+		if (ids.isEmpty()) {
+			return List.of();
+		}
+		Map<UUID, KnownWord> byId = items.findKnownWordsByIdIn(userId, languageCode, ids)
+			.stream()
+			.collect(Collectors.toMap(KnownWord::id, word -> word));
+		return ids.stream().map(byId::get).filter(Objects::nonNull).toList();
 	}
 
 	/** A word sent back to the AI, and the job doing it (VOC-06). */

@@ -41,6 +41,7 @@ import com.linguaflow.vocabulary.VocabularyService;
 import jakarta.validation.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -115,9 +116,12 @@ class ExerciseGenerator implements AiJobHandler {
 
 	private final TransactionTemplate tx;
 
+	private final ApplicationEventPublisher events;
+
 	ExerciseGenerator(ExerciseSetRepository sets, ExerciseRepository exercises, GrammarTopicService topics,
 			VocabularyService vocabulary, UserLanguageService userLanguages, StructuredLlm llm, PromptLibrary prompts,
-			Validator validator, PlatformTransactionManager transactions) {
+			Validator validator, PlatformTransactionManager transactions, ApplicationEventPublisher events) {
+		this.events = events;
 		this.sets = sets;
 		this.exercises = exercises;
 		this.topics = topics;
@@ -191,7 +195,8 @@ class ExerciseGenerator implements AiJobHandler {
 			.filter(set -> set.getStatus() == ExerciseSetStatus.GENERATING)
 			.ifPresent(set -> {
 				set.markFailed();
-				sets.save(set);
+				sets.saveAndFlush(set);
+				events.publishEvent(finished(set));
 			}));
 	}
 
@@ -202,8 +207,11 @@ class ExerciseGenerator implements AiJobHandler {
 		List<GrammarTopicSummary> setTopics = topics.summaries(userId, language, set.getRequest().grammarTopicIds());
 
 		List<KnownWord> words = vocabulary.knownWords(userId, language, WORDS_READ);
-		List<KnownWord> practice = new ArrayList<>(
-				words.stream().filter(word -> STILL_LEARNING.contains(word.status())).limit(MAX_PRACTICE_WORDS).toList());
+		List<UUID> focus = set.getRequest().vocabularyItemIds();
+		// A practice session (PRC-02) names its words; otherwise the ones still being learned come first
+		List<KnownWord> practice = new ArrayList<>(focus.isEmpty()
+				? words.stream().filter(word -> STILL_LEARNING.contains(word.status())).limit(MAX_PRACTICE_WORDS).toList()
+				: vocabulary.knownWords(userId, language, focus).stream().limit(MAX_PRACTICE_WORDS).toList());
 		// Learners who have finished every word still practise the most recent ones
 		words.stream()
 			.filter(word -> !practice.contains(word))
@@ -416,8 +424,14 @@ class ExerciseGenerator implements AiJobHandler {
 		else {
 			set.markReady();
 		}
-		sets.save(set);
+		// Flushed, so a practice session can link the new exercises with plain SQL
+		sets.saveAndFlush(set);
+		events.publishEvent(finished(set));
 		return true;
+	}
+
+	private static ExerciseSetFinishedEvent finished(ExerciseSet set) {
+		return new ExerciseSetFinishedEvent(set.getUserId(), set.getId(), set.getPracticeSessionId(), set.getStatus());
 	}
 
 	private static UUID setId(AiJob job) {

@@ -17,6 +17,8 @@ import org.springframework.data.repository.query.Param;
 /** Flashcards. The generator's system-wide queries say so in their names. */
 public interface FlashcardRepository extends OwnedRepository<Flashcard> {
 
+	List<Flashcard> findAllByUserIdAndIdIn(UUID userId, Collection<UUID> ids);
+
 	String SEARCH_FROM = """
 			from Flashcard f
 			join VocabularyItem v on v.id = f.vocabularyItemId

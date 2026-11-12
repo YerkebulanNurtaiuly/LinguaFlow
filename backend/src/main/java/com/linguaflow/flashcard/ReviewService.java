@@ -10,14 +10,17 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import com.linguaflow.common.practice.PracticeSessionRecorder;
 import com.linguaflow.flashcard.FlashcardService.CardView;
 import com.linguaflow.user.ActiveLanguageService;
 import com.linguaflow.user.LearningSettings;
@@ -57,7 +60,16 @@ public class ReviewService {
 			int dailyReviewGoal, long newCardsToday, int newCardsPerDay, @Nullable Instant nextLearningDueAt) {
 	}
 
-	public record Submission(UUID flashcardId, ReviewGrade grade, UUID reviewToken, @Nullable Integer durationMs) {
+	/**
+	 * @param practiceSessionId the practice session (PRC-02) the card was shown in, if any
+	 */
+	public record Submission(UUID flashcardId, ReviewGrade grade, UUID reviewToken, @Nullable Integer durationMs,
+			@Nullable UUID practiceSessionId) {
+
+		public Submission(UUID flashcardId, ReviewGrade grade, UUID reviewToken, @Nullable Integer durationMs) {
+			this(flashcardId, grade, reviewToken, durationMs, null);
+		}
+
 	}
 
 	/** @param replayed true when this token was already recorded and nothing changed */
@@ -78,6 +90,8 @@ public class ReviewService {
 
 	private final UserRepository users;
 
+	private final PracticeSessionRecorder practice;
+
 	private final TransactionTemplate transactions;
 
 	private final Clock clock;
@@ -86,7 +100,9 @@ public class ReviewService {
 
 	ReviewService(FlashcardRepository cards, SrsStateRepository srsStates, FlashcardReviewRepository reviews,
 			FlashcardService flashcards, ActiveLanguageService activeLanguages, UserLanguageService userLanguages,
-			UserRepository users, PlatformTransactionManager transactionManager, Clock clock) {
+			UserRepository users, PracticeSessionRecorder practice, PlatformTransactionManager transactionManager,
+			Clock clock) {
+		this.practice = practice;
 		this.cards = cards;
 		this.srsStates = srsStates;
 		this.reviews = reviews;
@@ -134,6 +150,26 @@ public class ReviewService {
 		return new Queue(items, dueCount, newCount, today, reviews.countReviewedSince(userId, language, startOfToday),
 				settings.dailyReviewGoal(), introduced, settings.newCardsPerDay(),
 				cards.findNextLearningDue(userId, language, directions, now, tomorrow));
+	}
+
+	/**
+	 * The user's cards with their grade previews, in the given order, for a practice
+	 * session (PRC-02). IDs that aren't the user's cards are left out.
+	 */
+	@Transactional(readOnly = true)
+	public List<QueueItem> items(UUID userId, List<UUID> flashcardIds) {
+		if (flashcardIds.isEmpty()) {
+			return List.of();
+		}
+		ZoneId zone = zoneOf(userId);
+		Instant now = now();
+		Map<UUID, Flashcard> byId = new HashMap<>();
+		cards.findAllByUserIdAndIdIn(userId, flashcardIds).forEach(card -> byId.put(card.getId(), card));
+		List<Flashcard> ordered = flashcardIds.stream().map(byId::get).filter(Objects::nonNull).toList();
+		return flashcards.views(userId, ordered)
+			.stream()
+			.map(view -> new QueueItem(view, previews(view.srs().toCard(), now, zone)))
+			.toList();
 	}
 
 	/**
@@ -265,9 +301,12 @@ public class ReviewService {
 		SrsScheduler.Card before = srs.toCard();
 		SrsScheduler.Card after = scheduler.review(before, submission.grade(), now, zoneOf(userId));
 		srs.apply(after);
+		if (submission.practiceSessionId() != null) {
+			practice.recordFlashcard(userId, submission.practiceSessionId(), card.getId(), now);
+		}
 		srsStates.saveAndFlush(srs);
 		FlashcardReview review = reviews.saveAndFlush(new FlashcardReview(card, submission.reviewToken(),
-				submission.grade(), now, submission.durationMs(), before, after));
+				submission.grade(), now, submission.durationMs(), before, after, submission.practiceSessionId()));
 		return new Result(review, flashcards.views(userId, List.of(card)).getFirst(), false);
 	}
 
