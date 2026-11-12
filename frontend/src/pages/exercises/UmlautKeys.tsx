@@ -1,3 +1,4 @@
+import { flushSync } from 'react-dom'
 import { insertAt } from './exerciseText'
 
 const KEYS = ['ä', 'ö', 'ü', 'ß', 'Ä', 'Ö', 'Ü'] as const
@@ -42,11 +43,10 @@ export function UmlautKeys({
               input.selectionEnd,
               key,
             )
-            onInsert(input, next.value)
-            requestAnimationFrame(() => {
-              input.focus()
-              input.setSelectionRange(next.cursor, next.cursor)
-            })
+            // Commit the new value now, so the caret can be placed before any more typing
+            flushSync(() => onInsert(input, next.value))
+            input.focus()
+            input.setSelectionRange(next.cursor, next.cursor)
           }}
           className="min-w-9 rounded-md border border-border bg-surface px-2 py-1 text-sm font-medium text-fg hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary disabled:opacity-50"
         >
