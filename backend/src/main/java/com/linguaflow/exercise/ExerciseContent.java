@@ -57,6 +57,16 @@ public record ExerciseContent(ExerciseType type, ExercisePrompt prompt, Exercise
 		};
 	}
 
+	/** A record as a JSON map, with this module's field names (e.g. an answer, EX-05). */
+	static Map<String, Object> toJson(Object value) {
+		return JSON.convertValue(value, MAP);
+	}
+
+	/** A JSON map read back into a record. */
+	static <T> T fromJson(Map<String, Object> json, Class<T> type) {
+		return JSON.convertValue(json, type);
+	}
+
 	Map<String, Object> promptJson() {
 		return JSON.convertValue(prompt, MAP);
 	}

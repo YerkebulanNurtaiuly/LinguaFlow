@@ -1581,6 +1581,195 @@
         "tags" : [ "Exercises" ]
       }
     },
+    "/api/exercises/{id}/attempts" : {
+      "get" : {
+        "description" : "Newest first; sortable by attemptedAt only.",
+        "operationId" : "history",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "query",
+          "name" : "pageable",
+          "required" : true,
+          "schema" : {
+            "$ref" : "#/components/schemas/Pageable"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseExerciseAttempt"
+                }
+              }
+            },
+            "description" : "One page of attempts"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "An exercise's attempts",
+        "tags" : [ "Exercises" ]
+      },
+      "post" : {
+        "description" : "Grades the answer, by rules or for open answers by the AI, and stores the attempt with its mistakes. The response has the correct answer and explanations. Nothing is stored when the AI fails (429 AI_QUOTA_EXCEEDED or 503 AI_UNAVAILABLE).",
+        "operationId" : "submit_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubmitAttemptRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExerciseAttemptResult"
+                }
+              }
+            },
+            "description" : "The graded attempt"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Answer an exercise",
+        "tags" : [ "Exercises" ]
+      }
+    },
     "/api/flashcards" : {
       "get" : {
         "description" : "Cards of the active language's words, newest first. Sortable by createdAt, updatedAt or dueAt (NEW cards, which have no due date, come last).",
@@ -2793,7 +2982,7 @@
     "/api/grammar-topics/{id}/status-history" : {
       "get" : {
         "description" : "Every status change, oldest first.",
-        "operationId" : "history",
+        "operationId" : "history_1",
         "parameters" : [ {
           "in" : "query",
           "name" : "userId",
@@ -6701,6 +6890,27 @@
           }
         }
       },
+      "AnswerError" : {
+        "type" : "object",
+        "properties" : {
+          "explanation" : {
+            "type" : "string"
+          },
+          "grammarTopicId" : {
+            "type" : "string",
+            "format" : "uuid",
+            "description" : "Your grammar topic it belongs to"
+          },
+          "span" : {
+            "type" : "string",
+            "description" : "The wrong part; null for something missing"
+          },
+          "type" : {
+            "type" : "string",
+            "enum" : [ "WRONG_CASE", "WRONG_ARTICLE", "WRONG_ENDING", "VERB_FORM", "TENSE", "WORD_ORDER", "PREPOSITION", "WRONG_WORD", "SPELLING", "MISSING_WORD", "EXTRA_WORD", "MEANING", "OTHER" ]
+          }
+        }
+      },
       "ApiProblem" : {
         "description" : "RFC 7807 problem details returned for every error",
         "properties" : {
@@ -7268,6 +7478,123 @@
           }
         }
       },
+      "ExerciseAttempt" : {
+        "type" : "object",
+        "properties" : {
+          "answer" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "The answer as given: {blanks}, {index}, {tokens} or {text}"
+          },
+          "attemptedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "correct" : {
+            "type" : "boolean"
+          },
+          "durationMs" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "evaluatedBy" : {
+            "type" : "string",
+            "enum" : [ "RULES", "AI" ]
+          },
+          "exerciseId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "score" : {
+            "type" : "number",
+            "description" : "0 to 1; partial credit for gaps and word order"
+          }
+        }
+      },
+      "ExerciseAttemptResult" : {
+        "type" : "object",
+        "description" : "How the answer was graded, with the solution",
+        "properties" : {
+          "alternatives" : {
+            "type" : "array",
+            "description" : "Other accepted answers",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "attempt" : {
+            "$ref" : "#/components/schemas/ExerciseAttempt"
+          },
+          "correct" : {
+            "type" : "boolean"
+          },
+          "correctAnswer" : {
+            "type" : "string",
+            "description" : "The solution, e.g. the text with its gaps filled"
+          },
+          "evaluatedBy" : {
+            "type" : "string",
+            "enum" : [ "RULES", "AI" ]
+          },
+          "explanation" : {
+            "type" : "string",
+            "description" : "Why the solution is right, written with the exercise"
+          },
+          "feedback" : {
+            "$ref" : "#/components/schemas/ExerciseFeedback",
+            "description" : "The AI judge's findings; null when the rules decided"
+          },
+          "mistakes" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Mistake"
+            }
+          },
+          "notes" : {
+            "type" : "array",
+            "description" : "What was accepted although it differed",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "CAPITALIZATION", "UMLAUT_SPELLING", "ALTERNATIVE" ]
+            },
+            "uniqueItems" : true
+          },
+          "parts" : {
+            "type" : "array",
+            "description" : "Per gap, or per answer token, whether it was right",
+            "items" : {
+              "type" : "boolean"
+            }
+          },
+          "score" : {
+            "type" : "number",
+            "format" : "double"
+          }
+        }
+      },
+      "ExerciseFeedback" : {
+        "type" : "object",
+        "properties" : {
+          "correctedAnswer" : {
+            "type" : "string",
+            "description" : "Your answer corrected; null when it was right"
+          },
+          "errors" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/AnswerError"
+            }
+          },
+          "explanation" : {
+            "type" : "string",
+            "description" : "A sentence or two for you"
+          }
+        }
+      },
       "ExercisePrompt" : { },
       "ExerciseSet" : {
         "type" : "object",
@@ -7830,6 +8157,27 @@
         },
         "required" : [ "email", "password" ]
       },
+      "Mistake" : {
+        "type" : "object",
+        "description" : "A stored error, for your mistake statistics",
+        "properties" : {
+          "errorType" : {
+            "type" : "string",
+            "description" : "An AnswerError type, or WRONG_GAP / WRONG_CHOICE / WORD_ORDER from the rules"
+          },
+          "excerpt" : {
+            "type" : "string"
+          },
+          "grammarTopicId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
       "MultipleChoicePrompt" : {
         "allOf" : [ {
           "$ref" : "#/components/schemas/ExercisePrompt"
@@ -7901,6 +8249,39 @@
             "type" : "array",
             "items" : {
               "$ref" : "#/components/schemas/AiJob"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "sort" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/SortOrder"
+            }
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseExerciseAttempt" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExerciseAttempt"
             }
           },
           "page" : {
@@ -8630,6 +9011,54 @@
           "vocabularyCount" : {
             "type" : "integer",
             "format" : "int64"
+          }
+        }
+      },
+      "SubmitAttemptRequest" : {
+        "type" : "object",
+        "description" : "Fill in the field the exercise type takes: blanks for FILL_BLANK, index for MULTIPLE_CHOICE, tokens for WORD_ORDER, text for the others",
+        "properties" : {
+          "blanks" : {
+            "type" : "array",
+            "description" : "What was typed into each gap, in order",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 200,
+              "minLength" : 0
+            },
+            "maxItems" : 10,
+            "minItems" : 0
+          },
+          "durationMs" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "How long answering took",
+            "maximum" : 3600000,
+            "minimum" : 0
+          },
+          "index" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Zero-based index of the chosen option",
+            "maximum" : 10,
+            "minimum" : 0
+          },
+          "text" : {
+            "type" : "string",
+            "description" : "The written answer",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "tokens" : {
+            "type" : "array",
+            "description" : "The prompt's tokens in the chosen order",
+            "items" : {
+              "type" : "string",
+              "maxLength" : 100,
+              "minLength" : 0
+            },
+            "maxItems" : 30,
+            "minItems" : 0
           }
         }
       },

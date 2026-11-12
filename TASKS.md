@@ -283,7 +283,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **EX-04 — AI evaluation for open answers** (M) — _deps: EX-03, AI-03_
   Translation, sentence construction, error correction, transformation: first try exact/alternatives match, then AI judge returning `{correct, score, errors[{type, span, explanation}], correctedAnswer}`. Error types map to grammar topics (e.g. wrong case → Dativ).
 
-- [ ] **EX-05 — Attempt submission API** (S) — _deps: EX-03, EX-04_
+- [x] **EX-05 — Attempt submission API** (S) — _deps: EX-03, EX-04_
   `POST /api/exercises/{id}/attempts` → result, explanation, correct answer. Persist attempt and mistakes; emit `ExerciseAttemptedEvent` for the progress module.
 
 - [ ] **EX-06 — Explanations for incorrect answers** (S) — _deps: EX-05_

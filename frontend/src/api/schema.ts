@@ -340,6 +340,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/exercises/{id}/attempts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * An exercise's attempts
+         * @description Newest first; sortable by attemptedAt only.
+         */
+        get: operations["history"];
+        put?: never;
+        /**
+         * Answer an exercise
+         * @description Grades the answer, by rules or for open answers by the AI, and stores the attempt with its mistakes. The response has the correct answer and explanations. Nothing is stored when the AI fails (429 AI_QUOTA_EXCEEDED or 503 AI_UNAVAILABLE).
+         */
+        post: operations["submit_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/flashcards": {
         parameters: {
             query?: never;
@@ -521,7 +545,7 @@ export interface paths {
          * Status history of a grammar topic
          * @description Every status change, oldest first.
          */
-        get: operations["history"];
+        get: operations["history_1"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1202,6 +1226,18 @@ export interface components {
             /** Format: int64 */
             requests?: number;
         };
+        AnswerError: {
+            explanation?: string;
+            /**
+             * Format: uuid
+             * @description Your grammar topic it belongs to
+             */
+            grammarTopicId?: string;
+            /** @description The wrong part; null for something missing */
+            span?: string;
+            /** @enum {string} */
+            type?: "WRONG_CASE" | "WRONG_ARTICLE" | "WRONG_ENDING" | "VERB_FORM" | "TENSE" | "WORD_ORDER" | "PREPOSITION" | "WRONG_WORD" | "SPELLING" | "MISSING_WORD" | "EXTRA_WORD" | "MEANING" | "OTHER";
+        };
         /** @description RFC 7807 problem details returned for every error */
         ApiProblem: {
             /**
@@ -1452,6 +1488,54 @@ export interface components {
             /** @enum {string} */
             type?: "FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION";
             vocabularyItemIds?: string[];
+        };
+        ExerciseAttempt: {
+            /** @description The answer as given: {blanks}, {index}, {tokens} or {text} */
+            answer?: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            attemptedAt?: string;
+            correct?: boolean;
+            /** Format: int32 */
+            durationMs?: number;
+            /** @enum {string} */
+            evaluatedBy?: "RULES" | "AI";
+            /** Format: uuid */
+            exerciseId?: string;
+            /** Format: uuid */
+            id?: string;
+            /** @description 0 to 1; partial credit for gaps and word order */
+            score?: number;
+        };
+        /** @description How the answer was graded, with the solution */
+        ExerciseAttemptResult: {
+            /** @description Other accepted answers */
+            alternatives?: string[];
+            attempt?: components["schemas"]["ExerciseAttempt"];
+            correct?: boolean;
+            /** @description The solution, e.g. the text with its gaps filled */
+            correctAnswer?: string;
+            /** @enum {string} */
+            evaluatedBy?: "RULES" | "AI";
+            /** @description Why the solution is right, written with the exercise */
+            explanation?: string;
+            /** @description The AI judge's findings; null when the rules decided */
+            feedback?: components["schemas"]["ExerciseFeedback"];
+            mistakes?: components["schemas"]["Mistake"][];
+            /** @description What was accepted although it differed */
+            notes?: ("CAPITALIZATION" | "UMLAUT_SPELLING" | "ALTERNATIVE")[];
+            /** @description Per gap, or per answer token, whether it was right */
+            parts?: boolean[];
+            /** Format: double */
+            score?: number;
+        };
+        ExerciseFeedback: {
+            /** @description Your answer corrected; null when it was right */
+            correctedAnswer?: string;
+            errors?: components["schemas"]["AnswerError"][];
+            /** @description A sentence or two for you */
+            explanation?: string;
         };
         ExercisePrompt: unknown;
         ExerciseSet: {
@@ -1724,6 +1808,16 @@ export interface components {
             /** @example demo-password-123 */
             password: string;
         };
+        /** @description A stored error, for your mistake statistics */
+        Mistake: {
+            /** @description An AnswerError type, or WRONG_GAP / WRONG_CHOICE / WORD_ORDER from the rules */
+            errorType?: string;
+            excerpt?: string;
+            /** Format: uuid */
+            grammarTopicId?: string;
+            /** Format: uuid */
+            id?: string;
+        };
         MultipleChoicePrompt: components["schemas"]["ExercisePrompt"] & {
             instruction?: string;
             options: string[];
@@ -1748,6 +1842,18 @@ export interface components {
         };
         PageResponseAiJob: {
             content?: components["schemas"]["AiJob"][];
+            /** Format: int32 */
+            page?: number;
+            /** Format: int32 */
+            size?: number;
+            sort?: components["schemas"]["SortOrder"][];
+            /** Format: int64 */
+            totalElements?: number;
+            /** Format: int32 */
+            totalPages?: number;
+        };
+        PageResponseExerciseAttempt: {
+            content?: components["schemas"]["ExerciseAttempt"][];
             /** Format: int32 */
             page?: number;
             /** Format: int32 */
@@ -2097,6 +2203,25 @@ export interface components {
             sessions?: components["schemas"]["StudySession"][];
             /** Format: int64 */
             vocabularyCount?: number;
+        };
+        /** @description Fill in the field the exercise type takes: blanks for FILL_BLANK, index for MULTIPLE_CHOICE, tokens for WORD_ORDER, text for the others */
+        SubmitAttemptRequest: {
+            /** @description What was typed into each gap, in order */
+            blanks?: string[];
+            /**
+             * Format: int32
+             * @description How long answering took
+             */
+            durationMs?: number;
+            /**
+             * Format: int32
+             * @description Zero-based index of the chosen option
+             */
+            index?: number;
+            /** @description The written answer */
+            text?: string;
+            /** @description The prompt's tokens in the chosen order */
+            tokens?: string[];
         };
         SubmitReviewRequest: {
             /**
@@ -3659,6 +3784,149 @@ export interface operations {
             };
         };
     };
+    history: {
+        parameters: {
+            query: {
+                userId: string;
+                pageable: components["schemas"]["Pageable"];
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description One page of attempts */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResponseExerciseAttempt"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    submit_1: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SubmitAttemptRequest"];
+            };
+        };
+        responses: {
+            /** @description The graded attempt */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExerciseAttemptResult"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
     list_6: {
         parameters: {
             query: {
@@ -4558,7 +4826,7 @@ export interface operations {
             };
         };
     };
-    history: {
+    history_1: {
         parameters: {
             query: {
                 userId: string;

@@ -138,3 +138,12 @@ export type SentenceConstructionPrompt = Schemas['SentenceConstructionPrompt']
 export type ErrorCorrectionPrompt = Schemas['ErrorCorrectionPrompt']
 export type WordOrderPrompt = Schemas['WordOrderPrompt']
 export type TransformationPrompt = Schemas['TransformationPrompt']
+
+// Exercise attempts (EX-05)
+export type SubmitAttemptRequest = Schemas['SubmitAttemptRequest']
+export type ExerciseAttempt = Schemas['ExerciseAttempt']
+export type ExerciseAttemptResult = Schemas['ExerciseAttemptResult']
+export type ExerciseAttemptPage = Schemas['PageResponseExerciseAttempt']
+export type ExerciseFeedback = Schemas['ExerciseFeedback']
+export type AnswerError = Schemas['AnswerError']
+export type ExerciseMistake = Schemas['Mistake']
