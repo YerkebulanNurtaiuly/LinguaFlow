@@ -277,7 +277,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   `POST /api/exercise-sets` with `{grammarTopicIds, types, count, difficulty}`. Backend picks vocabulary the user knows, builds prompt, validates each generated exercise (schema, solution present, MC options unique with exactly one correct, word-order tokens match solution), drops invalid ones and tops up.
   _Done when:_ a 10-exercise set for "Dativ" uses only (or mostly) the user's own words.
 
-- [ ] **EX-03 — Deterministic answer evaluation** (M) — _deps: EX-01_
+- [x] **EX-03 — Deterministic answer evaluation** (M) — _deps: EX-01_
   Closed formats (MC, fill-blank, word order) evaluated in code: normalization (whitespace, case where irrelevant, punctuation, umlaut alternatives ae/oe/ue configurable), accepted alternatives list, partial credit for word order.
 
 - [ ] **EX-04 — AI evaluation for open answers** (M) — _deps: EX-03, AI-03_

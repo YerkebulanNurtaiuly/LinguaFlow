@@ -22,7 +22,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("linguaflow")
 public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai ai, Cors cors,
-		@Valid RateLimit rateLimit, App app, Mail mail) {
+		@Valid RateLimit rateLimit, App app, Mail mail, Exercises exercises) {
 
 	public LinguaFlowProperties {
 		if (ai == null) {
@@ -39,6 +39,9 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		}
 		if (rateLimit == null) {
 			rateLimit = new RateLimit(null, null, null, null);
+		}
+		if (exercises == null) {
+			exercises = new Exercises(null);
 		}
 	}
 
@@ -61,6 +64,33 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		public ActionTokens {
 			emailVerificationTtl = (emailVerificationTtl == null) ? Duration.ofHours(48) : emailVerificationTtl;
 			passwordResetTtl = (passwordResetTtl == null) ? Duration.ofHours(1) : passwordResetTtl;
+		}
+
+	}
+
+	/** Exercises (EX-03). */
+	public record Exercises(Evaluation evaluation) {
+
+		public Exercises {
+			if (evaluation == null) {
+				evaluation = new Evaluation(null, null);
+			}
+		}
+
+	}
+
+	/**
+	 * How answers are checked in code (EX-03).
+	 * @param umlautAlternatives accept ae, oe, ue and ss for ä, ö, ü and ß (default true),
+	 * for learners without a German keyboard
+	 * @param strictCase count a capitalization mistake as wrong (default false: it's
+	 * accepted and pointed out)
+	 */
+	public record Evaluation(Boolean umlautAlternatives, Boolean strictCase) {
+
+		public Evaluation {
+			umlautAlternatives = umlautAlternatives == null || umlautAlternatives;
+			strictCase = strictCase != null && strictCase;
 		}
 
 	}

@@ -93,6 +93,7 @@ linguaflow:
     # Default model for every use case; override per use case under use-cases.<name>.{model,effort,max-tokens,timeout}
     model: ${AI_MODEL:claude-opus-5-5}
     # Background job queue (AI-04): jobs.{enabled,poll-interval,concurrency,batch-size,max-attempts,backoff-base,backoff-max,stale-after}
+  # Answer checking (EX-03): exercises.evaluation.{umlaut-alternatives (default true), strict-case (default false)}
   cors:
     # Comma-separated origins allowed to call /api from the browser; empty = same-origin only
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}

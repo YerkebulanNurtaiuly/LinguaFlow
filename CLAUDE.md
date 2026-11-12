@@ -322,6 +322,22 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Not shared:** the prompts carry the learner's words, so nothing goes through the AI cache.
   - **Templates:** the exercise templates are now **v2** (partials `exercise-rules-v2` and `exercise-request-v2`), written for the EX-01 records' field paths. They add the `DIFFICULTY` variable ("easy: short, simple sentences…"). The v1 files stay as released.
   - **Tests:** `ExerciseGenerationTests` (the done-when: a 10-exercise Dativ set built from the learner's own words), and `ExerciseGeneratorTests`.
+- **Answer checking (EX-03):** `exercise.AnswerEvaluator.evaluate(content, answer)` is pure code, and EX-05 calls it. There's no API yet.
+  - **Answer shapes (`ExerciseAnswer`, sealed, stored as `exercise_attempts.answer`):** `Blanks {blanks}` for FILL_BLANK, `Choice {index}` for MULTIPLE_CHOICE, `Tokens {tokens}` for WORD_ORDER, and `Text {text}` for the four open types (`ExerciseAnswer.typeFor`). Another shape is an `IllegalArgumentException`, which EX-05 should map to a 400.
+  - **Result (`Evaluation`):**
+    - `decided`: false means the AI judge must decide (EX-04).
+    - `correct` and `score` (0–1, three decimals, for `numeric(4,3)`), plus `evaluatedBy` (`RULES`/`AI`, matching the CHECK).
+    - `notes`: what was accepted although it differed: `CAPITALIZATION`, `UMLAUT_SPELLING`, `ALTERNATIVE`.
+    - `parts`: per gap, or per answer token whether it's in a right place.
+    - `correctAnswer`: for display. A fill-in-the-blank shows the text with its gaps filled.
+  - **Comparing (`AnswerNormalizer`):** NFC, typographic apostrophes made plain, punctuation and loose dashes removed, whitespace collapsed; hyphens inside words ("E-Mail") and apostrophes stay. Then the strictest match wins: exact; ignoring case (unless strict); with ae/oe/ue/ss folded on both sides (`foldUmlauts` keeps case); and both. Alternatives are tried at each level.
+  - **Settings:** `linguaflow.exercises.evaluation.umlaut-alternatives` (default true) and `strict-case` (default false), in `LinguaFlowProperties.Exercises`.
+  - **Per format:**
+    - FILL_BLANK: each gap separately, score = right gaps / gaps, correct only with all of them. A missing gap is wrong.
+    - MULTIPLE_CHOICE: the index.
+    - WORD_ORDER: tokens are compared ignoring case and punctuation, against the solution and every alternative. A wrong order gets partial credit: the longest common subsequence with the closest correct order, over the longer length, capped at 0.999. `parts` marks the tokens in that subsequence.
+    - Open types: a match with the answer or an alternative is correct. An empty answer is wrong. Anything else is undecided.
+  - **Tests:** `AnswerEvaluatorTests`, table-driven.
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).
