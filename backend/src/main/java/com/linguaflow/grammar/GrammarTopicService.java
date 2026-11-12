@@ -17,6 +17,7 @@ import com.linguaflow.user.ActiveLanguageService;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -126,6 +127,15 @@ public class GrammarTopicService {
 	@Transactional(readOnly = true)
 	public List<GrammarTopicSummary> summaries(UUID userId, String languageCode, Collection<UUID> ids) {
 		return ids.isEmpty() ? List.of() : topics.findSummaries(userId, languageCode, ids);
+	}
+
+	/**
+	 * Up to {@code limit} of the user's topics in {@code languageCode}, most recently
+	 * changed first; for other modules' AI prompts, e.g. answer grading (EX-04).
+	 */
+	@Transactional(readOnly = true)
+	public List<GrammarTopicSummary> recentSummaries(UUID userId, String languageCode, int limit) {
+		return topics.findRecentSummaries(userId, languageCode, PageRequest.of(0, limit));
 	}
 
 	/**

@@ -2,6 +2,7 @@ package com.linguaflow.exercise;
 
 import java.util.List;
 import java.util.Set;
+import java.util.UUID;
 
 import org.jspecify.annotations.Nullable;
 
@@ -15,9 +16,16 @@ import org.jspecify.annotations.Nullable;
  * @param parts for fill-in-the-blank one entry per gap, for word order one per answer
  * token (whether it's in a correct place); empty otherwise
  * @param correctAnswer the solution as it would be shown to the learner
+ * @param feedback the AI judge's findings (EX-04); null when the rules decided
  */
 public record Evaluation(boolean decided, boolean correct, double score, EvaluatedBy evaluatedBy, Set<Note> notes,
-		List<Boolean> parts, @Nullable String correctAnswer) {
+		List<Boolean> parts, @Nullable String correctAnswer, @Nullable Feedback feedback) {
+
+	/** A result of the rules, without AI feedback. */
+	public Evaluation(boolean decided, boolean correct, double score, EvaluatedBy evaluatedBy, Set<Note> notes,
+			List<Boolean> parts, @Nullable String correctAnswer) {
+		this(decided, correct, score, evaluatedBy, notes, parts, correctAnswer, null);
+	}
 
 	public Evaluation {
 		if (score < 0 || score > 1) {
@@ -26,6 +34,30 @@ public record Evaluation(boolean decided, boolean correct, double score, Evaluat
 		score = Math.round(score * 1000) / 1000.0;
 		notes = Set.copyOf(notes);
 		parts = List.copyOf(parts);
+	}
+
+	/**
+	 * What the AI judge found (EX-04), stored as {@code exercise_attempts.feedback}.
+	 * @param correctedAnswer the learner's answer with its errors fixed, as close to it as
+	 * possible; null when it was correct
+	 * @param explanation one or two sentences for the learner, in their explanation language
+	 */
+	public record Feedback(List<AnswerError> errors, @Nullable String correctedAnswer, String explanation) {
+
+		public Feedback {
+			errors = List.copyOf(errors);
+		}
+
+	}
+
+	/**
+	 * One error in an answer.
+	 * @param span the wrong part, as the learner wrote it; null for something missing
+	 * @param grammarTopicId the learner's grammar topic it belongs to, if any (for
+	 * {@code mistakes.grammar_topic_id}, PRG-04)
+	 */
+	public record AnswerError(ErrorType type, @Nullable String span, String explanation,
+			@Nullable UUID grammarTopicId) {
 	}
 
 	/** Who decided; same values as {@code exercise_attempts_evaluated_by_ck}. */

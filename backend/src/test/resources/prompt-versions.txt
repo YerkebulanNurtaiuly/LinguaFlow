@@ -1,5 +1,6 @@
 # Hashes of released prompt versions; see PromptVersionTests. Never change a line, add one.
 answer-evaluation/v1 e86ad41316f068a6adc9fb0d
+answer-evaluation/v2 950260688560ffae63836234
 exercise-error-correction/v1 395880d5a1581bda4c60dd46
 exercise-error-correction/v2 982c2b45fa729d246c57b4a8
 exercise-fill-blank/v1 c763d4c26abe530714d25f05

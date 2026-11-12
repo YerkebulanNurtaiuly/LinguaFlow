@@ -19,6 +19,8 @@ public enum PromptVar {
 	KNOWN_VOCABULARY("knownVocabulary", Shape.LIST, 100, 200),
 	/** Grammar topics the content should practise or relate to. */
 	FOCUS_TOPICS("focusTopics", Shape.LIST, 200, 20),
+	/** The learner's other grammar topics, which an answer's errors may relate to (EX-04). */
+	LEARNER_TOPICS("learnerTopics", Shape.LIST, 200, 30),
 
 	/** One word or phrase to enrich, as the learner typed it. */
 	WORD("word", Shape.LINE, 200, 0),

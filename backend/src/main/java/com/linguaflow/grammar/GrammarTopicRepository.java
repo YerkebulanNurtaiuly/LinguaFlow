@@ -41,6 +41,15 @@ public interface GrammarTopicRepository extends OwnedRepository<GrammarTopic>, G
 	List<GrammarTopicSummary> findSummaries(@Param("userId") UUID userId, @Param("languageCode") String languageCode,
 			@Param("ids") Collection<UUID> ids);
 
+	/** The user's topics in a language, most recently changed first (EX-04). */
+	@Query("""
+			select new com.linguaflow.grammar.GrammarTopicSummary(t.id, t.title, t.normalizedTitle, t.description, t.cefrLevel)
+			from GrammarTopic t
+			where t.userId = :userId and t.languageCode = :languageCode
+			order by t.updatedAt desc, t.id""")
+	List<GrammarTopicSummary> findRecentSummaries(@Param("userId") UUID userId,
+			@Param("languageCode") String languageCode, Pageable page);
+
 	/** What identifies each of the user's topics in a language, for matching against the catalog. */
 	@Query("""
 			select new com.linguaflow.grammar.GrammarTopicKey(t.id, t.catalogTopicId, t.normalizedTitle)

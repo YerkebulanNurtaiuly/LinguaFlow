@@ -280,7 +280,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **EX-03 — Deterministic answer evaluation** (M) — _deps: EX-01_
   Closed formats (MC, fill-blank, word order) evaluated in code: normalization (whitespace, case where irrelevant, punctuation, umlaut alternatives ae/oe/ue configurable), accepted alternatives list, partial credit for word order.
 
-- [ ] **EX-04 — AI evaluation for open answers** (M) — _deps: EX-03, AI-03_
+- [x] **EX-04 — AI evaluation for open answers** (M) — _deps: EX-03, AI-03_
   Translation, sentence construction, error correction, transformation: first try exact/alternatives match, then AI judge returning `{correct, score, errors[{type, span, explanation}], correctedAnswer}`. Error types map to grammar topics (e.g. wrong case → Dativ).
 
 - [ ] **EX-05 — Attempt submission API** (S) — _deps: EX-03, EX-04_

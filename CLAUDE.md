@@ -338,6 +338,19 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
     - WORD_ORDER: tokens are compared ignoring case and punctuation, against the solution and every alternative. A wrong order gets partial credit: the longest common subsequence with the closest correct order, over the longer length, capped at 0.999. `parts` marks the tokens in that subsequence.
     - Open types: a match with the answer or an alternative is correct. An empty answer is wrong. Anything else is undecided.
   - **Tests:** `AnswerEvaluatorTests`, table-driven.
+- **AI grading of open answers (EX-04):** `exercise.AnswerChecker.check(userId, exerciseId, answer)` is the entry point for EX-05. It loads the user's exercise (404 otherwise), runs `AnswerEvaluator`, and only an undecided open answer goes to the AI judge.
+  - **The call:** `ANSWER_EVALUATION` template **v2**. It adds fixed error types, null spans for missing words, a topic per error, and the new optional `LEARNER_TOPICS` variable. It's a synchronous call outside any transaction, with `AiCaller.user`, and isn't cached, since the answer is the learner's own.
+    - **Instruction:** the exercise's own, or the type's default (`AnswerChecker.instruction`). The exercise text comes from `AnswerChecker.exercise`; sentence construction adds "Words to use", transformation adds "Task".
+    - **Material:** the reference answer and alternatives, the exercise's topics as "Title: description", up to 30 of the learner's other topics by title, and the level.
+  - **Answer record (`JudgeAnswer`):** `{correct, score, errors[{type, span, explanation, topic}], correctedAnswer, feedback}`. `consistent` is the output check:
+    - Correct means score 1 and no errors.
+    - Not correct means a score below 1, and at least one error unless the score is 0.
+    - Each non-null span must occur in the answer as whole words, ignoring case and punctuation.
+  - **Error types (`ErrorType`, for `mistakes.error_type`):** WRONG_CASE, WRONG_ARTICLE, WRONG_ENDING, VERB_FORM, TENSE, WORD_ORDER, PREPOSITION, WRONG_WORD, SPELLING, MISSING_WORD, EXTRA_WORD, MEANING and OTHER. `grammatical()` is false for WRONG_WORD, SPELLING, MEANING and OTHER.
+  - **Topic mapping:** an error's `topic` is matched by normalized title (a ": description" suffix is dropped) to the exercise's or the learner's other topics. A grammatical error with no match falls back to the exercise's topic when it has exactly one; otherwise `grammarTopicId` stays null.
+  - **Result:** an `Evaluation` with `evaluatedBy` AI and `feedback` (`Evaluation.Feedback {errors[AnswerError{type, span, explanation, grammarTopicId}], correctedAnswer (null when correct), explanation}`, the shape of `exercise_attempts.feedback`). `correctAnswer` is still the reference answer.
+  - **Errors:** an AI failure propagates as an `LlmException` (an `InvalidLlmOutputException` after the retry). EX-05 converts it with `AiErrors.toApiException`.
+  - **Tests:** `AnswerCheckerTests` (scripted fake). `AnswerCheckerLiveTests` runs one real grading and is skipped unless `-Dai.live=true` with `AI_API_KEY` set.
 - **Grammar topic catalog (GRM-03):** `V5__grammar_catalog_seed.sql` seeds 52 German topics from A1 to C1. Titles are German and descriptions English.
   - **Stable IDs:** each ID is `md5('grammar-catalog:de:<slug>')::uuid`, so it's the same in every environment. To extend the catalog, write a new migration with the same scheme.
   - **Distinct titles:** titles must stay distinct after `TitleNormalizer` (`GrammarCatalogApiTests` checks this).

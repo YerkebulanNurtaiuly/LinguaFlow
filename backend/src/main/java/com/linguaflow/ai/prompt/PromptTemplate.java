@@ -12,6 +12,7 @@ import static com.linguaflow.ai.prompt.PromptVar.FOCUS_TOPICS;
 import static com.linguaflow.ai.prompt.PromptVar.INSTRUCTION;
 import static com.linguaflow.ai.prompt.PromptVar.KNOWN_VOCABULARY;
 import static com.linguaflow.ai.prompt.PromptVar.LEARNER_ANSWER;
+import static com.linguaflow.ai.prompt.PromptVar.LEARNER_TOPICS;
 import static com.linguaflow.ai.prompt.PromptVar.PART_OF_SPEECH;
 import static com.linguaflow.ai.prompt.PromptVar.PRACTICE_VOCABULARY;
 import static com.linguaflow.ai.prompt.PromptVar.RECENT_EXERCISES;
@@ -59,9 +60,9 @@ public enum PromptTemplate {
 	EXERCISE_WORD_ORDER("exercise-word-order"),
 	EXERCISE_TRANSFORMATION("exercise-transformation"),
 
-	ANSWER_EVALUATION("answer-evaluation", AiUseCase.ANSWER_EVALUATION, 1,
+	ANSWER_EVALUATION("answer-evaluation", AiUseCase.ANSWER_EVALUATION, 2,
 			Set.of(EXERCISE_TYPE, INSTRUCTION, EXERCISE, REFERENCE_ANSWER, LEARNER_ANSWER),
-			Set.of(ACCEPTED_ANSWERS, CEFR_LEVEL, FOCUS_TOPICS)),
+			Set.of(ACCEPTED_ANSWERS, CEFR_LEVEL, FOCUS_TOPICS, LEARNER_TOPICS)),
 
 	MISTAKE_EXPLANATION("mistake-explanation", AiUseCase.MISTAKE_EXPLANATION, 1,
 			Set.of(EXERCISE, REFERENCE_ANSWER, LEARNER_ANSWER), Set.of(INSTRUCTION, ERRORS, CEFR_LEVEL, FOCUS_TOPICS));
