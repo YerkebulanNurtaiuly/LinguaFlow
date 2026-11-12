@@ -300,6 +300,8 @@ describe('flashcard review page', () => {
     expect(screen.getByRole('button', { name: /^Hard/ })).toHaveClass('ring-2')
     expect(fakeApi.requests('/reviews')).toHaveLength(0)
 
+    // Focus leaves the answer box on the next frame; keys typed into it never grade
+    await waitFor(() => expect(answer.firstElementChild).toHaveFocus())
     await user.keyboard('2')
     await screen.findByRole(
       'heading',
