@@ -354,6 +354,7 @@ class ExerciseGenerator implements AiJobHandler {
 							material.knownWords().stream().map(ExerciseGenerator::describe).toList())
 					.set(PromptVar.LESSON_VOCABULARY, material.lessonVocabulary())
 					.set(PromptVar.COMBINE, material.combine() ? "yes" : null)
+					.set(PromptVar.FOCUS_MISTAKES, material.request().focusMistakes())
 					.set(PromptVar.RECENT_EXERCISES, recent.stream().limit(RECENT_EXERCISES).toList()));
 	}
 

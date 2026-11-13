@@ -337,7 +337,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRG-05 — Statistics API** (M) — _deps: PRG-01, SRS-03_
   Dashboard data: total words/topics by status, reviews per day (heatmap), accuracy trend, streak, time studied, CEFR distribution.
 
-- [ ] **PRG-06 — Personalized exercise generation** (M) — _deps: PRG-03, EX-02_
+- [x] **PRG-06 — Personalized exercise generation** (M) — _deps: PRG-03, EX-02_
   "Practice my weak spots" — generate exercises targeting the top weak topics and frequent error types, using weak vocabulary.
 
 - [ ] **FE-PRG-01 — Dashboard** (M) — _deps: PRG-05_

@@ -61,11 +61,13 @@ public class ExerciseSetController {
 	record RequestResponse(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
 			ExerciseDifficulty difficulty,
 			@Schema(description = "Words practised first; set by practice sessions, empty otherwise") List<UUID> vocabularyItemIds,
-			@Schema(description = "Each exercise combines several of the topics") boolean combined) {
+			@Schema(description = "Each exercise combines several of the topics") boolean combined,
+			@Schema(description = "Frequent mistakes the exercises test; set by \"practise my weak spots\", empty otherwise") List<String> focusMistakes) {
 
 		static RequestResponse from(ExerciseSetRequest request) {
 			return new RequestResponse(request.grammarTopicIds(), request.types(), request.count(),
-					request.difficulty(), request.vocabularyItemIds(), request.combined());
+					request.difficulty(), request.vocabularyItemIds(), request.combined(),
+					request.focusMistakes());
 		}
 
 	}

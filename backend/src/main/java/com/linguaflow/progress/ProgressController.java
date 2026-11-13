@@ -16,12 +16,21 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+import org.jspecify.annotations.Nullable;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Progress analysis: statistics (PRG-05), weak points (PRG-03) and frequent mistakes (PRG-04). */
+/** Progress analysis: statistics (PRG-05), weak points (PRG-03), frequent mistakes (PRG-04) and weak-spot exercises (PRG-06). */
 @RestController
 @RequestMapping("/api/progress")
 @Tag(name = "Progress", description = "How your learning is going")
@@ -33,7 +42,11 @@ class ProgressController {
 
 	private final StatisticsService statistics;
 
-	ProgressController(WeakPointService weakPoints, FrequentMistakeService mistakes, StatisticsService statistics) {
+	private final WeakSpotsService weakSpots;
+
+	ProgressController(WeakPointService weakPoints, FrequentMistakeService mistakes, StatisticsService statistics,
+			WeakSpotsService weakSpots) {
+		this.weakSpots = weakSpots;
 		this.statistics = statistics;
 		this.weakPoints = weakPoints;
 		this.mistakes = mistakes;
@@ -253,6 +266,35 @@ class ProgressController {
 					"must be between " + StatisticsService.MIN_WEEKS + " and " + StatisticsService.MAX_WEEKS);
 		}
 		return StatsResponse.from(statistics.statistics(userId, days, weeks));
+	}
+
+	@Schema(name = "WeakSpotsRequest")
+	record WeakSpotsRequest(
+			@Schema(description = "How many exercises; defaults to 10", example = "10") @Nullable @Min(1) @Max(20) Integer count,
+			@Schema(description = "Exercise formats; empty or absent means your preferred formats, or else all") @Nullable List<@NotNull ExerciseType> types) {
+	}
+
+	@Schema(name = "WeakSpotsStarted", description = "The exercise set being written for your weak spots")
+	record WeakSpotsResponse(UUID exerciseSetId,
+			@Schema(description = "Follow it with GET /api/ai/jobs/{id}, then open the set") UUID aiJobId,
+			@Schema(description = "The weakest topics it practises") List<WeakPointResponse> grammarTopics,
+			@Schema(description = "Weak words offered as its practice words") int words,
+			@Schema(description = "Your frequent mistakes it tests, as given to the AI") List<String> focusMistakes) {
+	}
+
+	@PostMapping("/weak-spots/exercises")
+	@ResponseStatus(HttpStatus.ACCEPTED)
+	@Operation(summary = "Practise my weak spots",
+			description = "Asks the AI for an exercise set on your weakest grammar topics (up to "
+					+ WeakSpotsService.TOPICS + "), with your weakest words, testing your most frequent mistakes on "
+					+ "those topics. 409 NOTHING_TO_PRACTISE until a topic counts as weak.")
+	@ApiResponse(responseCode = "202", description = "The set, still generating, and its job")
+	WeakSpotsResponse weakSpots(@CurrentUserId UUID userId, @Valid @RequestBody(required = false) WeakSpotsRequest request) {
+		var started = weakSpots.start(userId, request == null ? null : request.count(),
+				request == null || request.types() == null ? List.of() : request.types());
+		return new WeakSpotsResponse(started.exerciseSetId(), started.aiJobId(),
+				started.topics().stream().map(WeakPointResponse::from).toList(), started.words(),
+				started.focusMistakes());
 	}
 
 	@GetMapping("/weak-points")

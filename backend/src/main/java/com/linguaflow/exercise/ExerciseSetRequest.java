@@ -16,9 +16,12 @@ import org.jspecify.annotations.Nullable;
  * PRC-02); empty means the generator picks the learner's words still being learned
  * @param combined each exercise practises several of the topics at once, with words from
  * different lessons where they fit (PRC-03)
+ * @param focusMistakes the learner's frequent mistakes to test (PRG-06), one line each,
+ * e.g. "WRONG_CASE in Dativ (6 times), e.g. \"den\" in …"; empty for other sets
  */
 public record ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
-		@Nullable ExerciseDifficulty difficulty, List<UUID> vocabularyItemIds, boolean combined) {
+		@Nullable ExerciseDifficulty difficulty, List<UUID> vocabularyItemIds, boolean combined,
+		List<String> focusMistakes) {
 
 	// The canonical constructor, so reading the stored JSON keeps every field
 	@JsonCreator
@@ -26,6 +29,7 @@ public record ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> 
 		grammarTopicIds = grammarTopicIds == null ? List.of() : List.copyOf(grammarTopicIds);
 		types = types == null ? List.of() : List.copyOf(types);
 		vocabularyItemIds = vocabularyItemIds == null ? List.of() : List.copyOf(vocabularyItemIds);
+		focusMistakes = focusMistakes == null ? List.of() : List.copyOf(focusMistakes);
 		if (count < 1) {
 			throw new IllegalArgumentException("count must be positive");
 		}
@@ -33,7 +37,12 @@ public record ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> 
 
 	public ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
 			@Nullable ExerciseDifficulty difficulty) {
-		this(grammarTopicIds, types, count, difficulty, List.of(), false);
+		this(grammarTopicIds, types, count, difficulty, List.of(), false, List.of());
+	}
+
+	public ExerciseSetRequest(List<UUID> grammarTopicIds, List<ExerciseType> types, int count,
+			@Nullable ExerciseDifficulty difficulty, List<UUID> vocabularyItemIds, boolean combined) {
+		this(grammarTopicIds, types, count, difficulty, vocabularyItemIds, combined, List.of());
 	}
 
 }

@@ -145,6 +145,30 @@ public class ExerciseSetService {
 	}
 
 	/**
+	 * Saves a GENERATING WEAK_SPOTS set (PRG-06) in the active language and queues its
+	 * generation: the learner's weakest topics and words, and their frequent mistakes to
+	 * test, as the weak-point analysis chose them, so they're the user's own.
+	 * @param types empty means the learner's preferred types, or else every type
+	 */
+	@Transactional
+	public Requested createForWeakSpots(UUID userId, List<UUID> grammarTopicIds, List<UUID> vocabularyItemIds,
+			List<String> focusMistakes, List<ExerciseType> types, int count) {
+		String language = activeLanguages.requireActive(userId);
+		if (grammarTopicIds.isEmpty() || grammarTopicIds.size() > MAX_TOPICS || count < 1 || count > MAX_COUNT) {
+			throw new IllegalArgumentException("1 to " + MAX_TOPICS + " topics and 1 to " + MAX_COUNT + " exercises");
+		}
+		List<ExerciseType> chosen = types.isEmpty() ? userLanguages.settingsFor(userId, language).preferredExerciseTypes()
+				: List.copyOf(new LinkedHashSet<>(types));
+		ExerciseSet set = sets.save(new ExerciseSet(userId, language, ExerciseSetSource.WEAK_SPOTS,
+				new ExerciseSetRequest(grammarTopicIds, chosen, count, null, vocabularyItemIds, false, focusMistakes),
+				null));
+		UUID jobId = aiJobs
+			.enqueue(AiJobType.EXERCISE_GENERATION, userId, Map.of(ExerciseGenerator.SET_ID, set.getId().toString()))
+			.getId();
+		return new Requested(set, jobId);
+	}
+
+	/**
 	 * The set generated for a practice session, with its exercises in order (reported
 	 * ones included); empty when the session asked for none.
 	 */

@@ -796,6 +796,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/weak-spots/exercises": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Practise my weak spots
+         * @description Asks the AI for an exercise set on your weakest grammar topics (up to 3), with your weakest words, testing your most frequent mistakes on those topics. 409 NOTHING_TO_PRACTISE until a topic counts as weak.
+         */
+        post: operations["weakSpots"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reviews": {
         parameters: {
             query?: never;
@@ -1847,6 +1867,8 @@ export interface components {
             count?: number;
             /** @enum {string} */
             difficulty?: "EASY" | "MEDIUM" | "HARD";
+            /** @description Frequent mistakes the exercises test; set by "practise my weak spots", empty otherwise */
+            focusMistakes?: string[];
             grammarTopicIds?: string[];
             types?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
             /** @description Words practised first; set by practice sessions, empty otherwise */
@@ -3300,6 +3322,35 @@ export interface components {
             grammarTopics?: components["schemas"]["WeakPoint"][];
             /** @description Weakest first */
             words?: components["schemas"]["WeakPoint"][];
+        };
+        WeakSpotsRequest: {
+            /**
+             * Format: int32
+             * @description How many exercises; defaults to 10
+             * @example 10
+             */
+            count?: number;
+            /** @description Exercise formats; empty or absent means your preferred formats, or else all */
+            types?: ("FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION")[];
+        };
+        /** @description The exercise set being written for your weak spots */
+        WeakSpotsStarted: {
+            /**
+             * Format: uuid
+             * @description Follow it with GET /api/ai/jobs/{id}, then open the set
+             */
+            aiJobId?: string;
+            /** Format: uuid */
+            exerciseSetId?: string;
+            /** @description Your frequent mistakes it tests, as given to the AI */
+            focusMistakes?: string[];
+            /** @description The weakest topics it practises */
+            grammarTopics?: components["schemas"]["WeakPoint"][];
+            /**
+             * Format: int32
+             * @description Weak words offered as its practice words
+             */
+            words?: number;
         };
         WordOrderPrompt: components["schemas"]["ExercisePrompt"] & {
             instruction?: string;
@@ -6604,6 +6655,77 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["WeakPoints"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    weakSpots: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["WeakSpotsRequest"];
+            };
+        };
+        responses: {
+            /** @description The set, still generating, and its job */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeakSpotsStarted"];
                 };
             };
             /** @description Invalid request */

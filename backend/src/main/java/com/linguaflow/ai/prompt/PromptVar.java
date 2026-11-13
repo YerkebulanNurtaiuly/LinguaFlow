@@ -48,6 +48,8 @@ public enum PromptVar {
 	COMBINE("combine", Shape.LINE, 10, 0),
 	/** Practice words grouped by lesson, one "Lesson: word, word" line each (PRC-03). */
 	LESSON_VOCABULARY("lessonVocabulary", Shape.LIST, 500, 20),
+	/** The learner's frequent mistakes the exercises should test, one per line (PRG-06). */
+	FOCUS_MISTAKES("focusMistakes", Shape.LIST, 400, 10),
 
 	/** The exercise format, e.g. TRANSLATION. */
 	EXERCISE_TYPE("exerciseType", Shape.LINE, 40, 0),
