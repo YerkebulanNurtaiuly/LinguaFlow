@@ -116,6 +116,18 @@ const overviewSchema = z.object({
 }) satisfies z.ZodType<ApiPracticeOverview>
 export type PracticeOverview = z.infer<typeof overviewSchema>
 
+export type ListedPracticeSession = z.infer<typeof listedSchema>
+
+const listedPageSchema = z.object({ content: z.array(listedSchema) })
+
+/** The latest practice sessions, newest first. */
+export async function fetchRecentPracticeSessions(
+  size = 5,
+): Promise<ListedPracticeSession[]> {
+  const { data } = await api.get('/practice-sessions', { params: { size } })
+  return listedPageSchema.parse(data).content
+}
+
 export async function fetchPracticeOverview(): Promise<PracticeOverview> {
   const { data } = await api.get('/practice-sessions/overview')
   return overviewSchema.parse(data)

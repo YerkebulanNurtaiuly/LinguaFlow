@@ -16,6 +16,46 @@ import { fakeApi } from './fakeApi'
 
 export const TEST_ACCESS_TOKEN = 'test-access-token'
 
+const emptyPage = {
+  content: [],
+  page: 0,
+  size: 20,
+  totalElements: 0,
+  totalPages: 0,
+}
+
+/** A learner with nothing reviewed yet. */
+export const emptyReviewStats = {
+  today: '2026-11-13',
+  dueToday: 0,
+  newAvailable: 0,
+  reviewedToday: 0,
+  dailyReviewGoal: 50,
+  currentStreak: 0,
+  longestStreak: 0,
+  retention: { days: 30, reviews: 0, remembered: 0, rate: null },
+  forecast: [],
+}
+
+const emptyMaterial = {
+  total: 0,
+  byStatus: [],
+  byLevel: [],
+  unleveled: 0,
+}
+
+/** A learner with no practice yet. */
+export const emptyProgressStats = {
+  today: '2026-11-13',
+  words: emptyMaterial,
+  grammarTopics: emptyMaterial,
+  activity: [],
+  accuracy: [],
+  currentStreak: 0,
+  longestStreak: 0,
+  timeStudied: { todayMs: 0, periodMs: 0, totalMs: 0 },
+}
+
 export const testUser: CurrentUser = {
   id: '0190a6f0-0000-7000-8000-000000000001',
   email: 'anna@example.com',
@@ -104,6 +144,34 @@ export function renderRoute(
   })
   fakeApi.fallback('GET', '/grammar-topics/catalog', { status: 200, data: [] })
   fakeApi.fallback('GET', '/study-sessions/active', { status: 204 })
+  // The dashboard (FE-PRG-01), where logged-in tests usually land
+  fakeApi.fallback('GET', '/reviews/stats', {
+    status: 200,
+    data: emptyReviewStats,
+  })
+  fakeApi.fallback('GET', '/progress/stats', {
+    status: 200,
+    data: emptyProgressStats,
+  })
+  fakeApi.fallback('GET', '/progress/weak-points', {
+    status: 200,
+    data: { grammarTopics: [], words: [] },
+  })
+  fakeApi.fallback('GET', '/practice-sessions', {
+    status: 200,
+    data: emptyPage,
+  })
+  fakeApi.fallback('GET', '/practice-sessions/overview', {
+    status: 200,
+    data: {
+      currentLesson: null,
+      words: 0,
+      freshWords: 0,
+      topics: 0,
+      practiceSessionLength: 20,
+      inProgress: null,
+    },
+  })
   fakeApi.fallback('GET', '/study-sessions/timeline', {
     status: 200,
     data: {

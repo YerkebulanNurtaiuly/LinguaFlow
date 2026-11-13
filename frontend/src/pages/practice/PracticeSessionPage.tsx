@@ -14,6 +14,7 @@ import {
 } from '@/components/ui'
 import type { Exercise } from '@/exercises/exercisesApi'
 import { FLASHCARDS_QUERY_KEY } from '@/flashcards/queries'
+import { PROGRESS_QUERY_KEY } from '@/progress/queries'
 import { ExerciseCard } from '@/pages/exercises/ExerciseCard'
 import { formatScore, TYPE_LABELS } from '@/pages/exercises/exerciseText'
 import { GermanText, ReviewCard } from '@/pages/flashcards/ReviewCard'
@@ -124,6 +125,7 @@ function Player({ session }: { session: PracticeSession }) {
         }),
         queryClient.invalidateQueries({ queryKey: REVIEWS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: FLASHCARDS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PROGRESS_QUERY_KEY }),
       ])
     },
   })

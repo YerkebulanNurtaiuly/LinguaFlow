@@ -340,7 +340,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRG-06 — Personalized exercise generation** (M) — _deps: PRG-03, EX-02_
   "Practice my weak spots" — generate exercises targeting the top weak topics and frequent error types, using weak vocabulary.
 
-- [ ] **FE-PRG-01 — Dashboard** (M) — _deps: PRG-05_
+- [x] **FE-PRG-01 — Dashboard** (M) — _deps: PRG-05_
   Today's due reviews, daily goal ring, streak, quick-start buttons for each practice mode, recent sessions, weak topics.
 
 - [ ] **FE-PRG-02 — Progress page** (L) — _deps: PRG-03, PRG-04, PRG-05_

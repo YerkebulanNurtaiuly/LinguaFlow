@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Badge, Button } from '@/components/ui'
@@ -8,6 +8,7 @@ import {
   type Exercise,
   type ExerciseAnswer,
 } from '@/exercises/exercisesApi'
+import { PROGRESS_QUERY_KEY } from '@/progress/queries'
 import { AnswerFeedback } from './AnswerFeedback'
 import {
   ChoiceInput,
@@ -86,6 +87,7 @@ export function ExerciseCard({
     shownAt.current = Date.now()
   }, [])
 
+  const queryClient = useQueryClient()
   const submit = useMutation({
     mutationFn: (answer: ExerciseAnswer) =>
       submitAttempt(
@@ -94,7 +96,11 @@ export function ExerciseCard({
         Date.now() - shownAt.current,
         practiceSessionId,
       ),
-    onSuccess: onAnswered,
+    onSuccess: (result) => {
+      onAnswered(result)
+      // Progress figures (PRG-01) change with every answer
+      void queryClient.invalidateQueries({ queryKey: PROGRESS_QUERY_KEY })
+    },
     // The global toast reports a failure (e.g. the AI being busy); the answer stays
   })
   const result = submit.data

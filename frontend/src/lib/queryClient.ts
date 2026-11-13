@@ -11,6 +11,8 @@ import { errorNotifier } from './errorNotifier'
 export interface AppMeta extends Record<string, unknown> {
   /** false: the component shows this error itself, so no toast */
   errorToast?: boolean
+  /** The toast's title when this mutation fails; defaults to "Couldn't save your changes" */
+  errorTitle?: string
 }
 
 declare module '@tanstack/react-query' {
@@ -49,7 +51,8 @@ export function createQueryClient(config: QueryClientConfig = {}): QueryClient {
         if (mutation.options.meta?.errorToast === false) return
         if (mutation.options.onError || endsSession(error)) return
         errorNotifier.notify({
-          title: "Couldn't save your changes",
+          title:
+            mutation.options.meta?.errorTitle ?? "Couldn't save your changes",
           description: describeError(error),
         })
       },

@@ -1,6 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
 import { GENERATING_POLL_MS } from '@/exercises/queries'
-import { fetchPracticeOverview, fetchPracticeSession } from './practiceApi'
+import {
+  fetchPracticeOverview,
+  fetchPracticeSession,
+  fetchRecentPracticeSessions,
+} from './practiceApi'
 
 export const PRACTICE_QUERY_KEY = ['practice'] as const
 
@@ -9,6 +13,14 @@ export function usePracticeOverview() {
   return useQuery({
     queryKey: [...PRACTICE_QUERY_KEY, 'overview'],
     queryFn: fetchPracticeOverview,
+  })
+}
+
+/** The latest practice sessions, for the dashboard. */
+export function useRecentPracticeSessions() {
+  return useQuery({
+    queryKey: [...PRACTICE_QUERY_KEY, 'recent'],
+    queryFn: () => fetchRecentPracticeSessions(),
   })
 }
 

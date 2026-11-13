@@ -3,6 +3,7 @@ import { useCallback, useMemo, useRef, useState } from 'react'
 import { describeError } from '@/api/errors'
 import { useToast } from '@/components/ui'
 import { FLASHCARDS_QUERY_KEY } from '@/flashcards/queries'
+import { PROGRESS_QUERY_KEY } from '@/progress/queries'
 import { REVIEWS_QUERY_KEY } from '@/reviews/queries'
 import {
   fetchReviewQueue,
@@ -56,6 +57,7 @@ export function useReviewSession() {
       Promise.all([
         queryClient.invalidateQueries({ queryKey: REVIEWS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: FLASHCARDS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PROGRESS_QUERY_KEY }),
       ]),
     [queryClient],
   )
