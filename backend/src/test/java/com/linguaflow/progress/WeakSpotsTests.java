@@ -12,35 +12,28 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import com.linguaflow.TestcontainersConfiguration;
 import com.linguaflow.ai.AiUseCase;
 import com.linguaflow.ai.FakeLlmClient;
-import com.linguaflow.ai.LlmClient;
 import com.linguaflow.ai.job.AiJobWorker;
 import com.linguaflow.auth.AccessTokenService;
 import com.linguaflow.auth.RegistrationService;
+import com.linguaflow.testsupport.IntegrationTest;
+import com.linguaflow.testsupport.TestData;
+import com.linguaflow.testsupport.TestData.ExerciseSetIds;
 import com.linguaflow.testsupport.TestUsers;
 import com.linguaflow.testsupport.TestUsers.TestUser;
 import com.linguaflow.user.UserRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.json.JsonMapper;
 
 /** "Practise my weak spots" end to end (PRG-06), with a scripted fake model. */
-@SpringBootTest
-@AutoConfigureMockMvc
-@Import(TestcontainersConfiguration.class)
-@ActiveProfiles("test")
+@IntegrationTest
 class WeakSpotsTests {
 
 	private static final JsonMapper JSON = JsonMapper.builder().build();
@@ -63,57 +56,23 @@ class WeakSpotsTests {
 	private AccessTokenService accessTokens;
 
 	@Autowired
-	private LlmClient client;
-
-	@Autowired
 	private AiJobWorker worker;
 
 	private TestUser anna;
 
 	private TestUser ben;
 
-	private UUID set;
-
-	private FakeLlmClient fake() {
-		return (FakeLlmClient) client;
-	}
+	private TestData data;
 
 	@BeforeEach
 	void setUp() {
 		users.deleteAll();
 		jdbc.update("delete from ai_jobs");
-		fake().reset();
 		TestUsers testUsers = new TestUsers(registration, accessTokens, jdbc);
 		anna = testUsers.learner("anna@example.de");
 		ben = testUsers.learner("ben@example.de");
 		jdbc.update("update user_languages set preferred_exercise_types = '{FILL_BLANK}' where user_id = ?", anna.id());
-		set = UUID.randomUUID();
-		jdbc.update("insert into exercise_sets (id, user_id, language_code, source, request, status) "
-				+ "values (?, ?, 'de', 'MANUAL', '{\"count\":3}', 'READY')", set, anna.id());
-	}
-
-	@AfterEach
-	void tearDown() {
-		fake().reset();
-	}
-
-	private UUID topic(String title) {
-		UUID id = UUID.randomUUID();
-		jdbc.update("insert into grammar_topics (id, user_id, language_code, title, normalized_title) "
-				+ "values (?, ?, 'de', ?, ?)", id, anna.id(), title, title.toLowerCase());
-		return id;
-	}
-
-	private UUID gapExercise(String text, String answer, UUID topic, UUID word) {
-		UUID id = UUID.randomUUID();
-		Integer position = jdbc.queryForObject("select count(*) from exercises where exercise_set_id = ?",
-				Integer.class, set);
-		jdbc.update("insert into exercises (id, exercise_set_id, user_id, position, type, prompt, solution) "
-				+ "values (?, ?, ?, ?, 'FILL_BLANK', ?::jsonb, ?::jsonb)", id, set, anna.id(), position,
-				"{\"text\":\"" + text + "\"}", "{\"blanks\":[{\"answer\":\"" + answer + "\",\"alternatives\":[]}]}");
-		jdbc.update("insert into exercise_grammar_topics (exercise_id, grammar_topic_id) values (?, ?)", id, topic);
-		jdbc.update("insert into exercise_vocabulary (exercise_id, vocabulary_item_id) values (?, ?)", id, word);
-		return id;
+		data = new TestData(jdbc);
 	}
 
 	private void answer(UUID exercise, String blank) throws Exception {
@@ -123,17 +82,17 @@ class WeakSpotsTests {
 	}
 
 	@Test
-	void aSetIsWrittenForTheWeakestTopicTestingItsMistakes() throws Exception {
-		UUID hund = UUID.randomUUID();
-		jdbc.update("insert into vocabulary_items (id, user_id, language_code, lemma, normalized_lemma, translation, "
-				+ "ai_status) values (?, ?, 'de', 'der Hund', 'hund', 'dog', 'READY')", hund, anna.id());
-		UUID haus = UUID.randomUUID();
-		jdbc.update("insert into vocabulary_items (id, user_id, language_code, lemma, normalized_lemma, translation, "
-				+ "ai_status) values (?, ?, 'de', 'das Haus', 'haus', 'house', 'READY')", haus, anna.id());
-		UUID dativ = topic("Dativ");
-		UUID perfekt = topic("Perfekt");
-		UUID weak = gapExercise("Ich gebe ___ Hund Wasser.", "dem", dativ, hund);
-		UUID solid = gapExercise("Ich bin ___.", "gegangen", perfekt, haus);
+	void aSetIsWrittenForTheWeakestTopicTestingItsMistakes(FakeLlmClient fake) throws Exception {
+		UUID hund = data.word(anna.id(), "der Hund").translation("dog").insert();
+		UUID haus = data.word(anna.id(), "das Haus").translation("house").insert();
+		UUID dativ = data.topic(anna.id(), "Dativ").insert();
+		UUID perfekt = data.topic(anna.id(), "Perfekt").insert();
+		ExerciseSetIds set = data.exerciseSet(anna.id())
+			.with(TestData.fillBlank("Ich gebe ___ Hund Wasser.", "dem").topics(dativ).words(hund),
+					TestData.fillBlank("Ich bin ___.", "gegangen").topics(perfekt).words(haus))
+			.insert();
+		UUID weak = set.exercise(0);
+		UUID solid = set.exercise(1);
 		// Answering through the API updates the progress and the weak-point scores
 		answer(weak, "den");
 		answer(weak, "den");
@@ -141,7 +100,7 @@ class WeakSpotsTests {
 			answer(solid, "gegangen");
 		}
 
-		fake().respondTo(AiUseCase.EXERCISE_GENERATION, prompt -> {
+		fake.respondTo(AiUseCase.EXERCISE_GENERATION, prompt -> {
 			Matcher matcher = COUNT.matcher(prompt.user());
 			assertThat(matcher.find()).isTrue();
 			List<Map<String, Object>> items = new ArrayList<>();
@@ -175,7 +134,7 @@ class WeakSpotsTests {
 
 		worker.runDueJobs();
 
-		String prompt = fake().calls().getFirst().prompt().user();
+		String prompt = fake.calls().getFirst().prompt().user();
 		assertThat(prompt).contains("The learner keeps making these mistakes")
 			.contains("<focus_mistakes>")
 			.contains("- " + mistake)

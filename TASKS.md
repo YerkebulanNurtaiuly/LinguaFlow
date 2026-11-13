@@ -352,7 +352,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 15: Testing (`QA`)
 
-- [ ] **QA-01 — Backend test foundation** (S) — _deps: INF-02_
+- [x] **QA-01 — Backend test foundation** (S) — _deps: INF-02_
   Testcontainers PostgreSQL base class (reused container), test data builders, `FakeLlmClient` wiring, security test helpers (`@WithMockUser`-style for JWT).
 
 - [ ] **QA-02 — Module integration tests** (ongoing)
