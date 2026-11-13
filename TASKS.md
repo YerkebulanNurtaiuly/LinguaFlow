@@ -343,7 +343,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **FE-PRG-01 — Dashboard** (M) — _deps: PRG-05_
   Today's due reviews, daily goal ring, streak, quick-start buttons for each practice mode, recent sessions, weak topics.
 
-- [ ] **FE-PRG-02 — Progress page** (L) — _deps: PRG-03, PRG-04, PRG-05_
+- [x] **FE-PRG-02 — Progress page** (L) — _deps: PRG-03, PRG-04, PRG-05_
   Charts (activity heatmap, accuracy over time, mastery breakdown), weak-points list with "practice now", frequent-mistakes view.
 
 ---

@@ -23,6 +23,7 @@ import { ExercisePlayerPage } from '@/pages/exercises/ExercisePlayerPage'
 import { GrammarTopicPage } from '@/pages/grammar/topic/GrammarTopicPage'
 import { DashboardPage } from '@/pages/dashboard/DashboardPage'
 import { PracticePage } from '@/pages/practice/PracticePage'
+import { ProgressPage } from '@/pages/progress/ProgressPage'
 import { PracticeSessionPage } from '@/pages/practice/PracticeSessionPage'
 import { SessionPage } from '@/pages/sessions/SessionPage'
 import { SessionsPage } from '@/pages/sessions/SessionsPage'
@@ -34,6 +35,7 @@ const title = (value: string): RouteHandle => ({ title: value })
 /** Sections that are built; the others still show a placeholder. */
 const SECTION_PAGES: Partial<Record<string, ReactNode>> = {
   '/dashboard': <DashboardPage />,
+  '/progress': <ProgressPage />,
   '/settings': <SettingsPage />,
   '/grammar': <GrammarPage />,
   '/sessions': <SessionsPage />,

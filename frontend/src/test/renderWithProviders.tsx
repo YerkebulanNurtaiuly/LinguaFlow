@@ -157,6 +157,10 @@ export function renderRoute(
     status: 200,
     data: { grammarTopics: [], words: [] },
   })
+  fakeApi.fallback('GET', '/progress/mistakes', {
+    status: 200,
+    data: { groupBy: 'TYPE', since: null, total: 0, groups: [] },
+  })
   fakeApi.fallback('GET', '/practice-sessions', {
     status: 200,
     data: emptyPage,

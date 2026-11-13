@@ -1,9 +1,11 @@
 import { z } from 'zod'
 import type {
+  FrequentMistakes as ApiFrequentMistakes,
   ProgressStats as ApiProgressStats,
   WeakPoints as ApiWeakPoints,
   WeakSpotsStarted as ApiWeakSpotsStarted,
 } from '@/api/types'
+import { EXERCISE_TYPES } from '@/exercises/exercisesApi'
 import { api } from '@/lib/api'
 
 const optional = <T extends z.ZodType>(schema: T) =>
@@ -114,4 +116,60 @@ export async function fetchWeakPoints(limit = 5): Promise<WeakPoints> {
 export async function startWeakSpots(): Promise<WeakSpotsStarted> {
   const { data } = await api.post('/progress/weak-spots/exercises', {})
   return weakSpotsSchema.parse(data)
+}
+
+const topicSchema = z.object({ id: z.string(), title: z.string() })
+
+const mistakeGroupSchema = z.object({
+  errorType: optional(z.string()),
+  grammarTopic: optional(topicSchema),
+  count: z.number(),
+  lastSeenAt: z.string(),
+  breakdown: z.array(
+    z.object({
+      errorType: optional(z.string()),
+      grammarTopic: optional(topicSchema),
+      count: z.number(),
+    }),
+  ),
+  examples: z.array(
+    z.object({
+      mistakeId: z.string(),
+      errorType: z.string(),
+      excerpt: optional(z.string()),
+      explanation: optional(z.string()),
+      madeAt: z.string(),
+      grammarTopic: optional(topicSchema),
+      attempt: optional(
+        z.object({
+          exerciseId: z.string(),
+          exerciseType: z.enum(EXERCISE_TYPES),
+          exercise: z.string(),
+          answer: z.string(),
+          correctAnswer: z.string(),
+        }),
+      ),
+    }),
+  ),
+})
+export type MistakeGroup = z.infer<typeof mistakeGroupSchema>
+
+const mistakesSchema = z.object({
+  groupBy: z.enum(['TYPE', 'TOPIC']),
+  since: optional(z.string()),
+  total: z.number(),
+  groups: z.array(mistakeGroupSchema),
+}) satisfies z.ZodType<ApiFrequentMistakes>
+export type FrequentMistakes = z.infer<typeof mistakesSchema>
+export type MistakeGrouping = FrequentMistakes['groupBy']
+
+/** Frequent mistakes (PRG-04) over the last {@code days} days. */
+export async function fetchFrequentMistakes(
+  groupBy: MistakeGrouping,
+  days: number,
+): Promise<FrequentMistakes> {
+  const { data } = await api.get('/progress/mistakes', {
+    params: { groupBy, days, limit: 10, examples: 2 },
+  })
+  return mistakesSchema.parse(data)
 }

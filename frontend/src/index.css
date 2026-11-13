@@ -34,6 +34,18 @@
   --color-article-der: var(--lf-article-der);
   --color-article-die: var(--lf-article-die);
   --color-article-das: var(--lf-article-das);
+  /* Charts (FE-PRG-02), validated with the dataviz palette checks: an ordinal blue
+     ramp (low to high) with the ink for labels inside each step, and two line series */
+  --color-viz-1: var(--lf-viz-1);
+  --color-viz-2: var(--lf-viz-2);
+  --color-viz-3: var(--lf-viz-3);
+  --color-viz-4: var(--lf-viz-4);
+  --color-viz-1-ink: var(--lf-viz-1-ink);
+  --color-viz-2-ink: var(--lf-viz-2-ink);
+  --color-viz-3-ink: var(--lf-viz-3-ink);
+  --color-viz-4-ink: var(--lf-viz-4-ink);
+  --color-viz-series-1: var(--lf-viz-series-1);
+  --color-viz-series-2: var(--lf-viz-series-2);
 }
 
 :root {
@@ -65,6 +77,16 @@
   --lf-article-der: var(--color-blue-700);
   --lf-article-die: var(--color-rose-700);
   --lf-article-das: var(--color-emerald-700);
+  --lf-viz-1: #86b6ef;
+  --lf-viz-2: #5598e7;
+  --lf-viz-3: #256abf;
+  --lf-viz-4: #184f95;
+  --lf-viz-1-ink: #0b0b0b;
+  --lf-viz-2-ink: #0b0b0b;
+  --lf-viz-3-ink: #ffffff;
+  --lf-viz-4-ink: #ffffff;
+  --lf-viz-series-1: #2a78d6;
+  --lf-viz-series-2: #eb6834;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -113,6 +135,16 @@
     --lf-article-der: var(--color-blue-300);
     --lf-article-die: var(--color-rose-300);
     --lf-article-das: var(--color-emerald-300);
+    --lf-viz-1: #184f95;
+    --lf-viz-2: #256abf;
+    --lf-viz-3: #5598e7;
+    --lf-viz-4: #86b6ef;
+    --lf-viz-1-ink: #ffffff;
+    --lf-viz-2-ink: #ffffff;
+    --lf-viz-3-ink: #0b0b0b;
+    --lf-viz-4-ink: #0b0b0b;
+    --lf-viz-series-1: #3987e5;
+    --lf-viz-series-2: #d95926;
   }
 }
 
@@ -157,6 +189,16 @@
   --lf-article-der: var(--color-blue-300);
   --lf-article-die: var(--color-rose-300);
   --lf-article-das: var(--color-emerald-300);
+  --lf-viz-1: #184f95;
+  --lf-viz-2: #256abf;
+  --lf-viz-3: #5598e7;
+  --lf-viz-4: #86b6ef;
+  --lf-viz-1-ink: #ffffff;
+  --lf-viz-2-ink: #ffffff;
+  --lf-viz-3-ink: #0b0b0b;
+  --lf-viz-4-ink: #0b0b0b;
+  --lf-viz-series-1: #3987e5;
+  --lf-viz-series-2: #d95926;
 }
 
 body {

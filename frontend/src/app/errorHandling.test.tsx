@@ -19,17 +19,17 @@ import { renderApp } from '@/test/renderWithProviders'
 
 vi.mock('@/lib/health', () => ({ fetchHealth: vi.fn() }))
 
-// Lets a test make the Progress placeholder crash while rendering
+// Lets a test make the Progress page crash while rendering
 const crash = vi.hoisted(() => ({ progress: false }))
-vi.mock('@/pages/PlaceholderPage', async (importOriginal) => {
+vi.mock('@/pages/progress/ProgressPage', async (importOriginal) => {
   const original =
-    await importOriginal<typeof import('@/pages/PlaceholderPage')>()
+    await importOriginal<typeof import('@/pages/progress/ProgressPage')>()
   return {
-    PlaceholderPage: (props: { title: string; description: string }) => {
-      if (crash.progress && props.title === 'Progress') {
+    ProgressPage: () => {
+      if (crash.progress) {
         throw new Error('Progress exploded')
       }
-      return <original.PlaceholderPage {...props} />
+      return <original.ProgressPage />
     },
   }
 })
