@@ -736,6 +736,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/mistakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your frequent mistakes
+         * @description The active language's exercise mistakes grouped by error type or by grammar topic, most frequent first. Each group breaks down the other dimension and shows your latest wrong answers.
+         */
+        get: operations["mistakes"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/progress/weak-points": {
         parameters: {
             query?: never;
@@ -1885,6 +1905,22 @@ export interface components {
             /** @enum {string} */
             state?: "NEW" | "LEARNING" | "REVIEW" | "RELEARNING";
         };
+        FrequentMistakes: {
+            /** @enum {string} */
+            groupBy?: "TYPE" | "TOPIC";
+            /** @description Most frequent first */
+            groups?: components["schemas"]["MistakeGroup"][];
+            /**
+             * Format: date-time
+             * @description The start of the period; null for all time
+             */
+            since?: string;
+            /**
+             * Format: int32
+             * @description Mistakes counted, in every group
+             */
+            total?: number;
+        };
         GrammarCatalogEntry: {
             /** @enum {string} */
             cefrLevel?: "A1" | "A2" | "B1" | "B2" | "C1" | "C2";
@@ -2023,6 +2059,32 @@ export interface components {
             /** Format: uuid */
             id?: string;
         };
+        /** @description The answer the mistake was made in */
+        MistakeAttempt: {
+            /** @description What you answered */
+            answer?: string;
+            correctAnswer?: string;
+            /** @description The exercise as you saw it */
+            exercise?: string;
+            /** Format: uuid */
+            exerciseId?: string;
+            /** @enum {string} */
+            exerciseType?: "FILL_BLANK" | "MULTIPLE_CHOICE" | "TRANSLATION" | "SENTENCE_CONSTRUCTION" | "ERROR_CORRECTION" | "WORD_ORDER" | "TRANSFORMATION";
+        };
+        /** @description One of your wrong answers */
+        MistakeExample: {
+            attempt?: components["schemas"]["MistakeAttempt"];
+            errorType?: string;
+            /** @description The wrong part, e.g. what you typed into a gap */
+            excerpt?: string;
+            /** @description Why it's wrong, when the AI graded it */
+            explanation?: string;
+            grammarTopic?: components["schemas"]["MistakeTopic"];
+            /** Format: date-time */
+            madeAt?: string;
+            /** Format: uuid */
+            mistakeId?: string;
+        };
         /** @description Why an answer was wrong, in your explanation language */
         MistakeExplanation: {
             /** @description True when the answer turned out to be fine after all */
@@ -2047,6 +2109,33 @@ export interface components {
         MistakeExplanationExample: {
             sentence?: string;
             translation?: string;
+        };
+        MistakeGroup: {
+            /** @description The other dimension, most frequent first */
+            breakdown?: components["schemas"]["MistakeSlice"][];
+            /** Format: int32 */
+            count?: number;
+            /** @description TYPE grouping: the error type, e.g. WRONG_CASE */
+            errorType?: string;
+            /** @description The latest, newest first */
+            examples?: components["schemas"]["MistakeExample"][];
+            /** @description TOPIC grouping: the topic; null for mistakes without one */
+            grammarTopic?: components["schemas"]["MistakeTopic"];
+            /** Format: date-time */
+            lastSeenAt?: string;
+        };
+        /** @description Part of a group: a topic in an error-type group, or an error type in a topic group */
+        MistakeSlice: {
+            /** Format: int32 */
+            count?: number;
+            errorType?: string;
+            /** @description Null for mistakes without a topic, e.g. a wrong word */
+            grammarTopic?: components["schemas"]["MistakeTopic"];
+        };
+        MistakeTopic: {
+            /** Format: uuid */
+            id?: string;
+            title?: string;
         };
         MultipleChoicePrompt: components["schemas"]["ExercisePrompt"] & {
             instruction?: string;
@@ -6180,6 +6269,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PracticeSessionStarted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    mistakes: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description TYPE (default) or TOPIC */
+                groupBy?: "TYPE" | "TOPIC";
+                /** @description Only the last this many days, 1–3650; absent means all time */
+                days?: number;
+                /** @description Only this grammar topic's mistakes */
+                grammarTopicId?: string;
+                /** @description At most this many groups, 1–50 */
+                limit?: number;
+                /** @description Examples per group, 0–10 */
+                examples?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The mistakes */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FrequentMistakes"];
                 };
             };
             /** @description Invalid request */

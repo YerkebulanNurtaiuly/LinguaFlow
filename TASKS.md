@@ -331,7 +331,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRG-03 — Weak-point analysis** (M) — _deps: PRG-01_
   Weakness score per grammar topic and vocabulary item (error rate, recency, lapses). `GET /api/progress/weak-points` returns top N with reasons. Feeds PRC-01 weighting.
 
-- [ ] **PRG-04 — Frequent mistakes** (S) — _deps: PRG-01, EX-04_
+- [x] **PRG-04 — Frequent mistakes** (S) — _deps: PRG-01, EX-04_
   `GET /api/progress/mistakes` grouped by error type/topic with examples of the user's own wrong answers.
 
 - [ ] **PRG-05 — Statistics API** (M) — _deps: PRG-01, SRS-03_

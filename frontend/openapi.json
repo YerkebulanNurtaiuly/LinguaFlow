@@ -4025,6 +4025,133 @@
         "tags" : [ "Practice" ]
       }
     },
+    "/api/progress/mistakes" : {
+      "get" : {
+        "description" : "The active language's exercise mistakes grouped by error type or by grammar topic, most frequent first. Each group breaks down the other dimension and shows your latest wrong answers.",
+        "operationId" : "mistakes",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "TYPE (default) or TOPIC",
+          "in" : "query",
+          "name" : "groupBy",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "TYPE",
+            "enum" : [ "TYPE", "TOPIC" ]
+          }
+        }, {
+          "description" : "Only the last this many days, 1–3650; absent means all time",
+          "in" : "query",
+          "name" : "days",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }, {
+          "description" : "Only this grammar topic's mistakes",
+          "in" : "query",
+          "name" : "grammarTopicId",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "At most this many groups, 1–50",
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10
+          }
+        }, {
+          "description" : "Examples per group, 0–10",
+          "in" : "query",
+          "name" : "examples",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 3
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/FrequentMistakes"
+                }
+              }
+            },
+            "description" : "The mistakes"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Your frequent mistakes",
+        "tags" : [ "Progress" ]
+      }
+    },
     "/api/progress/weak-points" : {
       "get" : {
         "description" : "The active language's weakest grammar topics and words that you have practised, weakest first, each with why: low recent accuracy, a frequent mistake, card lapses or a long break. Scores below 0.2 aren't listed.",
@@ -8958,6 +9085,32 @@
           }
         }
       },
+      "FrequentMistakes" : {
+        "type" : "object",
+        "properties" : {
+          "groupBy" : {
+            "type" : "string",
+            "enum" : [ "TYPE", "TOPIC" ]
+          },
+          "groups" : {
+            "type" : "array",
+            "description" : "Most frequent first",
+            "items" : {
+              "$ref" : "#/components/schemas/MistakeGroup"
+            }
+          },
+          "since" : {
+            "type" : "string",
+            "format" : "date-time",
+            "description" : "The start of the period; null for all time"
+          },
+          "total" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Mistakes counted, in every group"
+          }
+        }
+      },
       "GrammarCatalogEntry" : {
         "type" : "object",
         "properties" : {
@@ -9231,6 +9384,62 @@
           }
         }
       },
+      "MistakeAttempt" : {
+        "type" : "object",
+        "description" : "The answer the mistake was made in",
+        "properties" : {
+          "answer" : {
+            "type" : "string",
+            "description" : "What you answered"
+          },
+          "correctAnswer" : {
+            "type" : "string"
+          },
+          "exercise" : {
+            "type" : "string",
+            "description" : "The exercise as you saw it"
+          },
+          "exerciseId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "exerciseType" : {
+            "type" : "string",
+            "enum" : [ "FILL_BLANK", "MULTIPLE_CHOICE", "TRANSLATION", "SENTENCE_CONSTRUCTION", "ERROR_CORRECTION", "WORD_ORDER", "TRANSFORMATION" ]
+          }
+        }
+      },
+      "MistakeExample" : {
+        "type" : "object",
+        "description" : "One of your wrong answers",
+        "properties" : {
+          "attempt" : {
+            "$ref" : "#/components/schemas/MistakeAttempt"
+          },
+          "errorType" : {
+            "type" : "string"
+          },
+          "excerpt" : {
+            "type" : "string",
+            "description" : "The wrong part, e.g. what you typed into a gap"
+          },
+          "explanation" : {
+            "type" : "string",
+            "description" : "Why it's wrong, when the AI graded it"
+          },
+          "grammarTopic" : {
+            "$ref" : "#/components/schemas/MistakeTopic"
+          },
+          "madeAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "mistakeId" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }
+      },
       "MistakeExplanation" : {
         "type" : "object",
         "description" : "Why an answer was wrong, in your explanation language",
@@ -9279,6 +9488,70 @@
             "type" : "string"
           },
           "translation" : {
+            "type" : "string"
+          }
+        }
+      },
+      "MistakeGroup" : {
+        "type" : "object",
+        "properties" : {
+          "breakdown" : {
+            "type" : "array",
+            "description" : "The other dimension, most frequent first",
+            "items" : {
+              "$ref" : "#/components/schemas/MistakeSlice"
+            }
+          },
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorType" : {
+            "type" : "string",
+            "description" : "TYPE grouping: the error type, e.g. WRONG_CASE"
+          },
+          "examples" : {
+            "type" : "array",
+            "description" : "The latest, newest first",
+            "items" : {
+              "$ref" : "#/components/schemas/MistakeExample"
+            }
+          },
+          "grammarTopic" : {
+            "$ref" : "#/components/schemas/MistakeTopic",
+            "description" : "TOPIC grouping: the topic; null for mistakes without one"
+          },
+          "lastSeenAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          }
+        }
+      },
+      "MistakeSlice" : {
+        "type" : "object",
+        "description" : "Part of a group: a topic in an error-type group, or an error type in a topic group",
+        "properties" : {
+          "count" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "errorType" : {
+            "type" : "string"
+          },
+          "grammarTopic" : {
+            "$ref" : "#/components/schemas/MistakeTopic",
+            "description" : "Null for mistakes without a topic, e.g. a wrong word"
+          }
+        }
+      },
+      "MistakeTopic" : {
+        "type" : "object",
+        "properties" : {
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "title" : {
             "type" : "string"
           }
         }
