@@ -334,7 +334,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRG-04 — Frequent mistakes** (S) — _deps: PRG-01, EX-04_
   `GET /api/progress/mistakes` grouped by error type/topic with examples of the user's own wrong answers.
 
-- [ ] **PRG-05 — Statistics API** (M) — _deps: PRG-01, SRS-03_
+- [x] **PRG-05 — Statistics API** (M) — _deps: PRG-01, SRS-03_
   Dashboard data: total words/topics by status, reviews per day (heatmap), accuracy trend, streak, time studied, CEFR distribution.
 
 - [ ] **PRG-06 — Personalized exercise generation** (M) — _deps: PRG-03, EX-02_
