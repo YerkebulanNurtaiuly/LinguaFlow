@@ -736,6 +736,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/progress/weak-points": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Your weak points
+         * @description The active language's weakest grammar topics and words that you have practised, weakest first, each with why: low recent accuracy, a frequent mistake, card lapses or a long break. Scores below 0.2 aren't listed.
+         */
+        get: operations["weakPoints"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/reviews": {
         parameters: {
             query?: never;
@@ -3027,6 +3047,52 @@ export interface components {
              * @description How many of your words carry this tag
              */
             wordCount?: number;
+        };
+        WeakPoint: {
+            /**
+             * Format: int32
+             * @description Attempts (topics) or answers (words) counted
+             */
+            answers?: number;
+            /** Format: uuid */
+            id?: string;
+            /** Format: date-time */
+            lastPracticedAt?: string;
+            /** @description The topic's title or the word */
+            name?: string;
+            reasons?: components["schemas"]["WeakPointReason"][];
+            /**
+             * Format: double
+             * @description The recent accuracy, 0–1
+             */
+            recentAccuracy?: number;
+            /**
+             * Format: double
+             * @description 0 (solid) to 1 (weakest)
+             */
+            score?: number;
+            /** @enum {string} */
+            status?: "NEW" | "LEARNING" | "LEARNED" | "MASTERED";
+            /** @description Words only */
+            translation?: string;
+        };
+        /** @description Why it counts as weak, with the number behind it */
+        WeakPointReason: {
+            /** @enum {string} */
+            code?: "LOW_ACCURACY" | "FREQUENT_MISTAKE" | "LAPSES" | "NOT_PRACTISED_RECENTLY";
+            /** @description FREQUENT_MISTAKE only: the error type, e.g. WRONG_CASE */
+            errorType?: string;
+            /**
+             * Format: double
+             * @description LOW_ACCURACY: the recent accuracy (0–1); FREQUENT_MISTAKE: how many mistakes of errorType; LAPSES: the most lapses on one card; NOT_PRACTISED_RECENTLY: days since
+             */
+            value?: number;
+        };
+        WeakPoints: {
+            /** @description Weakest first */
+            grammarTopics?: components["schemas"]["WeakPoint"][];
+            /** @description Weakest first */
+            words?: components["schemas"]["WeakPoint"][];
         };
         WordOrderPrompt: components["schemas"]["ExercisePrompt"] & {
             instruction?: string;
@@ -6114,6 +6180,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PracticeSessionStarted"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    weakPoints: {
+        parameters: {
+            query: {
+                userId: string;
+                /** @description At most this many of each, 1–50 */
+                limit?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The weak points */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WeakPoints"];
                 };
             };
             /** @description Invalid request */

@@ -59,6 +59,9 @@
     "description" : "Your lessons and the material you studied in each",
     "name" : "Study sessions"
   }, {
+    "description" : "How your learning is going",
+    "name" : "Progress"
+  }, {
     "description" : "The grammar topics you study and how well you know them",
     "name" : "Grammar"
   }, {
@@ -4020,6 +4023,95 @@
         },
         "summary" : "Practise a session's mistakes again",
         "tags" : [ "Practice" ]
+      }
+    },
+    "/api/progress/weak-points" : {
+      "get" : {
+        "description" : "The active language's weakest grammar topics and words that you have practised, weakest first, each with why: low recent accuracy, a frequent mistake, card lapses or a long break. Scores below 0.2 aren't listed.",
+        "operationId" : "weakPoints",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "At most this many of each, 1–50",
+          "in" : "query",
+          "name" : "limit",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 10
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WeakPoints"
+                }
+              }
+            },
+            "description" : "The weak points"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Your weak points",
+        "tags" : [ "Progress" ]
       }
     },
     "/api/reviews" : {
@@ -11326,6 +11418,90 @@
             "type" : "integer",
             "format" : "int64",
             "description" : "How many of your words carry this tag"
+          }
+        }
+      },
+      "WeakPoint" : {
+        "type" : "object",
+        "properties" : {
+          "answers" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Attempts (topics) or answers (words) counted"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "lastPracticedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "name" : {
+            "type" : "string",
+            "description" : "The topic's title or the word"
+          },
+          "reasons" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/WeakPointReason"
+            }
+          },
+          "recentAccuracy" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "The recent accuracy, 0–1"
+          },
+          "score" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "0 (solid) to 1 (weakest)"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "NEW", "LEARNING", "LEARNED", "MASTERED" ]
+          },
+          "translation" : {
+            "type" : "string",
+            "description" : "Words only"
+          }
+        }
+      },
+      "WeakPointReason" : {
+        "type" : "object",
+        "description" : "Why it counts as weak, with the number behind it",
+        "properties" : {
+          "code" : {
+            "type" : "string",
+            "enum" : [ "LOW_ACCURACY", "FREQUENT_MISTAKE", "LAPSES", "NOT_PRACTISED_RECENTLY" ]
+          },
+          "errorType" : {
+            "type" : "string",
+            "description" : "FREQUENT_MISTAKE only: the error type, e.g. WRONG_CASE"
+          },
+          "value" : {
+            "type" : "number",
+            "format" : "double",
+            "description" : "LOW_ACCURACY: the recent accuracy (0–1); FREQUENT_MISTAKE: how many mistakes of errorType; LAPSES: the most lapses on one card; NOT_PRACTISED_RECENTLY: days since"
+          }
+        }
+      },
+      "WeakPoints" : {
+        "type" : "object",
+        "properties" : {
+          "grammarTopics" : {
+            "type" : "array",
+            "description" : "Weakest first",
+            "items" : {
+              "$ref" : "#/components/schemas/WeakPoint"
+            }
+          },
+          "words" : {
+            "type" : "array",
+            "description" : "Weakest first",
+            "items" : {
+              "$ref" : "#/components/schemas/WeakPoint"
+            }
           }
         }
       },

@@ -328,7 +328,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **PRG-02 — Mastery rules** (M) — _deps: PRG-01, GRM-02_
   Deterministic rules, e.g. grammar topic → `MASTERED` when ≥ 85% accuracy over ≥ 20 attempts across ≥ 3 different days; demoted to `LEARNED` when accuracy drops below 70%. Vocabulary mastered when SRS interval ≥ 21 days. Thresholds configurable.
 
-- [ ] **PRG-03 — Weak-point analysis** (M) — _deps: PRG-01_
+- [x] **PRG-03 — Weak-point analysis** (M) — _deps: PRG-01_
   Weakness score per grammar topic and vocabulary item (error rate, recency, lapses). `GET /api/progress/weak-points` returns top N with reasons. Feeds PRC-01 weighting.
 
 - [ ] **PRG-04 — Frequent mistakes** (S) — _deps: PRG-01, EX-04_

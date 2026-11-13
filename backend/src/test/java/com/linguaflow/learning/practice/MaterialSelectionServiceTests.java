@@ -115,6 +115,9 @@ class MaterialSelectionServiceTests {
 		word(TestUsers.insertLearner(jdbc), "fremd", "READY");
 		UUID dativ = topic(anna, "Dativ");
 		attempt(dativ, neu, 0.5, 0);
+		// The weak-point analysis's stored score (PRG-03)
+		jdbc.update("insert into vocabulary_progress (vocabulary_item_id, user_id, times_seen, times_correct, "
+				+ "weakness_score) values (?, ?, 2, 1, 0.77)", hund, anna);
 
 		Map<UUID, WordStats> stats = candidates.words(anna, "de", null)
 			.stream()
@@ -125,6 +128,8 @@ class MaterialSelectionServiceTests {
 		assertThat(dog.maxLapses()).isEqualTo(3);
 		assertThat(dog.learning()).isTrue();
 		assertThat(dog.earliestDueAt()).isBefore(dog.lastReviewedAt().plusSeconds(86_400));
+		assertThat(dog.analysedWeakness()).isEqualTo(0.77);
+		assertThat(stats.get(neu).analysedWeakness()).isNull();
 		assertThat(stats.get(neu).lastReviewedAt()).isNull();
 		assertThat(stats.get(neu).lastAttemptAt()).isNotNull();
 	}

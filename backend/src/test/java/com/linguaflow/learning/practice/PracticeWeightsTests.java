@@ -75,6 +75,17 @@ class PracticeWeightsTests {
 	}
 
 	@Test
+	void theWeakPointAnalysisReplacesTheEstimates() {
+		// Estimated from the cards, this word would be fully weak (1.0)
+		WordStats word = new WordStats(ID, daysAgo(60), KnowledgeStatus.MASTERED, 1.3, 4, true, daysAgo(1), NOW,
+				null, 0.42);
+		// Not halved again: the analysis already takes mastery into account
+		assertThat(PracticeWeights.word(word, NOW).weakness()).isEqualTo(0.42);
+		TopicStats topic = new TopicStats(ID, daysAgo(60), KnowledgeStatus.MASTERED, 10, 0.2, daysAgo(1), 0.3);
+		assertThat(PracticeWeights.topic(topic, NOW).weakness()).isEqualTo(0.3);
+	}
+
+	@Test
 	void recentlyAddedMaterialIsFresh() {
 		WordStats week = new WordStats(ID, daysAgo(6.9), KnowledgeStatus.LEARNING, 2.5, 0, false, daysAgo(1), null,
 				null);

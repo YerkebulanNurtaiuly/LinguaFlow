@@ -12,6 +12,8 @@ import org.jspecify.annotations.Nullable;
  * Pure and deterministic: the same stats and {@code now} give the same scores.
  * <ul>
  * <li><b>Fresh:</b> added in the last {@value #FRESH_DAYS} days, or never practised.</li>
+ * <li><b>Weakness:</b> the weak-point analysis's stored score (PRG-03) once the word or topic
+ * has been practised; until then the estimates below.</li>
  * <li><b>Word weakness:</b> 0.4 × how far the lowest card ease is below 2.5 (1.3 counts
  * as fully weak), + 0.3 × lapses (4 or more is fully weak), + 0.3 if a card is
  * (re)learning. A word never reviewed is 0.5, unknown. MASTERED halves it.</li>
@@ -45,24 +47,46 @@ public final class PracticeWeights {
 	 * @param lastReviewedAt its latest card review
 	 * @param earliestDueAt the earliest due date among its cards
 	 * @param lastAttemptAt its latest exercise attempt
+	 * @param analysedWeakness the weak-point analysis's score (PRG-03), null before the word
+	 * was practised; it replaces the estimate from the cards
 	 */
 	public record WordStats(UUID id, Instant createdAt, KnowledgeStatus status, @Nullable Double lowestEase,
 			int maxLapses, boolean learning, @Nullable Instant lastReviewedAt, @Nullable Instant earliestDueAt,
-			@Nullable Instant lastAttemptAt) {
+			@Nullable Instant lastAttemptAt, @Nullable Double analysedWeakness) {
+
+		public WordStats(UUID id, Instant createdAt, KnowledgeStatus status, @Nullable Double lowestEase,
+				int maxLapses, boolean learning, @Nullable Instant lastReviewedAt, @Nullable Instant earliestDueAt,
+				@Nullable Instant lastAttemptAt) {
+			this(id, createdAt, status, lowestEase, maxLapses, learning, lastReviewedAt, earliestDueAt, lastAttemptAt,
+					null);
+		}
+
 	}
 
 	/**
 	 * What's known about one grammar topic.
 	 * @param recentScore the average score of its latest attempts (0–1); null without any
+	 * @param analysedWeakness the weak-point analysis's score (PRG-03), null before the topic
+	 * was practised; it replaces the estimate from the recent score
 	 */
 	public record TopicStats(UUID id, Instant createdAt, KnowledgeStatus status, int attempts,
-			@Nullable Double recentScore, @Nullable Instant lastAttemptAt) {
+			@Nullable Double recentScore, @Nullable Instant lastAttemptAt, @Nullable Double analysedWeakness) {
+
+		public TopicStats(UUID id, Instant createdAt, KnowledgeStatus status, int attempts,
+				@Nullable Double recentScore, @Nullable Instant lastAttemptAt) {
+			this(id, createdAt, status, attempts, recentScore, lastAttemptAt, null);
+		}
+
 	}
 
 	public static PracticeCandidate word(WordStats word, Instant now) {
 		Instant lastPracticed = latest(word.lastReviewedAt(), word.lastAttemptAt());
 		double weakness;
-		if (word.lastReviewedAt() == null) {
+		if (word.analysedWeakness() != null) {
+			// PRG-03's score, which already halves MASTERED
+			weakness = word.analysedWeakness();
+		}
+		else if (word.lastReviewedAt() == null) {
 			weakness = 0.5;
 		}
 		else {
@@ -70,7 +94,7 @@ public final class PracticeWeights {
 			weakness = 0.4 * PracticeCandidate.clamp((DEFAULT_EASE - ease) / (DEFAULT_EASE - MIN_EASE))
 					+ 0.3 * Math.min(word.maxLapses(), 4) / 4.0 + (word.learning() ? 0.3 : 0);
 		}
-		if (word.status() == KnowledgeStatus.MASTERED) {
+		if (word.status() == KnowledgeStatus.MASTERED && word.analysedWeakness() == null) {
 			weakness /= 2;
 		}
 		double staleness = staleness(lastPracticed, now);
@@ -90,8 +114,9 @@ public final class PracticeWeights {
 	}
 
 	public static PracticeCandidate topic(TopicStats topic, Instant now) {
-		double weakness = topic.attempts() == 0 || topic.recentScore() == null ? 0.5 : 1 - topic.recentScore();
-		if (topic.status() == KnowledgeStatus.MASTERED) {
+		double weakness = topic.analysedWeakness() != null ? topic.analysedWeakness()
+				: topic.attempts() == 0 || topic.recentScore() == null ? 0.5 : 1 - topic.recentScore();
+		if (topic.status() == KnowledgeStatus.MASTERED && topic.analysedWeakness() == null) {
 			weakness /= 2;
 		}
 		double staleness = staleness(topic.lastAttemptAt(), now);

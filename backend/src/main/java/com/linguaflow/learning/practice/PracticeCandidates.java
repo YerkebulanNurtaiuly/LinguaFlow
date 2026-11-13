@@ -51,7 +51,9 @@ class PracticeCandidates {
 				       min(s.due_at) as earliest_due_at,
 				       (select max(a.attempted_at) from exercise_attempts a
 				          join exercise_vocabulary ev on ev.exercise_id = a.exercise_id
-				         where ev.vocabulary_item_id = v.id and a.user_id = v.user_id) as last_attempt_at
+				         where ev.vocabulary_item_id = v.id and a.user_id = v.user_id) as last_attempt_at,
+				       (select p.weakness_score from vocabulary_progress p
+				         where p.vocabulary_item_id = v.id) as analysed_weakness
 				  from vocabulary_items v
 				  left join flashcards f on f.vocabulary_item_id = v.id and f.user_id = v.user_id
 				  left join srs_state s on s.flashcard_id = f.id and s.user_id = v.user_id
@@ -77,7 +79,9 @@ class PracticeCandidates {
 				           order by a.attempted_at desc limit ?) recent) as recent_score,
 				       (select max(a.attempted_at) from exercise_attempts a
 				          join exercise_grammar_topics eg on eg.exercise_id = a.exercise_id
-				         where eg.grammar_topic_id = t.id and a.user_id = t.user_id) as last_attempt_at
+				         where eg.grammar_topic_id = t.id and a.user_id = t.user_id) as last_attempt_at,
+				       (select p.weakness_score from grammar_topic_progress p
+				         where p.grammar_topic_id = t.id) as analysed_weakness
 				  from grammar_topics t
 				 where t.user_id = ? and t.language_code = ?
 				   and (cast(? as uuid) is null or exists (
@@ -155,7 +159,7 @@ class PracticeCandidates {
 		return new WordStats(rs.getObject("id", UUID.class), instant(rs, "created_at"),
 				KnowledgeStatus.valueOf(rs.getString("status")), ease, rs.getInt("max_lapses"),
 				rs.getBoolean("learning"), instant(rs, "last_reviewed_at"), instant(rs, "earliest_due_at"),
-				instant(rs, "last_attempt_at"));
+				instant(rs, "last_attempt_at"), decimal(rs, "analysed_weakness"));
 	}
 
 	private TopicStats topic(ResultSet rs, int row) throws SQLException {
@@ -163,7 +167,11 @@ class PracticeCandidates {
 				: rs.getBigDecimal("recent_score").doubleValue();
 		return new TopicStats(rs.getObject("id", UUID.class), instant(rs, "created_at"),
 				KnowledgeStatus.valueOf(rs.getString("status")), rs.getInt("attempts"), score,
-				instant(rs, "last_attempt_at"));
+				instant(rs, "last_attempt_at"), decimal(rs, "analysed_weakness"));
+	}
+
+	private static @Nullable Double decimal(ResultSet rs, String column) throws SQLException {
+		return rs.getBigDecimal(column) == null ? null : rs.getBigDecimal(column).doubleValue();
 	}
 
 	private static @Nullable Instant instant(ResultSet rs, String column) throws SQLException {

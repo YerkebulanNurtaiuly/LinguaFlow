@@ -166,3 +166,8 @@ export type PracticeSessionPage = Schemas['PageResponsePracticeSessionSummary']
 export type PracticeMode = PracticeSession['mode']
 export type PracticeOverview = Schemas['PracticeOverview']
 export type PracticeLesson = Schemas['PracticeLesson']
+
+// Progress (PRG-03)
+export type WeakPoints = Schemas['WeakPoints']
+export type WeakPoint = Schemas['WeakPoint']
+export type WeakPointReason = Schemas['WeakPointReason']

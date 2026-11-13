@@ -28,10 +28,13 @@ class ProgressEventHandler {
 
 	private final MasteryService mastery;
 
+	private final WeakPointService weakPoints;
+
 	private final TransactionTemplate tx;
 
-	ProgressEventHandler(ProgressAggregates aggregates, MasteryService mastery,
+	ProgressEventHandler(ProgressAggregates aggregates, MasteryService mastery, WeakPointService weakPoints,
 			PlatformTransactionManager transactions) {
+		this.weakPoints = weakPoints;
 		this.aggregates = aggregates;
 		this.mastery = mastery;
 		this.tx = new TransactionTemplate(transactions);
@@ -46,6 +49,7 @@ class ProgressEventHandler {
 				aggregates.refreshTopics(event.userId(), event.grammarTopicIds());
 				aggregates.refreshWords(event.userId(), event.vocabularyItemIds());
 				aggregates.refreshMistakeCounts(event.userId(), event.languageCode());
+				weakPoints.updateScores(event.userId(), event.grammarTopicIds(), event.vocabularyItemIds());
 				mastery.apply(event.userId(), event.grammarTopicIds(), event.vocabularyItemIds());
 			});
 		}
@@ -59,6 +63,7 @@ class ProgressEventHandler {
 		try {
 			tx.executeWithoutResult(status -> {
 				aggregates.refreshWords(event.userId(), List.of(event.vocabularyItemId()));
+				weakPoints.updateScores(event.userId(), List.of(), List.of(event.vocabularyItemId()));
 				mastery.apply(event.userId(), List.of(), List.of(event.vocabularyItemId()));
 			});
 		}
@@ -78,6 +83,7 @@ class ProgressEventHandler {
 			try {
 				tx.executeWithoutResult(status -> {
 					aggregates.rebuild(userId);
+					weakPoints.updateScores(userId, null, null);
 					mastery.apply(userId, null, null);
 				});
 				users++;
