@@ -186,6 +186,19 @@
 					</execution>
 				</executions>
 			</plugin>
+			<!--
+				At the end of the run every cached Spring test context (one per distinct test setup)
+				shuts down. With many contexts that outlasted surefire's default 30 s exit timeout on
+				CI; surefire then killed the JVM before JaCoCo wrote target/jacoco.exec, so coverage
+				read as 0% and the gate failed. Give the shutdown room.
+			-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<configuration>
+					<forkedProcessExitTimeoutInSeconds>300</forkedProcessExitTimeoutInSeconds>
+				</configuration>
+			</plugin>
 			<!-- Style gate (QA-06): checkstyle.xml, main and test code, fails the build -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

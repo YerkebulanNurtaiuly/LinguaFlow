@@ -109,6 +109,7 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - every `com.linguaflow.*Service` class keeps at least 80% of its lines covered;
   - the whole backend keeps at least 90% of lines and 80% of branches. It was at 95.8% and 83.3% when the gate went in, and every service was at 90% or more.
   - A new service needs tests to pass. Re-check after `verify` with `./mvnw jacoco:check@check`.
+  - **Coverage 0% on CI:** if every rule reports 0.00, JaCoCo got no data. That happened when surefire killed the test JVM because shutting down all the cached Spring test contexts took longer than its 30 s exit timeout ("Surefire is going to kill self fork JVM"). The agent only writes `jacoco.exec` on a clean exit, so the pom now gives the fork `forkedProcessExitTimeoutInSeconds` 300.
 - **Backend `GlobalExceptionHandler`:** it now stamps `timestamp` from the injected `Clock` (an `ObjectProvider`, falling back to the system clock in web slices without a Clock bean).
 
 ### Backend conventions (common module, INF-07)
