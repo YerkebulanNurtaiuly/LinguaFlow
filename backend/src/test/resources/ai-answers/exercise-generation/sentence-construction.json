@@ -1,0 +1,10 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "task": "Say that you help your brother.", "words": ["helfen", "Bruder", "mein"]},
+      "solution": {"answer": "Ich helfe meinem Bruder.", "alternatives": [], "explanation": "helfen takes the dative: mein Bruder becomes meinem Bruder."},
+      "words": [],
+      "topics": ["Dativ"]
+    }
+  ]
+}

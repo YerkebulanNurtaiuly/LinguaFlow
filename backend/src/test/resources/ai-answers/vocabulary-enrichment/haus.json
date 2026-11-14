@@ -1,0 +1,14 @@
+{
+  "word": "Haus",
+  "partOfSpeech": "NOUN",
+  "gender": "NEUTER",
+  "plural": "Häuser",
+  "translation": "house; home",
+  "cefrLevel": "A1",
+  "verbForms": null,
+  "examples": [
+    {"sentence": "Das Haus hat einen großen Garten.", "translation": "The house has a big garden."},
+    {"sentence": "Ich bin zu Hause.", "translation": "I am at home."}
+  ],
+  "notes": "\"zu Hause\" means at home, \"nach Hause\" means (going) home."
+}

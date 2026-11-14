@@ -358,7 +358,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [ ] **QA-02 — Module integration tests** (ongoing)
   Each module: repository tests, service tests (Mockito), controller tests (`@WebMvcTest` / MockMvc) including auth and ownership checks.
 
-- [ ] **QA-03 — AI contract tests** (M) — _deps: AI-03_
+- [x] **QA-03 — AI contract tests** (M) — _deps: AI-03_
   Golden-file tests for prompt rendering; recorded-response tests for parsing; optional nightly job running a small eval set against the real provider to catch quality regressions.
 
 - [ ] **QA-04 — Frontend tests** (ongoing)

@@ -1,0 +1,18 @@
+{
+  "summary": "The dative case marks the receiver of an action, usually the indirect object, and follows certain prepositions and verbs.",
+  "rules": [
+    "Use the dative for the indirect object: Ich gebe dem Hund Wasser.",
+    "Articles in the dative:\nmasculine  dem / einem\nfeminine   der / einer\nneuter     dem / einem\nplural     den (+ -n on the noun)",
+    "These prepositions always take the dative: aus, bei, mit, nach, seit, von, zu.",
+    "Some verbs take a dative object: helfen, danken, gefallen, gehören."
+  ],
+  "examples": [
+    {"sentence": "Ich helfe dem Mann.", "translation": "I am helping the man."},
+    {"sentence": "Sie fährt mit der Bahn.", "translation": "She goes by train."},
+    {"sentence": "Das Buch gehört den Kindern.", "translation": "The book belongs to the children."}
+  ],
+  "commonMistakes": [
+    "Using the accusative after helfen: not \"Ich helfe den Mann\" but \"Ich helfe dem Mann\".",
+    "Forgetting the -n in the dative plural: \"mit den Kindern\", not \"mit den Kinder\"."
+  ]
+}

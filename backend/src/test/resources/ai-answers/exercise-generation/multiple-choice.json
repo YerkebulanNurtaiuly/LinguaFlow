@@ -1,0 +1,10 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "question": "Ich helfe ___ Frau.", "options": ["die", "der", "den"]},
+      "solution": {"correctIndex": 1, "explanation": "helfen takes the dative; die Frau becomes der Frau."},
+      "words": [],
+      "topics": ["Dativ"]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "text": "Ich gebe ___ Hund einen Knochen.", "hint": null},
+      "solution": {"blanks": [{"answer": "dem", "alternatives": ["meinem"]}], "explanation": "geben takes the receiver in the dative: der Hund becomes dem Hund."},
+      "words": ["der Hund", "geben"],
+      "topics": ["Dativ"]
+    },
+    {
+      "prompt": {"instruction": null, "text": "Gestern ___ wir in den Park gelaufen.", "hint": "(sein)"},
+      "solution": {"blanks": [{"answer": "sind", "alternatives": []}], "explanation": "laufen forms the Perfekt with sein."},
+      "words": ["laufen"],
+      "topics": ["Perfekt"]
+    }
+  ]
+}

@@ -1,0 +1,46 @@
+{
+  "words": [
+    {
+      "word": "Hund",
+      "partOfSpeech": "NOUN",
+      "gender": "MASCULINE",
+      "plural": "die Hunde",
+      "translation": "dog",
+      "cefrLevel": "A1",
+      "verbForms": null,
+      "examples": [
+        {"sentence": "Der Hund bellt.", "translation": "The dog barks."},
+        {"sentence": "Die Hunde spielen.", "translation": "The dogs are playing."}
+      ],
+      "notes": null
+    },
+    {
+      "word": "schön",
+      "partOfSpeech": "ADJECTIVE",
+      "gender": null,
+      "plural": null,
+      "translation": "beautiful",
+      "cefrLevel": "A1",
+      "verbForms": null,
+      "examples": [
+        {"sentence": "Das ist schön.", "translation": "That is nice."},
+        {"sentence": "Ein schöner Tag.", "translation": "A beautiful day."}
+      ],
+      "notes": null
+    },
+    {
+      "word": "laufen",
+      "partOfSpeech": "VERB",
+      "gender": null,
+      "plural": null,
+      "translation": "to run",
+      "cefrLevel": "A1",
+      "verbForms": null,
+      "examples": [
+        {"sentence": "Ich laufe.", "translation": "I run."},
+        {"sentence": "Wir laufen schnell.", "translation": "We run fast."}
+      ],
+      "notes": null
+    }
+  ]
+}

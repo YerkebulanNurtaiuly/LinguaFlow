@@ -1,0 +1,10 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "sentence": "Der Hund läuft in den Garten.", "task": "Put the sentence into the Perfekt."},
+      "solution": {"answer": "Der Hund ist in den Garten gelaufen.", "alternatives": [], "explanation": "laufen is a verb of movement, so its Perfekt uses sein."},
+      "words": ["der Hund", "laufen"],
+      "topics": ["Perfekt"]
+    }
+  ]
+}

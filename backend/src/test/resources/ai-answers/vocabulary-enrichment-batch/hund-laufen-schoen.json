@@ -1,0 +1,47 @@
+{
+  "words": [
+    {
+      "word": "Hund",
+      "partOfSpeech": "NOUN",
+      "gender": "MASCULINE",
+      "plural": "Hunde",
+      "translation": "dog",
+      "cefrLevel": "A1",
+      "verbForms": null,
+      "examples": [
+        {"sentence": "Der Hund schläft im Garten.", "translation": "The dog is sleeping in the garden."},
+        {"sentence": "Wir haben zwei Hunde.", "translation": "We have two dogs."}
+      ],
+      "notes": null
+    },
+    {
+      "word": "laufen (verb)",
+      "partOfSpeech": "VERB",
+      "gender": null,
+      "plural": null,
+      "translation": "to run; to walk",
+      "cefrLevel": "A1",
+      "verbForms": {"praeteritum": "lief", "partizip2": "gelaufen", "auxiliary": "SEIN"},
+      "examples": [
+        {"sentence": "Ich laufe jeden Morgen im Park.", "translation": "I run in the park every morning."},
+        {"sentence": "Er ist nach Hause gelaufen.", "translation": "He walked home."},
+        {"sentence": "Wie läuft es?", "translation": "How is it going?"}
+      ],
+      "notes": "Stem vowel change in the present: du läufst, er läuft."
+    },
+    {
+      "word": "schön",
+      "partOfSpeech": "ADJECTIVE",
+      "gender": null,
+      "plural": null,
+      "translation": "beautiful; nice",
+      "cefrLevel": "A1",
+      "verbForms": null,
+      "examples": [
+        {"sentence": "Das Wetter ist heute schön.", "translation": "The weather is nice today."},
+        {"sentence": "Sie hat eine schöne Stimme.", "translation": "She has a beautiful voice."}
+      ],
+      "notes": null
+    }
+  ]
+}

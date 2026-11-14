@@ -195,7 +195,7 @@ public class AnswerChecker {
 		return (" " + text + " ").contains(" " + part + " ");
 	}
 
-	private static String typeName(ExerciseType type) {
+	static String typeName(ExerciseType type) {
 		return switch (type) {
 			case TRANSLATION -> "translation";
 			case SENTENCE_CONSTRUCTION -> "sentence construction";

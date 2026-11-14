@@ -326,7 +326,7 @@ class ExerciseGenerator implements AiJobHandler {
 				if (accepted.size() == quota) {
 					break;
 				}
-				Optional<ExerciseContent> content = check(type, item);
+				Optional<ExerciseContent> content = check(validator, type, item);
 				if (content.isEmpty() || !seen.add(ExerciseRules.normalize(content.get().summary()))) {
 					dropped++;
 					continue;
@@ -379,7 +379,8 @@ class ExerciseGenerator implements AiJobHandler {
 	}
 
 	/** The item's content if it passes every check. */
-	private Optional<ExerciseContent> check(ExerciseType type, GeneratedExercises.Item item) {
+	/** A generated item as stored content, or empty when it breaks Bean Validation or {@link ExerciseRules}. */
+	static Optional<ExerciseContent> check(Validator validator, ExerciseType type, GeneratedExercises.Item item) {
 		if (item == null || item.prompt() == null || item.solution() == null || item.words() == null
 				|| item.topics() == null) {
 			return Optional.empty();

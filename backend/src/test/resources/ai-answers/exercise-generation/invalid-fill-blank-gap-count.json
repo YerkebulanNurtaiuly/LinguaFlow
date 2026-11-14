@@ -1,0 +1,16 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "text": "Ich gebe ___ Hund ___ Knochen.", "hint": null},
+      "solution": {"blanks": [{"answer": "dem", "alternatives": []}], "explanation": null},
+      "words": ["der Hund"],
+      "topics": ["Dativ"]
+    },
+    {
+      "prompt": {"instruction": null, "text": "Wir helfen ___ Kindern.", "hint": null},
+      "solution": {"blanks": [{"answer": "den", "alternatives": []}], "explanation": "Dative plural."},
+      "words": [],
+      "topics": ["Dativ"]
+    }
+  ]
+}

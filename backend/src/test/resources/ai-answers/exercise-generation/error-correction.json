@@ -1,0 +1,10 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "sentence": "Ich danke den Lehrer."},
+      "solution": {"answer": "Ich danke dem Lehrer.", "alternatives": [], "explanation": "danken takes the dative: der Lehrer becomes dem Lehrer."},
+      "words": [],
+      "topics": ["Dativ"]
+    }
+  ]
+}

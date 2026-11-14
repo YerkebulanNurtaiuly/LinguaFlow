@@ -1,0 +1,9 @@
+{
+  "correct": false,
+  "score": 0.7,
+  "errors": [
+    {"type": "WRONG_CASE", "span": "den Hund", "explanation": "geben takes the receiver in the dative, so der Hund becomes dem Hund.", "topic": "Dativ"}
+  ],
+  "correctedAnswer": "Ich gebe dem Hund Wasser.",
+  "feedback": "Almost right: the word order and the verb are fine, only the case of the dog is wrong."
+}

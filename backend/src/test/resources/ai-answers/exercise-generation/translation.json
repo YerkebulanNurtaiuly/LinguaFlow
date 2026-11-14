@@ -1,0 +1,10 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "direction": "NATIVE_TO_TARGET", "text": "I gave the dog water."},
+      "solution": {"answer": "Ich habe dem Hund Wasser gegeben.", "alternatives": ["Ich gab dem Hund Wasser."], "explanation": "The receiver of geben is dative; the Perfekt of geben uses haben."},
+      "words": ["der Hund", "geben"],
+      "topics": ["Dativ", "Perfekt"]
+    }
+  ]
+}

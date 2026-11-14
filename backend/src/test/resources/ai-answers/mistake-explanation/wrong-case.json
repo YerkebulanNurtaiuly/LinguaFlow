@@ -1,0 +1,8 @@
+{
+  "answerIsCorrect": false,
+  "mistake": "You wrote \"den Hund\", the accusative, but the dog receives the water.",
+  "rule": "With geben, the person or animal that receives something is in the dative: dem Hund.",
+  "topic": "Dativ",
+  "example": {"sentence": "Sie gibt dem Kind einen Apfel.", "translation": "She gives the child an apple."},
+  "otherErrors": []
+}

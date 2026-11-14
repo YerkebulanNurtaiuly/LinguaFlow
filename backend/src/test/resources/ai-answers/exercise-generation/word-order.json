@@ -1,0 +1,10 @@
+{
+  "exercises": [
+    {
+      "prompt": {"instruction": null, "tokens": ["gegeben.", "dem", "Ich", "Wasser", "habe", "Hund"]},
+      "solution": {"tokens": ["Ich", "habe", "dem", "Hund", "Wasser", "gegeben."], "alternatives": [["Wasser", "habe", "ich", "dem", "Hund", "gegeben."]], "explanation": "In the Perfekt the auxiliary is second and the participle goes to the end."},
+      "words": ["der Hund", "geben"],
+      "topics": ["Perfekt"]
+    }
+  ]
+}
