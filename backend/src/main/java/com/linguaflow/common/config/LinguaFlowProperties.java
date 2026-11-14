@@ -220,7 +220,10 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 
 		public enum Provider {
 
-			AUTO, FAKE, ANTHROPIC
+			AUTO, FAKE, ANTHROPIC,
+
+			/** Canned, rule-valid answers for end-to-end tests and demos without a key (QA-05): {@code ScriptedLlmClient}. */
+			SCRIPTED
 
 		}
 

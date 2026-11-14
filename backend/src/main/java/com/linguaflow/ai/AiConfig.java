@@ -21,6 +21,10 @@ class AiConfig {
 	@Bean
 	LlmClient llmClient(LinguaFlowProperties properties, Clock clock) {
 		LinguaFlowProperties.Ai ai = properties.ai();
+		if (ai.provider() == LinguaFlowProperties.Ai.Provider.SCRIPTED) {
+			log.warn("AI: using scripted answers (linguaflow.ai.provider=scripted); for end-to-end tests and demos only");
+			return new ScriptedLlmClient();
+		}
 		if (!ai.usesAnthropic()) {
 			log.info("AI: using the fake LLM client (no API key set, or linguaflow.ai.provider=fake)");
 			return new FakeLlmClient();

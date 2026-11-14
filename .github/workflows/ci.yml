@@ -86,9 +86,12 @@ jobs:
         run: npm run build
 
   docker:
-    name: Docker images (build & smoke test)
+    name: Docker stack (build, smoke & end-to-end tests)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    env:
+      # QA-05: scripted AI answers, so the end-to-end tests need no key
+      COMPOSE_FILE: docker-compose.yml:docker-compose.e2e.yml
     steps:
       - uses: actions/checkout@v7
 
@@ -113,6 +116,34 @@ jobs:
           echo "::error::The stack didn't come up"
           docker compose logs
           exit 1
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.nvmrc
+          cache: npm
+          cache-dependency-path: e2e/package-lock.json
+
+      # QA-05: register → onboard → bulk add → review → exercises → progress
+      - name: End-to-end tests
+        working-directory: e2e
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium
+          npm test
+
+      - name: Upload the end-to-end report
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7
+
+      - name: Backend logs on failure
+        if: failure()
+        run: docker compose logs backend | tail -200
 
       - name: Stop the stack
         if: always()

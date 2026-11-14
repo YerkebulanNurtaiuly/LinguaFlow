@@ -1,0 +1,12 @@
+# End-to-end test overrides (QA-05), layered on docker-compose.yml:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.e2e.yml up --build -d
+#
+# The backend answers every AI call with scripted, rule-valid content, so the tests need
+# no API key and cost nothing, even when backend/.env holds a key.
+services:
+  backend:
+    environment:
+      AI_PROVIDER: scripted
+      # The tests register a fresh learner on every run
+      LINGUAFLOW_RATE_LIMIT_ENABLED: "false"

@@ -44,6 +44,8 @@ services:
       DB_USERNAME: linguaflow
       DB_PASSWORD: linguaflow
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
+      # The browser sends an Origin header with every POST, so a changed FRONTEND_PORT must be allowed too
+      CORS_ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
 

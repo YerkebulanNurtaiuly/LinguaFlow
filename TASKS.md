@@ -364,7 +364,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [ ] **QA-04 — Frontend tests** (ongoing)
   Component tests for forms and players; MSW for API mocking.
 
-- [ ] **QA-05 — End-to-end tests** (M) — _deps: FE-PRC-01_
+- [x] **QA-05 — End-to-end tests** (M) — _deps: FE-PRC-01_
   Playwright: register → onboard → bulk add words → review flashcards → do exercises → see progress. Runs in CI against docker compose with fake LLM.
 
 - [ ] **QA-06 — Coverage & quality gates** (S)

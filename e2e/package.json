@@ -1,0 +1,17 @@
+{
+  "name": "linguaflow-e2e",
+  "private": true,
+  "type": "module",
+  "description": "End-to-end tests (QA-05): Playwright against the Docker Compose stack with scripted AI",
+  "scripts": {
+    "test": "playwright test",
+    "install-browser": "playwright install chromium",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
