@@ -183,12 +183,15 @@ const sameExamples = (
   b: WordFormInput['examples'],
 ) =>
   a.length === b.length &&
-  a.every(
-    (example, i) =>
-      example.exampleId === b[i]?.exampleId &&
-      example.sentence === b[i]?.sentence.trim() &&
-      example.translation === b[i]?.translation.trim(),
-  )
+  a.every((example, i) => {
+    const other = b[i]
+    return (
+      other !== undefined &&
+      example.exampleId === other.exampleId &&
+      example.sentence === other.sentence.trim() &&
+      example.translation === other.translation.trim()
+    )
+  })
 
 /**
  * Only what changed, as the PATCH expects: absent fields stay unchanged, an empty

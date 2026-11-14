@@ -1,5 +1,5 @@
 import { ArrowLeft, CircleAlert, CircleCheck, Sparkles } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import type { BulkVocabularyFormat } from '@/api/types'
 import { describeError, getFieldErrors } from '@/api/errors'
 import {
@@ -141,7 +141,7 @@ function InputStep({
   const lines = countLines(text)
   const tooMany = lines > MAX_BULK_LINES
 
-  const submit = async (event: FormEvent) => {
+  const submit = async (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (lines === 0) {
       setError('Paste at least one word.')

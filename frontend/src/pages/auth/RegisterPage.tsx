@@ -76,7 +76,7 @@ export function RegisterPage() {
       await login({ email: values.email, password: values.password })
     } catch {
       const state: AuthPageState = { from, registeredEmail: values.email }
-      navigate('/login', { replace: true, state })
+      void navigate('/login', { replace: true, state })
     }
   })
 

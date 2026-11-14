@@ -55,7 +55,7 @@ export function NewSessionModal({ onClose }: { onClose: () => void }) {
       void invalidate()
       toast({ title: `Created “${session.title}”`, variant: 'success' })
       onClose()
-      navigate(`/sessions/${session.id}`)
+      void navigate(`/sessions/${session.id}`)
     } catch (error) {
       if (
         !applyServerFieldErrors(error, setError, [

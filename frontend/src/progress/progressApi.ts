@@ -101,12 +101,14 @@ export async function fetchProgressStats(
   days = 7,
   weeks = 4,
 ): Promise<ProgressStats> {
-  const { data } = await api.get('/progress/stats', { params: { days, weeks } })
+  const { data } = await api.get<unknown>('/progress/stats', {
+    params: { days, weeks },
+  })
   return statsSchema.parse(data)
 }
 
 export async function fetchWeakPoints(limit = 5): Promise<WeakPoints> {
-  const { data } = await api.get('/progress/weak-points', {
+  const { data } = await api.get<unknown>('/progress/weak-points', {
     params: { limit },
   })
   return weakPointsSchema.parse(data)
@@ -114,7 +116,7 @@ export async function fetchWeakPoints(limit = 5): Promise<WeakPoints> {
 
 /** "Practise my weak spots" (PRG-06): an exercise set being written. */
 export async function startWeakSpots(): Promise<WeakSpotsStarted> {
-  const { data } = await api.post('/progress/weak-spots/exercises', {})
+  const { data } = await api.post<unknown>('/progress/weak-spots/exercises', {})
   return weakSpotsSchema.parse(data)
 }
 
@@ -168,7 +170,7 @@ export async function fetchFrequentMistakes(
   groupBy: MistakeGrouping,
   days: number,
 ): Promise<FrequentMistakes> {
-  const { data } = await api.get('/progress/mistakes', {
+  const { data } = await api.get<unknown>('/progress/mistakes', {
     params: { groupBy, days, limit: 10, examples: 2 },
   })
   return mistakesSchema.parse(data)

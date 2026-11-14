@@ -148,7 +148,7 @@ describe('global query and mutation error toasts', () => {
   const toastRegion = () =>
     screen
       .getAllByRole('alert')
-      .map((region) => region.textContent ?? '')
+      .map((region) => region.textContent)
       .join(' ')
 
   function Words({

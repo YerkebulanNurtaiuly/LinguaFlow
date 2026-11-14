@@ -177,7 +177,7 @@ export function AccuracyChart({ weeks }: { weeks: Week[] }) {
               {active !== undefined && values[active] !== undefined && (
                 <circle
                   cx={x(active)}
-                  cy={y(values[active]!)}
+                  cy={y(values[active])}
                   r={5}
                   className={`${series.fill} stroke-surface`}
                   strokeWidth={2}

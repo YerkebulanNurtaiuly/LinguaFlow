@@ -30,9 +30,27 @@ jobs:
           java-version: '21'
           cache: maven
 
-      # Testcontainers uses the Docker daemon that GitHub-hosted runners provide
+      # Testcontainers uses the Docker daemon that GitHub-hosted runners provide.
+      # verify also runs the QA-06 gates: Checkstyle (validate) and JaCoCo's coverage check.
       - name: Build and test
         run: ./mvnw -B -ntp verify
+
+      - name: Coverage summary
+        if: always()
+        run: |
+          csv=target/site/jacoco/jacoco.csv
+          [ -f "$csv" ] || exit 0
+          awk -F, 'NR>1 {lm+=$8; lc+=$9; bm+=$6; bc+=$7} END {
+            printf "### Backend coverage\n\nLines %.1f%%, branches %.1f%% (gate: services 80%% of lines; overall 90%% of lines, 80%% of branches)\n",
+              100*lc/(lm+lc), 100*bc/(bm+bc) }' "$csv" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the coverage report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-coverage
+          path: backend/target/site/jacoco/
+          retention-days: 7
 
       - name: Upload test reports
         if: failure()

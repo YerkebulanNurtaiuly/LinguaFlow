@@ -124,12 +124,14 @@ const listedPageSchema = z.object({ content: z.array(listedSchema) })
 export async function fetchRecentPracticeSessions(
   size = 5,
 ): Promise<ListedPracticeSession[]> {
-  const { data } = await api.get('/practice-sessions', { params: { size } })
+  const { data } = await api.get<unknown>('/practice-sessions', {
+    params: { size },
+  })
   return listedPageSchema.parse(data).content
 }
 
 export async function fetchPracticeOverview(): Promise<PracticeOverview> {
-  const { data } = await api.get('/practice-sessions/overview')
+  const { data } = await api.get<unknown>('/practice-sessions/overview')
   return overviewSchema.parse(data)
 }
 
@@ -144,21 +146,21 @@ export async function startPracticeSession(
   request: NewPracticeSession,
 ): Promise<PracticeSession> {
   const body: StartPracticeSessionRequest = request
-  const { data } = await api.post('/practice-sessions', body)
+  const { data } = await api.post<unknown>('/practice-sessions', body)
   return startedSchema.parse(data).practiceSession
 }
 
 export async function fetchPracticeSession(
   id: string,
 ): Promise<PracticeSession> {
-  const { data } = await api.get(`/practice-sessions/${id}`)
+  const { data } = await api.get<unknown>(`/practice-sessions/${id}`)
   return sessionSchema.parse(data)
 }
 
 export async function completePracticeSession(
   id: string,
 ): Promise<PracticeSession> {
-  const { data } = await api.post(`/practice-sessions/${id}/complete`)
+  const { data } = await api.post<unknown>(`/practice-sessions/${id}/complete`)
   return sessionSchema.parse(data)
 }
 
@@ -166,6 +168,6 @@ export async function completePracticeSession(
 export async function retryPracticeSession(
   id: string,
 ): Promise<PracticeSession> {
-  const { data } = await api.post(`/practice-sessions/${id}/retry`)
+  const { data } = await api.post<unknown>(`/practice-sessions/${id}/retry`)
   return startedSchema.parse(data).practiceSession
 }

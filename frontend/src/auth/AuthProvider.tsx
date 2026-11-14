@@ -18,6 +18,11 @@ import {
 } from './authContext'
 import { tokenStore } from './tokenStore'
 
+// Stable functions, so useSyncExternalStore subscribes once
+const subscribeToToken = (listener: () => void) =>
+  tokenStore.subscribe(listener)
+const readToken = () => tokenStore.get()
+
 /**
  * Owns the session: restores it from the refresh cookie on startup, exposes login and
  * logout, and loads the current user. Whenever the session ends (logout, or a refresh
@@ -25,7 +30,7 @@ import { tokenStore } from './tokenStore'
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
-  const token = useSyncExternalStore(tokenStore.subscribe, tokenStore.get)
+  const token = useSyncExternalStore(subscribeToToken, readToken)
   const [restoring, setRestoring] = useState(() => tokenStore.get() === null)
 
   useEffect(() => {

@@ -12,13 +12,37 @@ export default defineConfig([
     files: ['**/*.{ts,tsx}'],
     extends: [
       js.configs.recommended,
-      tseslint.configs.recommended,
+      // QA-06: the strictest typescript-eslint preset, with type information
+      tseslint.configs.strictTypeChecked,
       reactHooks.configs.flat['recommended-latest'],
       reactRefresh.configs.vite,
     ],
     languageOptions: {
       ecmaVersion: 2023,
       globals: globals.browser,
+      parserOptions: {
+        projectService: true,
+        tsconfigRootDir: import.meta.dirname,
+      },
+    },
+    rules: {
+      // `onClick={() => setOpen(false)}` is idiomatic React
+      '@typescript-eslint/no-confusing-void-expression': [
+        'error',
+        { ignoreArrowShorthand: true },
+      ],
+      '@typescript-eslint/restrict-template-expressions': [
+        'error',
+        { allowNumber: true, allowBoolean: true },
+      ],
+      // With noUncheckedIndexedAccess, `items[i]!` is how a known-valid index is read
+      '@typescript-eslint/no-non-null-assertion': 'off',
+      // React Hook Form's `onSubmit={handleSubmit(save)}` returns a promise on purpose;
+      // promises passed elsewhere are still checked
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
     },
   },
   // Must stay last: turns off rules that conflict with Prettier formatting.

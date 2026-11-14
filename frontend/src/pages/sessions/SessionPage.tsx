@@ -439,7 +439,7 @@ function DeleteSection({ session }: { session: StudySession }) {
       return
     }
     toast({ title: `Deleted “${session.title}”`, variant: 'success' })
-    navigate('/sessions', { replace: true })
+    void navigate('/sessions', { replace: true })
     // Refetching the deleted lesson would 404 into an error toast: drop it instead
     queryClient.removeQueries({ queryKey: sessionKey(session.id) })
     void invalidate()

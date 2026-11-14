@@ -183,7 +183,7 @@ export type ExerciseAnswer =
   | { text: string }
 
 export async function fetchExerciseSet(id: string): Promise<ExerciseSet> {
-  const { data } = await api.get(`/exercise-sets/${id}`)
+  const { data } = await api.get<unknown>(`/exercise-sets/${id}`)
   return exerciseSetSchema.parse(data)
 }
 
@@ -198,7 +198,10 @@ export async function submitAttempt(
     durationMs,
     practiceSessionId,
   }
-  const { data } = await api.post(`/exercises/${exerciseId}/attempts`, body)
+  const { data } = await api.post<unknown>(
+    `/exercises/${exerciseId}/attempts`,
+    body,
+  )
   return attemptResultSchema.parse(data)
 }
 
@@ -206,7 +209,7 @@ export async function explainAttempt(
   exerciseId: string,
   attemptId: string,
 ): Promise<MistakeExplanation> {
-  const { data } = await api.post(
+  const { data } = await api.post<unknown>(
     `/exercises/${exerciseId}/attempts/${attemptId}/explanation`,
   )
   return explanationSchema.parse(data)
@@ -216,14 +219,14 @@ export async function reportExercise(
   exerciseId: string,
   reason: string | undefined,
 ): Promise<Exercise> {
-  const { data } = await api.post(`/exercises/${exerciseId}/report`, {
+  const { data } = await api.post<unknown>(`/exercises/${exerciseId}/report`, {
     reason: reason?.trim() || undefined,
   })
   return exerciseSchema.parse(data)
 }
 
 export async function withdrawReport(exerciseId: string): Promise<Exercise> {
-  const { data } = await api.delete(`/exercises/${exerciseId}/report`)
+  const { data } = await api.delete<unknown>(`/exercises/${exerciseId}/report`)
   return exerciseSchema.parse(data)
 }
 
@@ -243,7 +246,7 @@ export async function createExerciseSet(
   request: NewExerciseSet,
 ): Promise<{ exerciseSet: ExerciseSet; aiJobId: string }> {
   const body: CreateExerciseSetRequest = request
-  const { data } = await api.post('/exercise-sets', body)
+  const { data } = await api.post<unknown>('/exercise-sets', body)
   return z
     .object({ exerciseSet: exerciseSetSchema, aiJobId: z.string() })
     .parse(data)
@@ -267,7 +270,7 @@ const summaryPageSchema = z.object({
 export async function fetchExerciseSets(
   size = 10,
 ): Promise<z.infer<typeof summaryPageSchema>> {
-  const { data } = await api.get('/exercise-sets', {
+  const { data } = await api.get<unknown>('/exercise-sets', {
     params: { page: 0, size },
   })
   return summaryPageSchema.parse(data)

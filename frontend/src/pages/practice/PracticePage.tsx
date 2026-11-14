@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowRight, PencilLine, Play } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useState, type SubmitEvent } from 'react'
 import { Link, useNavigate } from 'react-router'
 import { describeError } from '@/api/errors'
 import {
@@ -181,7 +181,7 @@ function StartForm({ overview }: { overview: PracticeOverview }) {
       ? 'Choose flashcards, exercises or both.'
       : undefined
 
-  const submit = (event: FormEvent) => {
+  const submit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (problem) return
     start.mutate({

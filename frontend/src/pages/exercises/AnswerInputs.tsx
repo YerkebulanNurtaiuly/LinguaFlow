@@ -78,7 +78,7 @@ export function FillBlankInput({
         disabled={disabled}
         target={() =>
           last.current ??
-          (document.querySelector('[data-gap="0"]') as HTMLInputElement | null)
+          document.querySelector<HTMLInputElement>('[data-gap="0"]')
         }
         onInsert={(input: TextControl, text) =>
           set(Number(input.dataset.gap ?? 0), text)

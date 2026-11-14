@@ -1,0 +1,86 @@
+<?xml version="1.0"?>
+<!DOCTYPE module PUBLIC "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
+		"https://checkstyle.org/dtds/configuration_1_3.dtd">
+<!--
+	Backend style gate (QA-06), run by maven-checkstyle-plugin in the validate phase.
+	It doesn't dictate layout (the code keeps its tabs and Spring-style wrapping); it
+	catches mistakes and the project's own rules from CLAUDE.md:
+	- time comes from the injected Clock, never Instant.now() and friends;
+	- entities never use Lombok's @Data;
+	- the app logs through SLF4J, never System.out or printStackTrace.
+	A false positive can be silenced with // CHECKSTYLE:OFF ... // CHECKSTYLE:ON.
+-->
+<module name="Checker">
+	<property name="charset" value="UTF-8"/>
+	<property name="severity" value="error"/>
+
+	<module name="SuppressWithPlainTextCommentFilter">
+		<property name="offCommentFormat" value="CHECKSTYLE:OFF"/>
+		<property name="onCommentFormat" value="CHECKSTYLE:ON"/>
+	</module>
+	<!-- Tests may print (live AI calls report their tokens) and pin time themselves -->
+	<module name="SuppressionSingleFilter">
+		<property name="files" value="[\\/]src[\\/]test[\\/]"/>
+		<property name="id" value="appCodeOnly"/>
+	</module>
+
+	<module name="NewlineAtEndOfFile"/>
+
+	<module name="RegexpSingleline">
+		<property name="id" value="appCodeOnly"/>
+		<!-- Not in comments, which may name the call to warn against it -->
+		<property name="format" value="^(?!\s*(\*|//)).*\b(Instant|LocalDate|LocalDateTime|ZonedDateTime|OffsetDateTime|LocalTime)\.now\(\s*\)"/>
+		<property name="message" value="Use the injected java.time.Clock (e.g. Instant.now(clock)), not the system clock"/>
+	</module>
+	<module name="RegexpSingleline">
+		<property name="id" value="appCodeOnly"/>
+		<property name="format" value="System\.(out|err)\.print|\.printStackTrace\(\)"/>
+		<property name="message" value="Log through SLF4J instead"/>
+	</module>
+	<module name="RegexpSingleline">
+		<property name="format" value="^\s*@Data\b|import lombok\.Data;"/>
+		<property name="message" value="Don't use Lombok's @Data: use @Getter and @Setter on the fields that may change"/>
+	</module>
+
+	<module name="TreeWalker">
+		<!-- Imports -->
+		<module name="AvoidStarImport">
+			<property name="allowStaticMemberImports" value="false"/>
+		</module>
+		<module name="RedundantImport"/>
+		<module name="UnusedImports"/>
+		<module name="IllegalImport">
+			<property name="illegalPkgs" value="sun, jdk.internal, junit.framework"/>
+		</module>
+
+		<!-- Likely bugs -->
+		<module name="EqualsHashCode"/>
+		<module name="StringLiteralEquality"/>
+		<module name="CovariantEquals"/>
+		<module name="EmptyStatement"/>
+		<module name="EmptyBlock">
+			<property name="option" value="text"/>
+		</module>
+		<module name="EmptyCatchBlock">
+			<property name="exceptionVariableName" value="expected|ignored"/>
+		</module>
+		<module name="FallThrough"/>
+		<module name="SimplifyBooleanExpression"/>
+		<module name="SimplifyBooleanReturn"/>
+		<module name="MissingOverride"/>
+		<module name="PackageDeclaration"/>
+
+		<!-- Readability -->
+		<module name="NeedBraces"/>
+		<module name="OneStatementPerLine"/>
+		<module name="MultipleVariableDeclarations"/>
+		<module name="ArrayTypeStyle"/>
+		<module name="UpperEll"/>
+		<module name="ModifierOrder"/>
+		<module name="OuterTypeFilename"/>
+		<module name="OneTopLevelClass"/>
+		<module name="AvoidNestedBlocks">
+			<property name="allowInSwitchCase" value="true"/>
+		</module>
+	</module>
+</module>

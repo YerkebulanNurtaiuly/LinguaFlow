@@ -1,6 +1,7 @@
 package com.linguaflow.common.error;
 
 import java.net.URI;
+import java.time.Clock;
 import java.time.Instant;
 import java.util.Comparator;
 import java.util.List;
@@ -11,6 +12,7 @@ import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatusCode;
@@ -42,6 +44,13 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	private static final String CODE = "code";
+
+	private final Clock clock;
+
+	/** The app's {@link Clock}; a web slice test that loads none gets the system clock. */
+	public GlobalExceptionHandler(ObjectProvider<Clock> clock) {
+		this.clock = clock.getIfAvailable(Clock::systemUTC);
+	}
 
 	@ExceptionHandler(ApiException.class)
 	ResponseEntity<Object> handleApiException(ApiException ex, WebRequest request) {
@@ -171,7 +180,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 		return problem;
 	}
 
-	private static void enrich(ProblemDetail problem, HttpStatusCode status, WebRequest request) {
+	private void enrich(ProblemDetail problem, HttpStatusCode status, WebRequest request) {
 		ErrorCode code = ErrorCode.fromStatus(status);
 		if (problem.getProperties() == null || !problem.getProperties().containsKey(CODE)) {
 			problem.setProperty(CODE, code.name());
@@ -181,7 +190,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 			problem.setInstance(URI.create(request.getDescription(false).replaceFirst("^uri=", "")));
 		}
 		problem.setProperty("correlationId", MDC.get(CorrelationIdFilter.MDC_KEY));
-		problem.setProperty("timestamp", Instant.now());
+		problem.setProperty("timestamp", Instant.now(clock));
 	}
 
 }

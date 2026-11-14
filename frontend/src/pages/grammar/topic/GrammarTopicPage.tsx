@@ -78,7 +78,7 @@ export function GrammarTopicPage() {
       return
     }
     toast({ title: `Deleted “${current.title}”`, variant: 'success' })
-    navigate('/grammar', { replace: true })
+    void navigate('/grammar', { replace: true })
     // Refetching the deleted topic would 404 into an error toast: drop it instead
     queryClient.removeQueries({ queryKey: grammarTopicKey(current.id) })
     queryClient.removeQueries({ queryKey: statusHistoryKey(current.id) })

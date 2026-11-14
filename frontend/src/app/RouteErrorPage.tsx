@@ -13,7 +13,13 @@ import { cn } from '@/lib/cn'
 function technicalDetails(error: unknown): string | undefined {
   if (error instanceof Error) return error.stack ?? error.message
   if (isRouteErrorResponse(error)) return `${error.status} ${error.statusText}`
-  return error === undefined ? undefined : String(error)
+  if (error === undefined) return undefined
+  if (typeof error === 'string') return error
+  try {
+    return JSON.stringify(error)
+  } catch {
+    return Object.prototype.toString.call(error)
+  }
 }
 
 /**

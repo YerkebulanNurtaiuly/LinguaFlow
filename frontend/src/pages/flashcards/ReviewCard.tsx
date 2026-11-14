@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type SubmitEvent,
+} from 'react'
 import { Button, Input } from '@/components/ui'
 import { cn } from '@/lib/cn'
 import {
@@ -130,7 +136,7 @@ export function ReviewCard({
     requestAnimationFrame(() => backRef.current?.focus())
   }, [])
 
-  const submitTyped = (event: FormEvent) => {
+  const submitTyped = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault()
     setCheck(checkAnswer(typed, content.back))
     reveal()

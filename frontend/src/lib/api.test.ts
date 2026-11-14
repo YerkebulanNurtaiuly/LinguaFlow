@@ -44,7 +44,7 @@ describe('API client', () => {
     tokenStore.set('token-1')
     wordsAcceptOnly('token-1')
 
-    const { data } = await api.get('/words')
+    const { data } = await api.get<unknown>('/words')
 
     expect(data).toEqual(['Hund'])
     expect(fakeApi.requests('/words')[0]?.authorization).toBe('Bearer token-1')
@@ -61,7 +61,7 @@ describe('API client', () => {
     wordsAcceptOnly('fresh')
     refreshReturns('fresh')
 
-    const { data } = await api.get('/words')
+    const { data } = await api.get<unknown>('/words')
 
     expect(data).toEqual(['Hund'])
     expect(tokenStore.get()).toBe('fresh')

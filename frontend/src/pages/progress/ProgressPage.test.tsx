@@ -202,7 +202,7 @@ describe('progress page', () => {
     fakeApi.on('GET', '/progress/mistakes', (config) => ({
       status: 200,
       data:
-        config.params?.groupBy === 'TOPIC'
+        (config.params as { groupBy?: string } | undefined)?.groupBy === 'TOPIC'
           ? {
               ...mistakesByType,
               groupBy: 'TOPIC',

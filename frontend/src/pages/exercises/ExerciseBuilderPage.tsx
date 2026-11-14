@@ -46,7 +46,11 @@ const DEFAULT_TYPES = [
 
 /** Checkbox groups come back from RHF as false, a string or an array. */
 const asArray = (value: unknown): string[] =>
-  Array.isArray(value) ? value : typeof value === 'string' ? [value] : []
+  Array.isArray(value)
+    ? value.filter((item): item is string => typeof item === 'string')
+    : typeof value === 'string'
+      ? [value]
+      : []
 
 const formSchema = z.object({
   grammarTopicIds: z.preprocess(

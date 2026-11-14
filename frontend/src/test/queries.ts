@@ -8,7 +8,7 @@ import { expect } from 'vitest'
 export function queryAlerts(): HTMLElement[] {
   return screen
     .queryAllByRole('alert')
-    .filter((alert) => alert.textContent?.trim())
+    .filter((alert) => alert.textContent.trim())
 }
 
 /** Waits for exactly one alert with content and returns it. */
