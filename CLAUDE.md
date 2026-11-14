@@ -40,7 +40,7 @@ docker compose down -v               # stop and delete the database volume
   - **Selectors:** they're roles and labels, the same ones the Vitest tests use. A changed label breaks both.
 - **Secrets:** `backend/.dockerignore` excludes `.env`, so the key never enters a build context or image. The backend image runs as a non-root `app` user, with the heap sized from the container (`MaxRAMPercentage=75`).
 - **Uploads:** nginx allows 3 MB bodies (`client_max_body_size`), above CSV import's 2 MB limit, so too-large files get the backend's `PAYLOAD_TOO_LARGE` problem rather than an nginx page.
-- **Images:** `backend/Dockerfile` builds with the Maven wrapper and runs on a JRE. `frontend/Dockerfile` builds with Node 26 and serves `dist` from nginx with `frontend/nginx.conf`, which adds an SPA fallback and long caching for `/assets`.
+- **Images:** `backend/Dockerfile` builds with the Maven wrapper (skipping tests and the QA-06 gates, which CI runs; it copies `lombok.config` too) and runs on a JRE. `frontend/Dockerfile` builds with Node 26 and serves `dist` from nginx with `frontend/nginx.conf`, which adds an SPA fallback and long caching for `/assets`.
 
 ### Backend and frontend on their own
 

@@ -9,8 +9,10 @@ COPY mvnw pom.xml ./
 COPY .mvn .mvn
 RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q dependency:go-offline
 
+COPY lombok.config ./
 COPY src src
-RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q package -DskipTests \
+# Tests and the QA-06 gates (Checkstyle, JaCoCo) run in CI's backend job, not in the image build
+RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q package -DskipTests -Dcheckstyle.skip -Djacoco.skip \
  && cp target/*.jar app.jar
 
 # ---- Runtime stage ----
