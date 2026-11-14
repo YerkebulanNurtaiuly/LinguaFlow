@@ -372,7 +372,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 16: Security & Compliance
 
-- [ ] **SEC-01 — Security review** (M)
+- [x] **SEC-01 — Security review** (M)
   OWASP top-10 pass: input validation, SQL injection (JPA params only), XSS in Markdown notes (sanitize rendering), security headers, dependency scanning (Dependabot / OWASP dependency-check).
 
 - [ ] **SEC-02 — Privacy / GDPR basics** (S)

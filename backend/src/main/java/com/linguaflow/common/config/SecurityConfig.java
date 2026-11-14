@@ -14,6 +14,10 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.header.writers.DelegatingRequestMatcherHeaderWriter;
+import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter.ReferrerPolicy;
+import org.springframework.security.web.header.writers.StaticHeadersWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
@@ -46,6 +50,14 @@ public class SecurityConfig {
 	private static final String[] API_DOCS_PATHS = { "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html",
 			"/swagger-ui/**" };
 
+	/**
+	 * API responses are JSON, never pages to render (SEC-01): forbid loading anything and
+	 * being framed. Scoped to /api/**, so Swagger UI (dev) keeps working.
+	 */
+	public static final String API_CONTENT_SECURITY_POLICY = "default-src 'none'; frame-ancestors 'none'; base-uri 'none'";
+
+	public static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
+
 	@Bean
 	SecurityFilterChain securityFilterChain(HttpSecurity http,
 			@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
@@ -61,6 +73,14 @@ public class SecurityConfig {
 			.formLogin(AbstractHttpConfigurer::disable)
 			.logout(AbstractHttpConfigurer::disable)
 			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			// SEC-01: on top of Spring's defaults (nosniff, no-cache, HSTS over HTTPS), deny
+			// framing, send no referrer and lock API responses down with their own CSP
+			.headers(headers -> headers.frameOptions(frame -> frame.deny())
+				.referrerPolicy(referrer -> referrer.policy(ReferrerPolicy.NO_REFERRER))
+				.addHeaderWriter(new StaticHeadersWriter("Permissions-Policy", PERMISSIONS_POLICY))
+				.addHeaderWriter(new DelegatingRequestMatcherHeaderWriter(
+						PathPatternRequestMatcher.withDefaults().matcher("/api/**"),
+						new StaticHeadersWriter("Content-Security-Policy", API_CONTENT_SECURITY_POLICY))))
 			.authorizeHttpRequests(auth -> {
 				auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
 				auth.requestMatchers(HttpMethod.POST, PUBLIC_AUTH_ENDPOINTS).permitAll();

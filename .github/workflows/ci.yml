@@ -79,6 +79,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # SEC-01: what ships to browsers must have no known high or critical vulnerability.
+      # Dev tooling is left to Dependabot (a lint-time issue never reaches users).
+      - name: Audit production dependencies
+        run: npm audit --omit=dev --audit-level=high
+
       - name: Check formatting
         run: npm run format:check
 

@@ -10,6 +10,17 @@ test('a new learner goes from registration to their progress', async ({
   page,
 }) => {
   const email = `e2e-${Date.now()}@example.test`
+  // SEC-01: the app must run under nginx's strict Content-Security-Policy
+  const blocked: string[] = []
+  page.on('console', (message) => {
+    if (/Content Security Policy|Refused to/i.test(message.text())) {
+      blocked.push(message.text())
+    }
+  })
+  const firstPage = await page.request.get('/')
+  expect(firstPage.headers()['content-security-policy']).toContain(
+    "script-src 'self'",
+  )
 
   await test.step('register', async () => {
     await page.goto('/register')
@@ -115,6 +126,8 @@ test('a new learner goes from registration to their progress', async ({
       page.getByRole('heading', { level: 1, name: 'Dashboard' }),
     ).toBeVisible()
   })
+
+  expect(blocked, 'Content-Security-Policy violations').toEqual([])
 })
 
 /** Shows each card's answer and grades it Good until the session sums up. */

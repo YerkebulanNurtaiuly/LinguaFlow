@@ -5,15 +5,8 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>LinguaFlow</title>
-    <script>
-      // Apply the saved theme before first paint (see ThemeProvider); ignore storage errors
-      try {
-        const theme = localStorage.getItem('lf-theme')
-        if (theme === 'light' || theme === 'dark') {
-          document.documentElement.dataset.theme = theme
-        }
-      } catch {}
-    </script>
+    <!-- Applies the saved theme before first paint; a file, so the CSP needs no inline scripts -->
+    <script src="/theme-init.js"></script>
   </head>
   <body>
     <div id="root"></div>
