@@ -15,6 +15,7 @@ name: linguaflow
 services:
   db:
     image: postgres:16-alpine
+    restart: unless-stopped
     environment:
       POSTGRES_DB: linguaflow
       POSTGRES_USER: linguaflow
@@ -31,6 +32,7 @@ services:
 
   backend:
     build: ./backend
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
@@ -51,10 +53,13 @@ services:
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
+    # The images report their own health (OPS-01); start once the backend is ready
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     ports:
-      - "127.0.0.1:${FRONTEND_PORT:-3000}:80"
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:8080"
 
   pgadmin:
     image: dpage/pgadmin4:9

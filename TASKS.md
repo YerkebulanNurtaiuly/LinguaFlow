@@ -380,7 +380,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 
 ### Epic 17: Deployment & Operations (`OPS`)
 
-- [ ] **OPS-01 — Production Docker images** (S) — _deps: INF-04_
+- [x] **OPS-01 — Production Docker images** (S) — _deps: INF-04_
   Slim JRE image, non-root user, healthchecks; nginx config for SPA routing and `/api` reverse proxy.
 
 - [ ] **OPS-02 — Hosting & environments** (M) — _deps: OPS-01_
