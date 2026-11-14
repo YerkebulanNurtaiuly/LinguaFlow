@@ -1132,6 +1132,26 @@ export interface paths {
         patch: operations["update_1"];
         trace?: never;
     };
+    "/api/users/me/export": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Download all your data (SEC-02)
+         * @description Everything stored about you, as one JSON file: your account, learning languages and settings, words, tags, grammar topics, lessons, flashcards and reviews, exercises and answers, practice sessions, progress, and your AI jobs and AI usage. Password and token hashes are never included. Sent as an attachment.
+         */
+        get: operations["export_1"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/users/me/languages": {
         parameters: {
             query?: never;
@@ -1763,6 +1783,29 @@ export interface components {
             tagIds?: string[];
             /** @example dog */
             translation?: string;
+        };
+        /** @description A user's complete data export */
+        DataExport: {
+            /** @description The account, without the password hash */
+            account?: {
+                [key: string]: unknown;
+            };
+            exportedAt?: string;
+            /** @example linguaflow-export */
+            format?: string;
+            /** @description Tables deliberately left out: secrets and shared data */
+            notExported?: string[];
+            /** @description Table name to the user's rows; each row maps column names to values */
+            tables?: {
+                [key: string]: {
+                    [key: string]: unknown;
+                }[];
+            };
+            /**
+             * Format: int32
+             * @description Bumped when the shape changes
+             */
+            version?: number;
         };
         DeleteAccountRequest: {
             /** @description Current password, to confirm */
@@ -8325,6 +8368,73 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserProfileResponse"];
+                };
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    export_1: {
+        parameters: {
+            query: {
+                userId: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description The export */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DataExport"];
                 };
             };
             /** @description Invalid request */

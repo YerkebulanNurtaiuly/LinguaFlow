@@ -375,7 +375,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **SEC-01 — Security review** (M)
   OWASP top-10 pass: input validation, SQL injection (JPA params only), XSS in Markdown notes (sanitize rendering), security headers, dependency scanning (Dependabot / OWASP dependency-check).
 
-- [ ] **SEC-02 — Privacy / GDPR basics** (S)
+- [x] **SEC-02 — Privacy / GDPR basics** (S)
   Data export (`GET /api/users/me/export` JSON), account deletion with full data removal, privacy policy page, no personal data sent to the AI beyond learning content.
 
 ### Epic 17: Deployment & Operations (`OPS`)

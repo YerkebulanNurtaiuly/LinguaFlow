@@ -6,8 +6,9 @@ import { DeleteAccountSection } from './DeleteAccountSection'
 import { LanguageSettingsSection } from './LanguageSettingsSection'
 import { PasswordSection } from './PasswordSection'
 import { ProfileSection } from './ProfileSection'
+import { YourDataSection } from './YourDataSection'
 
-/** /settings: profile, learning languages, password and account deletion. */
+/** /settings: profile, learning languages, password, your data and account deletion. */
 export function SettingsPage() {
   const { user } = useAuth()
   const catalog = useLanguages()
@@ -49,6 +50,7 @@ export function SettingsPage() {
             />
           ))}
           <PasswordSection email={user.email} />
+          <YourDataSection />
           <DeleteAccountSection />
         </>
       )}

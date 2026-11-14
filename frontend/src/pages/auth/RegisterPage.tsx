@@ -143,6 +143,11 @@ export function RegisterPage() {
           Log in
         </Link>
       </p>
+      <p className="text-center text-xs text-fg-subtle">
+        <Link to="/privacy" className="hover:underline">
+          How we handle your data
+        </Link>
+      </p>
     </div>
   )
 }

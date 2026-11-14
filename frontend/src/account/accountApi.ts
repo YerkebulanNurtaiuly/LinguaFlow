@@ -26,6 +26,45 @@ export async function changePassword(
   tokenStore.set(tokenResponseSchema.parse(data).accessToken)
 }
 
+/** The file name from a `Content-Disposition: attachment; filename="…"` header. */
+export function attachmentFilename(
+  header: string | undefined,
+  fallback: string,
+): string {
+  const match = header ? /filename="?([^";]+)"?/.exec(header) : null
+  return match?.[1] ?? fallback
+}
+
+/**
+ * Downloads everything stored about the user as one JSON file (SEC-02): fetches
+ * `GET /users/me/export` and hands it to the browser as a download.
+ */
+export async function downloadMyData(): Promise<void> {
+  const response = await api.get<Blob>('/users/me/export', {
+    responseType: 'blob',
+  })
+  const blob =
+    response.data instanceof Blob
+      ? response.data
+      : new Blob([JSON.stringify(response.data)], { type: 'application/json' })
+  const contentDisposition = response.headers['content-disposition'] as
+    string | undefined
+  const url = URL.createObjectURL(blob)
+  try {
+    const link = document.createElement('a')
+    link.href = url
+    link.download = attachmentFilename(
+      contentDisposition,
+      'linguaflow-export.json',
+    )
+    document.body.append(link)
+    link.click()
+    link.remove()
+  } finally {
+    URL.revokeObjectURL(url)
+  }
+}
+
 /** Deletes the account and all its data, then ends the local session. */
 export async function deleteAccount(
   request: DeleteAccountRequest,

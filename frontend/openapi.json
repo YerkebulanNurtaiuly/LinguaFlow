@@ -6410,6 +6410,85 @@
         "tags" : [ "Profile" ]
       }
     },
+    "/api/users/me/export" : {
+      "get" : {
+        "description" : "Everything stored about you, as one JSON file: your account, learning languages and settings, words, tags, grammar topics, lessons, flashcards and reviews, exercises and answers, practice sessions, progress, and your AI jobs and AI usage. Password and token hashes are never included. Sent as an attachment.",
+        "operationId" : "export_1",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "userId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DataExport"
+                }
+              }
+            },
+            "description" : "The export"
+          },
+          "400" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Invalid request"
+          },
+          "401" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Missing or invalid access token"
+          },
+          "403" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Not allowed"
+          },
+          "404" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Resource not found"
+          },
+          "500" : {
+            "content" : {
+              "application/problem+json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ApiProblem"
+                }
+              }
+            },
+            "description" : "Unexpected server error"
+          }
+        },
+        "summary" : "Download all your data (SEC-02)",
+        "tags" : [ "Profile" ]
+      }
+    },
     "/api/users/me/languages" : {
       "get" : {
         "operationId" : "listMine",
@@ -8799,6 +8878,47 @@
           }
         },
         "required" : [ "lemma" ]
+      },
+      "DataExport" : {
+        "type" : "object",
+        "description" : "A user's complete data export",
+        "properties" : {
+          "account" : {
+            "type" : "object",
+            "additionalProperties" : { },
+            "description" : "The account, without the password hash"
+          },
+          "exportedAt" : {
+            "type" : "string"
+          },
+          "format" : {
+            "type" : "string",
+            "example" : "linguaflow-export"
+          },
+          "notExported" : {
+            "type" : "array",
+            "description" : "Tables deliberately left out: secrets and shared data",
+            "items" : {
+              "type" : "string"
+            }
+          },
+          "tables" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "array",
+              "items" : {
+                "type" : "object",
+                "additionalProperties" : { }
+              }
+            },
+            "description" : "Table name to the user's rows; each row maps column names to values"
+          },
+          "version" : {
+            "type" : "integer",
+            "format" : "int32",
+            "description" : "Bumped when the shape changes"
+          }
+        }
       },
       "DeleteAccountRequest" : {
         "type" : "object",

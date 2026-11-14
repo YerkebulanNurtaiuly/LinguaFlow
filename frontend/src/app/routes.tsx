@@ -14,6 +14,7 @@ import { DesignSystemPage } from '@/pages/DesignSystemPage'
 import { NotFoundPage } from '@/pages/NotFoundPage'
 import { OnboardingPage } from '@/pages/onboarding/OnboardingPage'
 import { PlaceholderPage } from '@/pages/PlaceholderPage'
+import { PrivacyPage } from '@/pages/privacy/PrivacyPage'
 import { SettingsPage } from '@/pages/settings/SettingsPage'
 import { FlashcardBrowserPage } from '@/pages/flashcards/FlashcardBrowserPage'
 import { ReviewPage } from '@/pages/flashcards/ReviewPage'
@@ -161,6 +162,17 @@ export const routes: RouteObject[] = [
                 ],
               },
             ],
+          },
+        ],
+      },
+      // SEC-02: open to everyone, logged in or not
+      {
+        element: <AuthLayout width="wide" />,
+        children: [
+          {
+            path: '/privacy',
+            handle: title('Privacy'),
+            element: <PrivacyPage />,
           },
         ],
       },
