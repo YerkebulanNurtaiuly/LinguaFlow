@@ -66,6 +66,8 @@ class PersonalDataInPromptsTests {
 	void setUp() {
 		users.deleteAll();
 		jdbc.update("delete from ai_jobs");
+		// A cached enrichment from another test would skip the AI call this test checks
+		jdbc.update("delete from ai_cache");
 		User user = registration.register(new RegistrationRequest(EMAIL, "correct-horse-battery", NAME));
 		TestUsers.addGerman(jdbc, user.getId());
 		userId = user.getId();
@@ -86,7 +88,7 @@ class PersonalDataInPromptsTests {
 		jdbc.update("update study_sessions set notes = ? where user_id = ?", PRIVATE_NOTE, userId);
 
 		// Background AI: enrichment, an explanation, exercise generation
-		send("/api/vocabulary", "{\"lemma\": \"Hund\", \"notes\": \"" + PRIVATE_NOTE + "\"}");
+		send("/api/vocabulary", "{\"lemma\": \"Quittenbaum\", \"notes\": \"" + PRIVATE_NOTE + "\"}");
 		send("/api/grammar-topics/" + dativ + "/explanation", "{}");
 		send("/api/exercise-sets",
 				"{\"grammarTopicIds\": [\"" + dativ + "\"], \"types\": [\"FILL_BLANK\"], \"count\": 2}");
