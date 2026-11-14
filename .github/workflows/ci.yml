@@ -33,7 +33,24 @@ jobs:
       # Testcontainers uses the Docker daemon that GitHub-hosted runners provide.
       # verify also runs the QA-06 gates: Checkstyle (validate) and JaCoCo's coverage check.
       - name: Build and test
-        run: ./mvnw -B -ntp verify
+        run: |
+          set -o pipefail
+          ./mvnw -B -ntp verify 2>&1 | tee maven.log
+
+      # Annotations are readable without signing in, unlike the raw log: surface why it failed
+      - name: Explain a failure
+        if: failure()
+        run: |
+          [ -f maven.log ] || exit 0
+          grep -E "COMPILATION ERROR|\.java:\[[0-9]+|Rule violated|kill self fork|Checkstyle violations|Failed to execute goal" maven.log \
+            | head -20 | while IFS= read -r line; do echo "::error title=Backend build::${line:0:900}"; done
+          for report in target/surefire-reports/*.txt; do
+            [ -f "$report" ] || continue
+            if grep -qE "<<< (FAILURE|ERROR)" "$report"; then
+              detail=$(grep -E -A8 "<<< (FAILURE|ERROR)" "$report" | head -24 | tr '\n' ' ')
+              echo "::error title=Test failed: $(basename "$report" .txt)::${detail:0:1500}"
+            fi
+          done
 
       - name: Coverage summary
         if: always()
