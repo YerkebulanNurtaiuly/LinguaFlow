@@ -18,7 +18,7 @@
 		<java.version>21</java.version>
 		<springdoc.version>3.2.0</springdoc.version>
 		<!-- Official Anthropic SDK for the real LLM client (AI-01) -->
-		<anthropic-java.version>3.3.0</anthropic-java.version>
+		<anthropic-java.version>3.8.0</anthropic-java.version>
 		<resilience4j.version>2.4.0</resilience4j.version>
 		<bucket4j.version>8.21.0</bucket4j.version>
 		<!-- Coverage and style gates (QA-06) -->
