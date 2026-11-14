@@ -23,7 +23,7 @@
 		<bucket4j.version>8.21.0</bucket4j.version>
 		<!-- Coverage and style gates (QA-06) -->
 		<jacoco.version>0.8.16</jacoco.version>
-		<checkstyle.version>14.3.0</checkstyle.version>
+		<checkstyle.version>14.4.0</checkstyle.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
 	</properties>
 
