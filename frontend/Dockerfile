@@ -10,13 +10,19 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 COPY . .
 RUN npm run build
+# /version.txt names the deployed commit, so a deploy can be checked from outside (OPS-03)
+ARG APP_VERSION=dev
+RUN echo "${APP_VERSION}" > dist/version.txt
 
 # ---- Runtime stage (OPS-01): static files behind nginx, which also proxies /api ----
 # nginx-unprivileged runs as a non-root user (uid 101) and listens on 8080
 FROM nginxinc/nginx-unprivileged:1.30-alpine
+# The commit the image was built from (OPS-03); "dev" for local builds
+ARG APP_VERSION=dev
 LABEL org.opencontainers.image.title="LinguaFlow frontend" \
       org.opencontainers.image.source="https://github.com/YerkebulanNurtaiuly/LinguaFlow" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.revision="${APP_VERSION}"
 # Where /api is proxied to; the compose service by default. A platform that names its
 # services differently sets BACKEND_URL, with or without http:// (Render's fromService
 # gives "linguaflow-api-xyz:8080"). docker/10-backend-url.envsh adds the scheme and finds

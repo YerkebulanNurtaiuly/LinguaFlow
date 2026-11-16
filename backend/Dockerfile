@@ -23,9 +23,13 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q package -DskipTests -Dcheck
 
 # ---- Runtime stage ----
 FROM eclipse-temurin:21-jre-alpine
+# The commit the image was built from (OPS-03); "dev" for local builds
+ARG APP_VERSION=dev
 LABEL org.opencontainers.image.title="LinguaFlow backend" \
       org.opencontainers.image.source="https://github.com/YerkebulanNurtaiuly/LinguaFlow" \
-      org.opencontainers.image.licenses="MIT"
+      org.opencontainers.image.licenses="MIT" \
+      org.opencontainers.image.revision="${APP_VERSION}"
+ENV APP_VERSION=${APP_VERSION}
 RUN addgroup -S app && adduser -S -G app -H -s /sbin/nologin app
 WORKDIR /app
 COPY --from=build /workspace/extracted/dependencies/ ./

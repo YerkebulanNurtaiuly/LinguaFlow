@@ -1,0 +1,110 @@
+name: Promote to production
+
+# OPS-03, manual promotion. Deploys to production the images already built and tested on
+# staging, without rebuilding: the commit's images are tagged "production" and deployed by
+# digest. Run it from Actions → Promote to production → Run workflow.
+#
+# The "production" GitHub environment should require a reviewer (Settings → Environments),
+# so each promotion waits for an approval. Secrets: RENDER_DEPLOY_HOOK_PRODUCTION_API,
+# RENDER_DEPLOY_HOOK_PRODUCTION_WEB and optionally RENDER_API_KEY; variables STAGING_URL
+# and PRODUCTION_URL.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Full commit SHA to promote; empty means what staging serves now
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  production:
+    name: Promote to production
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    permissions:
+      contents: read
+      packages: write
+    env:
+      API_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION_API }}
+      WEB_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION_WEB }}
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      REQUESTED: ${{ inputs.commit }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Which commit
+        id: commit
+        run: |
+          commit="$REQUESTED"
+          if [ -z "$commit" ]; then
+            if [ -z "${{ vars.STAGING_URL }}" ]; then
+              echo "::error::Give a commit, or set the STAGING_URL variable to promote what staging serves"
+              exit 1
+            fi
+            commit=$(curl -fsS "${{ vars.STAGING_URL }}/version.txt" | tr -d '[:space:]')
+          fi
+          if ! [[ "$commit" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::'$commit' isn't a full commit SHA"
+            exit 1
+          fi
+          echo "sha=$commit" >> "$GITHUB_OUTPUT"
+          owner=$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')
+          echo "backend=ghcr.io/${owner}/linguaflow-backend" >> "$GITHUB_OUTPUT"
+          echo "frontend=ghcr.io/${owner}/linguaflow-frontend" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The same images staging runs: retag, never rebuild. Fails if Deliver never built them.
+      - name: Tag the images for production
+        id: images
+        run: |
+          sha=${{ steps.commit.outputs.sha }}
+          for name in backend frontend; do
+            repo=${{ steps.commit.outputs.backend }}
+            [ "$name" = frontend ] && repo=${{ steps.commit.outputs.frontend }}
+            docker buildx imagetools create --tag "${repo}:production" "${repo}:${sha}"
+            digest=$(docker buildx imagetools inspect "${repo}:${sha}" --format '{{json .Manifest}}' | jq -r '.digest')
+            echo "${name}=${repo}@${digest}" >> "$GITHUB_OUTPUT"
+          done
+
+      - name: Check the setup
+        id: setup
+        run: |
+          if [ -z "$API_HOOK" ] || [ -z "$WEB_HOOK" ]; then
+            echo "::error::Set RENDER_DEPLOY_HOOK_PRODUCTION_API and RENDER_DEPLOY_HOOK_PRODUCTION_WEB first"
+            exit 1
+          fi
+
+      - name: Deploy the backend
+        run: scripts/render-deploy.sh "$API_HOOK" "${{ steps.images.outputs.backend }}"
+
+      - name: Deploy the frontend
+        run: scripts/render-deploy.sh "$WEB_HOOK" "${{ steps.images.outputs.frontend }}"
+
+      - name: Check production
+        if: vars.PRODUCTION_URL != ''
+        run: scripts/check-deployment.sh "${{ vars.PRODUCTION_URL }}" "${{ steps.commit.outputs.sha }}"
+
+      - name: Summary
+        run: |
+          {
+            echo "### Promoted ${{ steps.commit.outputs.sha }} to production"
+            echo "- \`${{ steps.images.outputs.backend }}\`"
+            echo "- \`${{ steps.images.outputs.frontend }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"

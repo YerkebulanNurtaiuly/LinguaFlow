@@ -4,15 +4,20 @@
 #
 # Each environment has three resources:
 #   - linguaflow-db-*   managed PostgreSQL 16, private network only, point-in-time recovery
-#   - linguaflow-api-*  the backend (backend/Dockerfile) as a private service: not reachable
-#                       from the internet, one instance (rate limits and the AI job worker
-#                       live in its memory)
-#   - linguaflow-web-*  the frontend (frontend/Dockerfile) as the public web service: Render
-#                       terminates HTTPS, nginx serves the app and proxies /api to the backend
+#   - linguaflow-api-*  the backend image as a private service: not reachable from the
+#                       internet, one instance (rate limits and the AI job worker live in
+#                       its memory)
+#   - linguaflow-web-*  the frontend image as the public web service: Render terminates
+#                       HTTPS, nginx serves the app and proxies /api to the backend
 #
-# Staging deploys automatically once CI passes on main and answers AI calls with scripted
-# content (no key, no cost). Production deploys only when someone presses "Deploy" (OPS-03
-# automates the promotion) and is protected against accidental changes.
+# The services run images built once by GitHub Actions and pushed to GHCR (OPS-03), not
+# builds on Render: the Deliver workflow deploys each green commit on main to staging, and
+# the Promote workflow sends the same images to production after an approval. Pulling them
+# needs the Render registry credential "ghcr-linguaflow" (a GitHub token with
+# read:packages), created before this Blueprint is applied.
+#
+# Staging answers AI calls with scripted content (no key, no cost). Production is protected
+# against accidental changes.
 #
 # Plans and region are a starting point; change them here or in the Dashboard. The region
 # and the database's name, user and version can't change after creation.
@@ -39,15 +44,14 @@ projects:
         services:
           - type: pserv
             name: linguaflow-api-staging
-            runtime: docker
+            runtime: image
+            image:
+              url: ghcr.io/yerkebulannurtaiuly/linguaflow-backend:staging
+              creds:
+                fromRegistryCreds:
+                  name: ghcr-linguaflow
             region: frankfurt
             plan: 1c-2g
-            dockerContext: ./backend
-            dockerfilePath: ./backend/Dockerfile
-            autoDeployTrigger: checksPass
-            buildFilter:
-              paths:
-                - backend/**
             envVars:
               - key: SPRING_PROFILES_ACTIVE
                 value: prod
@@ -66,16 +70,15 @@ projects:
                 sync: false
           - type: web
             name: linguaflow-web-staging
-            runtime: docker
+            runtime: image
+            image:
+              url: ghcr.io/yerkebulannurtaiuly/linguaflow-frontend:staging
+              creds:
+                fromRegistryCreds:
+                  name: ghcr-linguaflow
             region: frankfurt
             plan: 0.5c-512mb
-            dockerContext: ./frontend
-            dockerfilePath: ./frontend/Dockerfile
             healthCheckPath: /healthz
-            autoDeployTrigger: checksPass
-            buildFilter:
-              paths:
-                - frontend/**
             envVars:
               - key: PORT
                 value: "8080"
@@ -102,12 +105,14 @@ projects:
         services:
           - type: pserv
             name: linguaflow-api-production
-            runtime: docker
+            runtime: image
+            image:
+              url: ghcr.io/yerkebulannurtaiuly/linguaflow-backend:production
+              creds:
+                fromRegistryCreds:
+                  name: ghcr-linguaflow
             region: frankfurt
             plan: 1c-2g
-            dockerContext: ./backend
-            dockerfilePath: ./backend/Dockerfile
-            autoDeployTrigger: "off"
             envVars:
               - key: SPRING_PROFILES_ACTIVE
                 value: prod
@@ -124,13 +129,15 @@ projects:
                 sync: false
           - type: web
             name: linguaflow-web-production
-            runtime: docker
+            runtime: image
+            image:
+              url: ghcr.io/yerkebulannurtaiuly/linguaflow-frontend:production
+              creds:
+                fromRegistryCreds:
+                  name: ghcr-linguaflow
             region: frankfurt
             plan: 0.5c-512mb
-            dockerContext: ./frontend
-            dockerfilePath: ./frontend/Dockerfile
             healthCheckPath: /healthz
-            autoDeployTrigger: "off"
             envVars:
               - key: PORT
                 value: "8080"

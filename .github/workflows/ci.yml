@@ -155,7 +155,7 @@ jobs:
       - name: Start the stack and check it end to end
         run: |
           docker compose up -d
-          for i in $(seq 1 60); do
+          for _ in $(seq 1 60); do
             if curl -fsS http://localhost:3000/actuator/health | grep -q '"status":"UP"'; then
               echo "Backend is UP through the frontend's nginx"
               curl -fsS -o /dev/null http://localhost:3000/
