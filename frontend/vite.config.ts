@@ -18,6 +18,10 @@ export default defineConfig({
       '/api': backendUrl,
       '/actuator': backendUrl,
     },
+    // Tests only: apiOverview.test.ts reads the API overview in the docs (DOC-01)
+    ...(process.env.VITEST
+      ? { fs: { allow: ['.', '../docs/technical-specification'] } }
+      : {}),
   },
   test: {
     environment: 'jsdom',

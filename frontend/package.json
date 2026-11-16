@@ -16,7 +16,8 @@
     "format:check": "prettier --check .",
     "test": "vitest run",
     "test:watch": "vitest",
-    "api:generate": "openapi-typescript openapi.json -o src/api/schema.ts"
+    "api:generate": "openapi-typescript openapi.json -o src/api/schema.ts",
+    "docs:api": "node scripts/api-overview.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",
