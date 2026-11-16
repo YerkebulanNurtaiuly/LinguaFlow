@@ -16,7 +16,7 @@ RUN echo "${APP_VERSION}" > dist/version.txt
 
 # ---- Runtime stage (OPS-01): static files behind nginx, which also proxies /api ----
 # nginx-unprivileged runs as a non-root user (uid 101) and listens on 8080
-FROM nginxinc/nginx-unprivileged:1.30-alpine
+FROM nginxinc/nginx-unprivileged:1.31-alpine
 # The commit the image was built from (OPS-03); "dev" for local builds
 ARG APP_VERSION=dev
 LABEL org.opencontainers.image.title="LinguaFlow frontend" \
