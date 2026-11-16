@@ -1,0 +1,46 @@
+name: Restore drill
+
+# OPS-05: backs up a throwaway database, restores it into a new server, compares every
+# table and checks the app on the restored copy (scripts/restore-drill.sh). It runs monthly,
+# on demand, and whenever the backup scripts change, so a schema or tooling change that
+# breaks restores is caught before it's needed. It never touches a deployed database; the
+# drill against Render is manual, see docs/operations/backup-restore.md.
+on:
+  schedule:
+    - cron: '17 4 1 * *'
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/db-*.sh'
+      - 'scripts/lib/pg.sh'
+      - 'scripts/restore-drill.sh'
+      - '.github/workflows/restore-drill.yml'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: restore-drill
+  cancel-in-progress: false
+
+jobs:
+  drill:
+    name: Back up, restore and check
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Run the restore drill
+        run: |
+          {
+            echo '## Restore drill'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          status=0
+          scripts/restore-drill.sh > drill.log 2>&1 || status=$?
+          cat drill.log
+          grep -E '^(==|   .* took|Backup written|Restored|[0-9]+ tables|The demo learner|From an empty|Restore drill)' drill.log >> "$GITHUB_STEP_SUMMARY" || true
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

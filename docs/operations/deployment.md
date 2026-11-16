@@ -163,7 +163,8 @@ Optional backend settings, any `linguaflow.*` property as an environment variabl
 - **Recovery:** Render keeps point-in-time recovery for paid databases. That's the last
   3 days on a Hobby workspace and 7 days on Pro or higher. Restoring creates a **new**
   database from a chosen moment; you then point the backend's `DATABASE_URL` at it.
-  OPS-05 documents and tests the full procedure.
+  The full procedure, the backup scripts and the drill record are in
+  [backup-restore.md](backup-restore.md) (OPS-05).
 - **Exports:** from the database's **Recovery** page you can create a logical export,
   kept for 7 days. Download it to keep it longer.
 - **Connecting with `psql`:** the database accepts no outside connections. To connect,
@@ -178,4 +179,5 @@ Optional backend settings, any `linguaflow.*` property as an environment variabl
   (`docs/security/privacy.md`).
 - **Observability (OPS-04):** a Sentry DSN, a metrics scraper and the uptime variables still
   have to be set up; see [observability.md](observability.md).
-- **Restore drill (OPS-05):** the documented and tested restore.
+- **Restore drill on Render:** the automated drill runs on Docker; a point-in-time recovery
+  of staging still has to be done once ([backup-restore.md](backup-restore.md#drills)).

@@ -393,8 +393,9 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   Structured JSON logs, Micrometer metrics (+ Prometheus/Grafana or provider equivalent), AI latency/cost/error dashboards, error tracking (Sentry) for backend and frontend, uptime alerts.
   _Done: ECS JSON logs in prod; Micrometer + Prometheus behind a bearer token with AI call, token, cost, refusal, cache and job metrics; Prometheus and two provisioned Grafana dashboards (`--profile observability`); Sentry for the backend (on with `SENTRY_DSN`), browser errors reported through `/api/client-errors`; a 10-minute uptime workflow. See docs/operations/observability.md._
 
-- [ ] **OPS-05 — Backups & restore drill** (S) — _deps: OPS-02_
+- [x] **OPS-05 — Backups & restore drill** (S) — _deps: OPS-02_
   Documented restore procedure, tested once.
+  _Done: docs/operations/backup-restore.md (targets, PITR runbook, data-protection rules, drill log); scripts/db-backup.sh, db-restore.sh (empty targets only, one transaction) and db-verify.sh (table-by-table counts); scripts/restore-drill.sh restores into a separate server and checks the app on the copy, passed on 2026-11-16 and run monthly by the Restore drill workflow. A PITR drill on Render staging is still to do._
 
 ### Epic 18: Documentation
 
