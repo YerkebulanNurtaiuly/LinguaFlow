@@ -1,0 +1,141 @@
+# Render Blueprint (OPS-02): staging and production for LinguaFlow.
+# Create it in the Render Dashboard: New → Blueprint → this repository. See
+# docs/operations/deployment.md for the first deploy, secrets and day-to-day operation.
+#
+# Each environment has three resources:
+#   - linguaflow-db-*   managed PostgreSQL 16, private network only, point-in-time recovery
+#   - linguaflow-api-*  the backend (backend/Dockerfile) as a private service: not reachable
+#                       from the internet, one instance (rate limits and the AI job worker
+#                       live in its memory)
+#   - linguaflow-web-*  the frontend (frontend/Dockerfile) as the public web service: Render
+#                       terminates HTTPS, nginx serves the app and proxies /api to the backend
+#
+# Staging deploys automatically once CI passes on main and answers AI calls with scripted
+# content (no key, no cost). Production deploys only when someone presses "Deploy" (OPS-03
+# automates the promotion) and is protected against accidental changes.
+#
+# Plans and region are a starting point; change them here or in the Dashboard. The region
+# and the database's name, user and version can't change after creation.
+
+previews:
+  generation: off
+
+projects:
+  - name: linguaflow
+    environments:
+      - name: staging
+        networking:
+          isolation: enabled
+        databases:
+          - name: linguaflow-db-staging
+            plan: 0.1c-256mb
+            diskSizeGB: 5
+            region: frankfurt
+            postgresMajorVersion: "16"
+            databaseName: linguaflow
+            user: linguaflow
+            # No access from outside Render's private network
+            ipAllowList: []
+        services:
+          - type: pserv
+            name: linguaflow-api-staging
+            runtime: docker
+            region: frankfurt
+            plan: 1c-2g
+            dockerContext: ./backend
+            dockerfilePath: ./backend/Dockerfile
+            autoDeployTrigger: checksPass
+            buildFilter:
+              paths:
+                - backend/**
+            envVars:
+              - key: SPRING_PROFILES_ACTIVE
+                value: prod
+              # A libpq URL; the backend turns it into its JDBC settings
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: linguaflow-db-staging
+                  property: connectionString
+              - key: JWT_SECRET
+                generateValue: true
+              # Scripted AI answers: the whole app works without a key or cost (QA-05)
+              - key: AI_PROVIDER
+                value: scripted
+              # The public URL of linguaflow-web-staging, e.g. https://linguaflow-web-staging.onrender.com
+              - key: FRONTEND_URL
+                sync: false
+          - type: web
+            name: linguaflow-web-staging
+            runtime: docker
+            region: frankfurt
+            plan: 0.5c-512mb
+            dockerContext: ./frontend
+            dockerfilePath: ./frontend/Dockerfile
+            healthCheckPath: /healthz
+            autoDeployTrigger: checksPass
+            buildFilter:
+              paths:
+                - frontend/**
+            envVars:
+              - key: PORT
+                value: "8080"
+              - key: BACKEND_URL
+                fromService:
+                  type: pserv
+                  name: linguaflow-api-staging
+                  property: hostport
+
+      - name: production
+        networking:
+          isolation: enabled
+        permissions:
+          protection: enabled
+        databases:
+          - name: linguaflow-db-production
+            plan: 0.5c-1g
+            diskSizeGB: 10
+            region: frankfurt
+            postgresMajorVersion: "16"
+            databaseName: linguaflow
+            user: linguaflow
+            ipAllowList: []
+        services:
+          - type: pserv
+            name: linguaflow-api-production
+            runtime: docker
+            region: frankfurt
+            plan: 1c-2g
+            dockerContext: ./backend
+            dockerfilePath: ./backend/Dockerfile
+            autoDeployTrigger: "off"
+            envVars:
+              - key: SPRING_PROFILES_ACTIVE
+                value: prod
+              - key: DATABASE_URL
+                fromDatabase:
+                  name: linguaflow-db-production
+                  property: connectionString
+              - key: JWT_SECRET
+                generateValue: true
+              # The Anthropic API key; entered in the Dashboard, never in this file
+              - key: AI_API_KEY
+                sync: false
+              - key: FRONTEND_URL
+                sync: false
+          - type: web
+            name: linguaflow-web-production
+            runtime: docker
+            region: frankfurt
+            plan: 0.5c-512mb
+            dockerContext: ./frontend
+            dockerfilePath: ./frontend/Dockerfile
+            healthCheckPath: /healthz
+            autoDeployTrigger: "off"
+            envVars:
+              - key: PORT
+                value: "8080"
+              - key: BACKEND_URL
+                fromService:
+                  type: pserv
+                  name: linguaflow-api-production
+                  property: hostport

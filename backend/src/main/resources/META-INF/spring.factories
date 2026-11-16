@@ -1,0 +1,3 @@
+# OPS-02: a libpq DATABASE_URL (as Render hands it out) becomes DB_URL, DB_USERNAME and DB_PASSWORD
+org.springframework.boot.EnvironmentPostProcessor=\
+com.linguaflow.common.config.DatabaseUrlEnvironmentPostProcessor

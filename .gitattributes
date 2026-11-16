@@ -1,4 +1,6 @@
 # Shell scripts must keep LF so they run on Linux/macOS/WSL; Windows scripts keep CRLF.
 *.sh text eol=lf
+# nginx entrypoint scripts sourced inside the Linux container (OPS-02)
+*.envsh text eol=lf
 **/mvnw text eol=lf
 *.cmd text eol=crlf

@@ -18,11 +18,14 @@ LABEL org.opencontainers.image.title="LinguaFlow frontend" \
       org.opencontainers.image.source="https://github.com/YerkebulanNurtaiuly/LinguaFlow" \
       org.opencontainers.image.licenses="MIT"
 # Where /api is proxied to; the compose service by default. A platform that names its
-# services differently sets BACKEND_URL, e.g. http://linguaflow-backend:8080.
+# services differently sets BACKEND_URL, with or without http:// (Render's fromService
+# gives "linguaflow-api-xyz:8080"). docker/10-backend-url.envsh adds the scheme and finds
+# the DNS resolver nginx needs to look the backend up per request (OPS-02).
 ENV BACKEND_URL=http://backend:8080 \
-    NGINX_ENVSUBST_FILTER=^BACKEND_
-# Rendered to /etc/nginx/conf.d/default.conf at startup, with BACKEND_URL filled in;
-# the filter leaves nginx variables like $host alone
+    NGINX_ENVSUBST_FILTER=^(BACKEND_URL|NGINX_LOCAL_RESOLVERS)$
+COPY --chmod=0755 docker/10-backend-url.envsh /docker-entrypoint.d/10-backend-url.envsh
+# Rendered to /etc/nginx/conf.d/default.conf at startup with those two filled in; the
+# filter leaves nginx's own variables like $host alone
 COPY nginx.conf /etc/nginx/templates/default.conf.template
 COPY security-headers.conf /etc/nginx/snippets/security-headers.conf
 COPY --from=build /app/dist /usr/share/nginx/html

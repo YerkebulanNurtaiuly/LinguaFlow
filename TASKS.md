@@ -383,7 +383,7 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
 - [x] **OPS-01 — Production Docker images** (S) — _deps: INF-04_
   Slim JRE image, non-root user, healthchecks; nginx config for SPA routing and `/api` reverse proxy.
 
-- [ ] **OPS-02 — Hosting & environments** (M) — _deps: OPS-01_
+- [x] **OPS-02 — Hosting & environments** (M) — _deps: OPS-01_ — Render: `render.yaml` defines both environments; the owner applies it once in the Render Dashboard (`docs/operations/deployment.md`)
   Pick hosting (e.g. a VPS with Docker Compose, Fly.io, Render, or AWS ECS + RDS). Staging and production environments, managed PostgreSQL with automated backups, HTTPS.
 
 - [ ] **OPS-03 — CD pipeline** (M) — _deps: OPS-02, INF-06_

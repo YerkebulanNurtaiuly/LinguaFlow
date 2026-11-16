@@ -138,6 +138,16 @@ jobs:
       - name: Check the compose file
         run: docker compose config --quiet
 
+      # OPS-02: catch a broken render.yaml before Render does
+      - name: Validate the Render Blueprint
+        run: |
+          if curl -fsSL -o /tmp/render-schema.json https://render.com/schema/render.yaml.json; then
+            npx -y -p ajv-cli@5.0.0 -p ajv-formats@3.0.1 ajv validate --spec=draft2020 --strict=false \
+              -c ajv-formats -s /tmp/render-schema.json -d render.yaml
+          else
+            echo "::warning title=Render Blueprint::Couldn't download Render's schema; render.yaml wasn't validated"
+          fi
+
       - name: Build the images
         run: docker compose build
 

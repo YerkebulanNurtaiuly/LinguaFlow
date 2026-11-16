@@ -38,7 +38,7 @@ nginx served the app with no security headers, and the API had only Spring Secur
   - **On top of Spring's defaults** (`nosniff`, `Cache-Control: no-store`, HSTS on HTTPS requests): `X-Frame-Options: DENY`, `Referrer-Policy: no-referrer` and the same `Permissions-Policy`.
   - **A CSP of its own on `/api/**`:** `default-src 'none'; frame-ancestors 'none'; base-uri 'none'`, since a JSON response is never a page.
   - **Swagger UI** (dev only) is outside `/api` and keeps working.
-- **HSTS:** it belongs to the HTTPS proxy in front of the containers (OPS-02). Sent over plain HTTP it's ignored, and on `localhost` it would pin developers' browsers to HTTPS.
+- **HSTS:** nginx sends it only when the browser used HTTPS, judged from the platform's `X-Forwarded-Proto` (OPS-02, the `$hsts` map). Over plain HTTP, including `localhost`, it's left out so developers' browsers aren't pinned to HTTPS. Render terminates TLS ([deployment guide](../operations/deployment.md)).
 
 ### 2. No dependency scanning (A03), fixed
 
@@ -104,7 +104,7 @@ nginx served the app with no security headers, and the API had only Spring Secur
 - **Rate limits are per instance:** the buckets live in each instance's memory. Move them to Redis or JDBC before scaling out (noted in CLAUDE.md).
 - **Health is public:** `/actuator/health` is reachable through nginx. Prod shows no details, but OPS-02 should still keep it internal or behind the load balancer.
 - **Alerting (A09):** logs carry correlation IDs and never secrets or prompts, but nothing alerts on 5xx spikes, repeated 401s or AI failures yet. That's OPS-04.
-- **HSTS and TLS** belong to the deployment (OPS-02).
+- **HSTS and TLS:** done in OPS-02. Render terminates TLS, and nginx adds HSTS over HTTPS.
 
 ## Guards
 

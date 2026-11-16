@@ -1,7 +1,11 @@
 # Deployed environments. Required environment variables (startup fails without them):
-#   DB_URL, DB_USERNAME, DB_PASSWORD, JWT_SECRET
-# Optional: AI_API_KEY, CORS_ALLOWED_ORIGINS (only if the frontend is on another origin),
-#   FRONTEND_URL (base of the links in emails)
+#   the database: DB_URL, DB_USERNAME and DB_PASSWORD, or one libpq DATABASE_URL
+#     (postgresql://user:password@host:port/db, as Render gives it; see
+#     DatabaseUrlEnvironmentPostProcessor, OPS-02)
+#   JWT_SECRET (at least 32 characters)
+#   AI_API_KEY, unless AI_PROVIDER is scripted (staging, demos)
+# Recommended: FRONTEND_URL, the public https URL (links in emails, and the default
+#   allowed CORS origin). CORS_ALLOWED_ORIGINS overrides that list.
 springdoc:
   api-docs:
     enabled: false
@@ -16,6 +20,10 @@ management:
 linguaflow:
   app:
     frontend-url: ${FRONTEND_URL:http://localhost:5173}
+  # nginx forwards the browser's scheme and host, so same-origin calls pass anyway; this
+  # keeps the public origin allowed if a proxy in between rewrites them
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:${FRONTEND_URL:}}
   # No SMTP mailer yet: emails are suppressed (never logged with their secret links)
   mail:
     mode: disabled
