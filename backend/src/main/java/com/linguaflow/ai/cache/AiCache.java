@@ -6,6 +6,7 @@ import java.time.Instant;
 import java.util.Map;
 import java.util.Optional;
 
+import com.linguaflow.ai.AiMetrics;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,9 +55,12 @@ public class AiCache {
 
 	private final TransactionTemplate tx;
 
+	private final AiMetrics metrics;
+
 	public AiCache(AiCacheRepository entries, Clock clock, LinguaFlowProperties properties,
-			PlatformTransactionManager transactions) {
+			PlatformTransactionManager transactions, AiMetrics metrics) {
 		this.entries = entries;
+		this.metrics = metrics;
 		this.clock = clock;
 		this.settings = properties.ai().cache();
 		this.tx = new TransactionTemplate(transactions);
@@ -68,6 +72,12 @@ public class AiCache {
 		if (!settings.enabled()) {
 			return Optional.empty();
 		}
+		Optional<T> found = lookUp(key, type);
+		metrics.cacheLookup(key.useCase(), found.isPresent());
+		return found;
+	}
+
+	private <T> Optional<T> lookUp(AiCacheKey key, Class<T> type) {
 		String hash = key.hash();
 		try {
 			return tx.execute(status -> {

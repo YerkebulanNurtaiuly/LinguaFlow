@@ -25,6 +25,8 @@
 		<jacoco.version>0.8.16</jacoco.version>
 		<checkstyle.version>14.3.0</checkstyle.version>
 		<maven-checkstyle-plugin.version>3.6.0</maven-checkstyle-plugin.version>
+		<!-- Error tracking (OPS-04) -->
+		<sentry.version>8.62.0</sentry.version>
 	</properties>
 
 	<dependencies>
@@ -98,6 +100,21 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
+		</dependency>
+		<!-- OPS-04: metrics at /actuator/prometheus (token-protected), errors to Sentry when SENTRY_DSN is set -->
+		<dependency>
+			<groupId>io.micrometer</groupId>
+			<artifactId>micrometer-registry-prometheus</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry-spring-boot-4-starter</artifactId>
+			<version>${sentry.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>io.sentry</groupId>
+			<artifactId>sentry-logback</artifactId>
+			<version>${sentry.version}</version>
 		</dependency>
 
 		<dependency>

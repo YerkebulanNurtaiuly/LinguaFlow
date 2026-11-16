@@ -24,7 +24,8 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("linguaflow")
 public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai ai, Cors cors,
-		@Valid RateLimit rateLimit, App app, Mail mail, Exercises exercises, @Valid Progress progress) {
+		@Valid RateLimit rateLimit, App app, Mail mail, Exercises exercises, @Valid Progress progress,
+		Metrics metrics) {
 
 	public LinguaFlowProperties {
 		if (ai == null) {
@@ -40,7 +41,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 			cors = new Cors(List.of());
 		}
 		if (rateLimit == null) {
-			rateLimit = new RateLimit(null, null, null, null);
+			rateLimit = new RateLimit(null, null, null, null, null);
 		}
 		if (exercises == null) {
 			exercises = new Exercises(null);
@@ -48,6 +49,32 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 		if (progress == null) {
 			progress = new Progress(null);
 		}
+		if (metrics == null) {
+			metrics = new Metrics(null);
+		}
+	}
+
+	/**
+	 * Metrics scraping (OPS-04): {@code /actuator/prometheus} answers only requests with
+	 * {@code Authorization: Bearer <token>} (env {@code METRICS_TOKEN}). Without a token
+	 * the endpoint is closed to everyone.
+	 */
+	public record Metrics(String token) {
+
+		public Metrics {
+			token = (token == null) ? "" : token.strip();
+		}
+
+		public boolean scrapingEnabled() {
+			return !token.isEmpty();
+		}
+
+		/** Keeps the token out of logs. */
+		@Override
+		public String toString() {
+			return "Metrics[token=" + (token.isEmpty() ? "none" : "***") + "]";
+		}
+
 	}
 
 	public record Security(@Valid @NotNull Jwt jwt, RefreshCookie refreshCookie, ActionTokens actionTokens) {
@@ -368,13 +395,16 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 	 * Per-client-IP limits for the public auth endpoints (AUTH-06). Defaults: 10 logins per
 	 * minute, 5 registrations and 5 password-reset requests per hour. Disabled in the test profile.
 	 */
-	public record RateLimit(Boolean enabled, @Valid Limit login, @Valid Limit register, @Valid Limit passwordReset) {
+	public record RateLimit(Boolean enabled, @Valid Limit login, @Valid Limit register, @Valid Limit passwordReset,
+			@Valid Limit clientErrors) {
 
 		public RateLimit {
 			enabled = (enabled == null) ? Boolean.TRUE : enabled;
 			login = (login == null) ? new Limit(10, Duration.ofMinutes(1)) : login;
 			register = (register == null) ? new Limit(5, Duration.ofHours(1)) : register;
 			passwordReset = (passwordReset == null) ? new Limit(5, Duration.ofHours(1)) : passwordReset;
+			// Browser error reports (OPS-04): a page in a crash loop mustn't flood the logs
+			clientErrors = (clientErrors == null) ? new Limit(30, Duration.ofMinutes(1)) : clientErrors;
 		}
 
 	}

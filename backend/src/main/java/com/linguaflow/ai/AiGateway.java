@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Set;
 
 import com.linguaflow.ai.usage.AiQuota;
+import com.linguaflow.ai.usage.AiQuotaExceededException;
 import com.linguaflow.ai.usage.AiRequestLog;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
@@ -25,7 +26,8 @@ import org.springframework.stereotype.Component;
  * {@code UNAVAILABLE}, so a struggling provider isn't hammered and jobs back off. Other
  * errors (bad request, refusal) say nothing about the provider's health and don't
  * count;</li>
- * <li>logs the call in {@code ai_requests}, with tokens, latency, cost and outcome.</li>
+ * <li>logs the call in {@code ai_requests}, with tokens, latency, cost and outcome, and
+ * records it in the {@link AiMetrics} (OPS-04).</li>
  * </ol>
  * Timeouts are per use case, in {@link LlmOptions} (AI-01). Calls refused by the quota or
  * the open circuit never reach the provider and aren't logged as calls.
@@ -47,10 +49,14 @@ public class AiGateway {
 
 	private final CircuitBreaker breaker;
 
-	public AiGateway(LlmClient client, AiQuota quota, AiRequestLog requests, LinguaFlowProperties properties) {
+	private final AiMetrics metrics;
+
+	public AiGateway(LlmClient client, AiQuota quota, AiRequestLog requests, LinguaFlowProperties properties,
+			AiMetrics metrics) {
 		this.client = client;
 		this.quota = quota;
 		this.requests = requests;
+		this.metrics = metrics;
 		LinguaFlowProperties.Ai.Breaker settings = properties.ai().circuitBreaker();
 		this.breaker = CircuitBreaker.of("llm-" + client.provider(), CircuitBreakerConfig.custom()
 			.slidingWindowType(CircuitBreakerConfig.SlidingWindowType.COUNT_BASED)
@@ -74,19 +80,29 @@ public class AiGateway {
 	 */
 	public LlmResponse complete(AiCaller caller, String promptVersion, LlmPrompt prompt,
 			@Nullable Map<String, Object> jsonSchema, LlmOptions options) {
-		quota.check(caller);
+		try {
+			quota.check(caller);
+		}
+		catch (AiQuotaExceededException ex) {
+			metrics.refused(options.useCase(), "quota");
+			throw ex;
+		}
 		long started = System.nanoTime();
 		try {
 			LlmResponse response = breaker.executeSupplier(() -> client.complete(prompt, jsonSchema, options));
 			requests.succeeded(caller, promptVersion, options, response);
+			metrics.succeeded(options, response, Duration.ofNanos(System.nanoTime() - started));
 			return response;
 		}
 		catch (CallNotPermittedException ex) {
+			metrics.refused(options.useCase(), "circuit_open");
 			throw new LlmException(LlmException.Kind.UNAVAILABLE,
 					"AI calls are paused for a moment after repeated provider failures", ex);
 		}
 		catch (LlmException ex) {
-			requests.failed(caller, promptVersion, options, ex, Duration.ofNanos(System.nanoTime() - started));
+			Duration took = Duration.ofNanos(System.nanoTime() - started);
+			requests.failed(caller, promptVersion, options, ex, took);
+			metrics.failed(options, ex.kind(), took);
 			throw ex;
 		}
 	}

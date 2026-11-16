@@ -1,0 +1,16 @@
+# Local metrics (OPS-04): `docker compose --profile observability up` scrapes the backend.
+# The token is the local default from docker-compose.yml, not a secret.
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: linguaflow-backend
+    metrics_path: /actuator/prometheus
+    authorization:
+      type: Bearer
+      credentials: local-metrics-token
+    static_configs:
+      - targets: ['backend:8080']
+        labels:
+          environment: local

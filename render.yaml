@@ -68,6 +68,14 @@ projects:
               # The public URL of linguaflow-web-staging, e.g. https://linguaflow-web-staging.onrender.com
               - key: FRONTEND_URL
                 sync: false
+              # Observability (OPS-04): Sentry when a DSN is entered (empty = off), a generated
+              # token for a metrics scraper on the private network
+              - key: SENTRY_DSN
+                sync: false
+              - key: SENTRY_ENVIRONMENT
+                value: staging
+              - key: METRICS_TOKEN
+                generateValue: true
           - type: web
             name: linguaflow-web-staging
             runtime: image
@@ -127,6 +135,14 @@ projects:
                 sync: false
               - key: FRONTEND_URL
                 sync: false
+              # Observability (OPS-04): Sentry when a DSN is entered (empty = off), a generated
+              # token for a metrics scraper on the private network
+              - key: SENTRY_DSN
+                sync: false
+              - key: SENTRY_ENVIRONMENT
+                value: production
+              - key: METRICS_TOKEN
+                generateValue: true
           - type: web
             name: linguaflow-web-production
             runtime: image

@@ -2,6 +2,7 @@
 #
 #   docker compose up --build          # http://localhost:3000 (demo@linguaflow.local / demo-password-123)
 #   docker compose --profile tools up  # also pgAdmin on http://localhost:5050
+#   docker compose --profile observability up  # also Prometheus (:9090) and Grafana (:3001)
 #   docker compose down                # stop; add -v to also delete the database
 #
 # The backend runs the dev profile, so it loads the demo data and serves the API docs at
@@ -48,6 +49,9 @@ services:
       FRONTEND_URL: http://localhost:${FRONTEND_PORT:-3000}
       # The browser sends an Origin header with every POST, so a changed FRONTEND_PORT must be allowed too
       CORS_ALLOWED_ORIGINS: http://localhost:${FRONTEND_PORT:-3000}
+      # Lets the observability profile's Prometheus scrape /actuator/prometheus (OPS-04); a
+      # local value, not a secret. Deployed environments get a generated token.
+      METRICS_TOKEN: local-metrics-token
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8080}:8080"
 
@@ -60,6 +64,35 @@ services:
         condition: service_healthy
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:8080"
+
+  # Metrics and dashboards (OPS-04): docker compose --profile observability up
+  # Prometheus on http://localhost:9090, Grafana on http://localhost:3001 (dashboards in
+  # the LinguaFlow folder; anonymous viewers, admin/admin to edit locally)
+  prometheus:
+    image: prom/prometheus:v3.15.1
+    profiles: [observability]
+    depends_on:
+      - backend
+    volumes:
+      - ./ops/observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "127.0.0.1:${PROMETHEUS_PORT:-9090}:9090"
+
+  grafana:
+    image: grafana/grafana:13.2.5
+    profiles: [observability]
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Viewer
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/linguaflow-ai.json
+    volumes:
+      - ./ops/observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./ops/observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    ports:
+      - "127.0.0.1:${GRAFANA_PORT:-3001}:3000"
 
   pgadmin:
     image: dpage/pgadmin4:9

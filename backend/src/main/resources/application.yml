@@ -76,11 +76,30 @@ management:
   endpoints:
     web:
       exposure:
-        include: health
+        # prometheus (OPS-04) answers only a scraper presenting METRICS_TOKEN (SecurityConfig);
+        # nginx never proxies it, so it's reachable on the private network only
+        include: health, prometheus
   endpoint:
     health:
       probes:
         enabled: true
+  metrics:
+    tags:
+      application: linguaflow
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+
+# Error tracking (OPS-04): off unless SENTRY_DSN is set. See common.config.SentryConfig.
+sentry:
+  dsn: ${SENTRY_DSN:}
+  environment: ${SENTRY_ENVIRONMENT:local}
+  release: ${APP_VERSION:dev}
+  send-default-pii: false
+  in-app-includes: com.linguaflow
+  logging:
+    minimum-event-level: error
+    minimum-breadcrumb-level: info
 
 linguaflow:
   security:
@@ -97,3 +116,6 @@ linguaflow:
   cors:
     # Comma-separated origins allowed to call /api from the browser; empty = same-origin only
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}
+  metrics:
+    # The bearer token Prometheus presents at /actuator/prometheus (OPS-04); empty = closed
+    token: ${METRICS_TOKEN:}

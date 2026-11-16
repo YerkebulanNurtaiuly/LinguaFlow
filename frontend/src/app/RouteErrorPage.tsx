@@ -9,6 +9,7 @@ import {
 } from 'react-router'
 import { Button } from '@/components/ui'
 import { cn } from '@/lib/cn'
+import { reportError } from '@/lib/errorReporting'
 
 function technicalDetails(error: unknown): string | undefined {
   if (error instanceof Error) return error.stack ?? error.message
@@ -35,6 +36,13 @@ export function RouteErrorPage({ inline = false }: { inline?: boolean }) {
   useEffect(() => {
     document.title = 'Something went wrong · LinguaFlow'
   }, [])
+
+  // OPS-04: crashes are reported; a route's own error response (like a 404) isn't one
+  useEffect(() => {
+    if (import.meta.env.PROD && !isRouteErrorResponse(error)) {
+      void reportError('render', error)
+    }
+  }, [error])
 
   const details = import.meta.env.DEV ? technicalDetails(error) : undefined
 

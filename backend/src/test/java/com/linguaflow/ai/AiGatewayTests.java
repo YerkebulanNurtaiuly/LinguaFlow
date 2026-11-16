@@ -19,6 +19,7 @@ import com.linguaflow.ai.usage.AiQuotaExceededException;
 import com.linguaflow.ai.usage.AiRequestLog;
 import com.linguaflow.common.config.LinguaFlowProperties;
 import io.github.resilience4j.circuitbreaker.CircuitBreaker;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 
 class AiGatewayTests {
@@ -36,7 +37,10 @@ class AiGatewayTests {
 
 	private final AiRequestLog requests = mock(AiRequestLog.class);
 
-	private final AiGateway gateway = new AiGateway(fake, quota, requests, properties(Duration.ofMillis(300)));
+	private final SimpleMeterRegistry meters = new SimpleMeterRegistry();
+
+	private final AiGateway gateway = new AiGateway(fake, quota, requests, properties(Duration.ofMillis(300)),
+			new AiMetrics(meters));
 
 	private static LinguaFlowProperties properties(Duration openFor) {
 		LinguaFlowProperties properties = mock(LinguaFlowProperties.class);
@@ -58,6 +62,26 @@ class AiGatewayTests {
 		fake.failNext(failure);
 		assertThatThrownBy(this::call).isSameAs(failure);
 		verify(requests).failed(eq(ANNA), eq("vocabulary-enrichment/v1"), eq(OPTIONS), eq(failure), any());
+	}
+
+	/** OPS-04: each call is timed and counted by use case, model and outcome, with its tokens. */
+	@Test
+	void recordsMetricsForEveryOutcome() {
+		call();
+		fake.failNext(new LlmException(LlmException.Kind.TIMEOUT, "too slow"));
+		assertThatThrownBy(this::call).isInstanceOf(LlmException.class);
+		doThrow(new AiQuotaExceededException("limit", Instant.now())).when(quota).check(ANNA);
+		assertThatThrownBy(this::call).isInstanceOf(AiQuotaExceededException.class);
+
+		assertThat(meters.get("linguaflow.ai.calls")
+			.tags("use_case", "vocabulary-enrichment", "model", "claude-opus-5-5", "outcome", "success")
+			.timer()
+			.count()).isEqualTo(1);
+		assertThat(meters.get("linguaflow.ai.calls").tags("outcome", "timeout").timer().count()).isEqualTo(1);
+		assertThat(meters.get("linguaflow.ai.tokens").tags("type", "input").counter().count()).isPositive();
+		assertThat(meters.get("linguaflow.ai.refused").tags("reason", "quota").counter().count()).isEqualTo(1);
+		// The fake has no price, so no cost is recorded
+		assertThat(meters.find("linguaflow.ai.cost").counter()).isNull();
 	}
 
 	@Test
@@ -86,6 +110,7 @@ class AiGatewayTests {
 			assertThat(ex.getMessage()).contains("paused");
 		});
 		assertThat(fake.calls()).hasSize(before);
+		assertThat(meters.get("linguaflow.ai.refused").tags("reason", "circuit_open").counter().count()).isEqualTo(1);
 
 		// After open-for, test calls go through and successes close it again
 		Thread.sleep(400);

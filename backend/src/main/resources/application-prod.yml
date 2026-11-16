@@ -30,3 +30,15 @@ linguaflow:
   # Production needs the real AI client: startup fails without AI_API_KEY (AI-01)
   ai:
     provider: ${AI_PROVIDER:anthropic}
+
+# Structured logs (OPS-04): one JSON object per line in Elastic Common Schema, so a log
+# service can search by level, logger and correlation ID (the MDC's correlationId).
+logging:
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: linguaflow-backend
+        version: ${APP_VERSION:dev}
+        environment: ${SENTRY_ENVIRONMENT:production}

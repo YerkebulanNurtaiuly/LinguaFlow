@@ -1,0 +1,62 @@
+name: Uptime
+
+# OPS-04: checks the deployed environments every 10 minutes. A failed run means the site or
+# its backend and database are down; GitHub emails the repository owner about failed
+# scheduled runs (Settings → Notifications → Actions). GitHub may start scheduled runs a
+# few minutes late, so this is a safety net, not minute-precise monitoring; see
+# docs/operations/observability.md for a dedicated uptime service.
+#
+# Needs the repository variables STAGING_URL and/or PRODUCTION_URL; environments without
+# a URL are skipped.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: uptime
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: ${{ matrix.environment }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - environment: production
+            url: ${{ vars.PRODUCTION_URL }}
+          - environment: staging
+            url: ${{ vars.STAGING_URL }}
+    steps:
+      - name: Check ${{ matrix.environment }}
+        env:
+          BASE_URL: ${{ matrix.url }}
+        run: |
+          if [ -z "$BASE_URL" ]; then
+            echo "No URL configured for ${{ matrix.environment }}; skipped"
+            exit 0
+          fi
+          base=${BASE_URL%/}
+          failed=0
+          check() {
+            local path=$1 expect=$2 body
+            # Retry a few times: one dropped request isn't an outage
+            for attempt in 1 2 3; do
+              if body=$(curl -fsS --max-time 15 "${base}${path}") && grep -q "$expect" <<<"$body"; then
+                echo "OK   ${base}${path}"
+                return 0
+              fi
+              sleep $((attempt * 10))
+            done
+            echo "::error title=${{ matrix.environment }} is down::${base}${path} didn't answer with '${expect}'"
+            failed=1
+          }
+          check /healthz ok
+          check /actuator/health '"status":"UP"'
+          exit "$failed"

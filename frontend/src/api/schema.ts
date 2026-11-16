@@ -312,6 +312,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/client-errors": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report a browser error
+         * @description Logs the error for the developers (and Sentry, where configured). Accepts reports without a login; limited per IP.
+         */
+        post: operations["report_1"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/exercise-sets": {
         parameters: {
             query?: never;
@@ -1712,6 +1732,25 @@ export interface components {
             /** Format: int32 */
             correctIndex: number;
             explanation?: string;
+        };
+        /** @description One error that happened in the browser */
+        ClientErrorReport: {
+            /**
+             * @description Where it came from
+             * @example render
+             */
+            kind: string;
+            /** @example Cannot read properties of undefined (reading 'map') */
+            message: string;
+            /**
+             * @description The page's path, without query or fragment
+             * @example /vocabulary
+             */
+            path?: string;
+            /** @description The deployed frontend version (version.txt) */
+            release?: string;
+            /** @description The stack trace, if the browser gave one */
+            stack?: string;
         };
         CreateExerciseSetRequest: {
             /** @description Each exercise practises two or more of the topics at once, with words from different lessons where they fit; needs at least two topics */
@@ -4402,6 +4441,73 @@ export interface operations {
         responses: {
             /** @description Sent (or nothing to do: already verified) */
             202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Invalid request */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Missing or invalid access token */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Not allowed */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Resource not found */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+            /** @description Unexpected server error */
+            500: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/problem+json": components["schemas"]["ApiProblem"];
+                };
+            };
+        };
+    };
+    report_1: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClientErrorReport"];
+            };
+        };
+        responses: {
+            /** @description Reported */
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };

@@ -17,7 +17,7 @@ public final class TestGateways {
 		LinguaFlowProperties properties = mock(LinguaFlowProperties.class);
 		when(properties.ai())
 			.thenReturn(new LinguaFlowProperties.Ai(null, null, null, null, null, null, null, null, null, null));
-		return new AiGateway(client, mock(AiQuota.class), mock(AiRequestLog.class), properties);
+		return new AiGateway(client, mock(AiQuota.class), mock(AiRequestLog.class), properties, AiMetrics.discarding());
 	}
 
 }

@@ -1,4 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
+import { reportError } from '@/lib/errorReporting'
 
 interface State {
   error: Error | null
@@ -21,6 +22,7 @@ export class AppErrorBoundary extends Component<
 
   componentDidCatch(error: Error, info: ErrorInfo): void {
     console.error('LinguaFlow crashed', error, info.componentStack)
+    if (import.meta.env.PROD) void reportError('render', error)
   }
 
   render() {

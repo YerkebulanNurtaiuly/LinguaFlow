@@ -1,11 +1,17 @@
 package com.linguaflow.common.config;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+
 import com.linguaflow.common.security.JwtRoleConverter;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -58,7 +64,44 @@ public class SecurityConfig {
 
 	public static final String PERMISSIONS_POLICY = "camera=(), microphone=(), geolocation=(), payment=(), usb=()";
 
+	/** Where the frontend reports browser errors (OPS-04). */
+	public static final String CLIENT_ERRORS_PATH = "/api/client-errors";
+
+	/** Where Prometheus scrapes the metrics (OPS-04). */
+	static final String METRICS_PATH = "/actuator/prometheus";
+
+	/**
+	 * The metrics endpoint has its own chain, ahead of the JWT one: the scraper presents
+	 * {@code Authorization: Bearer <linguaflow.metrics.token>}, which isn't a JWT. Without a
+	 * configured token, or with a wrong one, it's 401 like any other protected path.
+	 */
 	@Bean
+	@Order(1)
+	SecurityFilterChain metricsFilterChain(HttpSecurity http,
+			@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
+			LinguaFlowProperties properties) throws Exception {
+		AuthenticationEntryPoint unauthorized = (request, response, ex) -> exceptionResolver.resolveException(request,
+				response, null, ex);
+		LinguaFlowProperties.Metrics metrics = properties.metrics();
+		byte[] expected = ("Bearer " + metrics.token()).getBytes(StandardCharsets.UTF_8);
+		http.securityMatcher(METRICS_PATH)
+			.csrf(AbstractHttpConfigurer::disable)
+			.httpBasic(AbstractHttpConfigurer::disable)
+			.formLogin(AbstractHttpConfigurer::disable)
+			.logout(AbstractHttpConfigurer::disable)
+			.sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+			.authorizeHttpRequests(auth -> auth.anyRequest().access((authentication, context) -> {
+				String header = context.getRequest().getHeader(HttpHeaders.AUTHORIZATION);
+				boolean granted = metrics.scrapingEnabled() && header != null
+						&& MessageDigest.isEqual(header.getBytes(StandardCharsets.UTF_8), expected);
+				return new AuthorizationDecision(granted);
+			}))
+			.exceptionHandling(errors -> errors.authenticationEntryPoint(unauthorized));
+		return http.build();
+	}
+
+	@Bean
+	@Order(2)
 	SecurityFilterChain securityFilterChain(HttpSecurity http,
 			@Qualifier("handlerExceptionResolver") HandlerExceptionResolver exceptionResolver,
 			@Value("${springdoc.api-docs.enabled:false}") boolean apiDocsEnabled) throws Exception {
@@ -84,6 +127,8 @@ public class SecurityConfig {
 			.authorizeHttpRequests(auth -> {
 				auth.requestMatchers("/actuator/health", "/actuator/health/**").permitAll();
 				auth.requestMatchers(HttpMethod.POST, PUBLIC_AUTH_ENDPOINTS).permitAll();
+				// OPS-04: browser errors, also from visitors who aren't logged in (rate-limited)
+				auth.requestMatchers(HttpMethod.POST, CLIENT_ERRORS_PATH).permitAll();
 				// Docs are public only where they are enabled (dev); elsewhere the paths stay locked
 				if (apiDocsEnabled) {
 					auth.requestMatchers(API_DOCS_PATHS).permitAll();
