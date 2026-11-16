@@ -180,6 +180,19 @@ Add Learning Material
          +------> Repeat
 ```
 
+## Getting Started
+
+With Docker installed:
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:3000 and sign in as the demo learner `demo@linguaflow.local` /
+`demo-password-123`. The [developer setup guide](docs/development/setup.md) covers running
+the backend and frontend on their own, configuration, the AI in development, tests, API
+changes and migrations.
+
 ## Project Structure
 
 The planned repository structure:
