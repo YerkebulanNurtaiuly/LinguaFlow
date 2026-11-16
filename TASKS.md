@@ -407,8 +407,9 @@ Full task breakdown for building LinguaFlow from an empty repo to a production-r
   How to run locally, env vars, running tests, generating the API client, adding a migration.
   _Done: docs/development/setup.md (prerequisites, Docker quick start, running each part, backend/frontend/Compose variables, demo and admin accounts, AI providers in dev, backend/frontend/e2e tests, the API change pipeline, the migration checklist, style and CI, troubleshooting), linked from a new README "Getting Started" section._
 
-- [ ] **DOC-03 — Update README status & roadmap checkboxes** (S)
+- [x] **DOC-03 — Update README status & roadmap checkboxes** (S)
   Replace the status placeholder and tick roadmap items as epics complete.
+  _Done: the README status describes the finished MVP and the steps left before a public launch; Phases 1–4 and a new Launch readiness phase are ticked; the technology stack and project structure now match the code. Keep them in step as Phase 5 lands._
 
 ---
 
