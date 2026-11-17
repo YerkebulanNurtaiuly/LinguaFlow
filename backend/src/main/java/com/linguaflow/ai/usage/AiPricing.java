@@ -36,6 +36,7 @@ public class AiPricing {
 	static final Map<String, Price> BUILT_IN = Map.of(
 			"claude-fable-5-2", price("8", "10", "0.20", "40"),
 			"claude-opus-5-5", price("4", "5", "0.20", "20"),
+			"claude-opus-4-8", price("5", "6.25", "0.50", "25"),
 			"claude-sonnet-5-5", price("2", "2.50", "0.10", "10"),
 			"claude-haiku-5-5", price("0.10", "0.125", "0.01", "0.50"));
 

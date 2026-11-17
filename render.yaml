@@ -60,6 +60,10 @@ projects:
               # The Anthropic API key; entered in the Dashboard, never in this file
               - key: AI_API_KEY
                 sync: false
+              # The Claude model every AI use case runs on (overridable per use case). Opus 4.8;
+              # its price is built into AiPricing, so cost logging stays accurate.
+              - key: AI_MODEL
+                value: claude-opus-4-8
               # The public URL of linguaflow-web, e.g. https://linguaflow-web.onrender.com.
               # Used for email links and as the allowed CORS origin.
               - key: FRONTEND_URL

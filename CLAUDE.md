@@ -61,7 +61,7 @@ docker compose down -v               # stop and delete the database volume
   - **Database:** external free Postgres (Supabase/Neon), reached through `DATABASE_URL` (`sync: false`). Must be a direct/session-mode connection: Supabase's **session pooler** (port 5432), **not** the transaction pooler (6543), with `?sslmode=require`. `backend/src/main/resources/application.yml` sets `server.port: ${PORT:8080}` so the public web service binds Render's `PORT`.
   - **Memory:** 512 MB free; `JAVA_TOOL_OPTIONS` in `render.yaml` caps it (`-Xmx300m`, serial GC, metaspace/code-cache limits). It's tight and can OOM; raise on a paid plan.
   - **Images, not builds:** both services are `runtime: image` from GHCR (`ghcr.io/yerkebulannurtaiuly/linguaflow-{backend,frontend}:production`). Pulling needs the Render registry credential `ghcr-linguaflow`.
-  - **AI:** production takes `AI_API_KEY` from the Dashboard (`sync: false`, never in the file). `AI_MODEL` (e.g. `claude-haiku-5-5`) cuts cost on the free tier.
+  - **AI:** production takes `AI_API_KEY` from the Dashboard (`sync: false`, never in the file). `AI_MODEL` is pinned to `claude-opus-4-8` in `render.yaml` (its price is in `AiPricing`); change it (e.g. `claude-haiku-5-5`) to cut cost on the free tier.
   - **The guide:** `docs/operations/deployment.md` covers the first deploy, the Supabase connection string, the free-tier caveats, the variables, rollbacks and backups.
   - **CI check:** the docker job validates `render.yaml` against Render's published JSON schema (`ajv-cli`), and only warns when the schema can't be downloaded.
   - **`DATABASE_URL` (`common.config.DatabaseUrlEnvironmentPostProcessor`, registered in `META-INF/spring.factories`):** a libpq `postgresql://user:pass@host:port/db?query` URL becomes `DB_URL` (JDBC, query string preserved so `sslmode` carries through), `DB_USERNAME` and `DB_PASSWORD`. Explicit `DB_*` variables win. Tests: `DatabaseUrlEnvironmentPostProcessorTests`.
@@ -655,7 +655,7 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
     - `input_tokens` counts every input token, cached or not. A failed call has null tokens and its `LlmException.Kind` in `error_code`.
     - `prompt_version` is the template's `versionTag()`, or `custom` for a hand-built prompt.
   - **Cost (`AiPricing`):** USD per million tokens of each kind (input, 5-minute cache write, cache read, output). The built-in standard prices are from the provider's pricing page on 2026-11-11.
-    - **Prices:** Fable 5.2, Opus 5.5, Sonnet 5.5 and Haiku 5.5 (≤100k-token prompts) are built in. Override or add models under `linguaflow.ai.pricing.<model-id>.{input,cache-write,cache-read,output}`.
+    - **Prices:** Fable 5.2, Opus 5.5, Opus 4.8, Sonnet 5.5 and Haiku 5.5 (≤100k-token prompts) are built in. Override or add models under `linguaflow.ai.pricing.<model-id>.{input,cache-write,cache-read,output}`.
     - **Matching:** a dated model ID matches its base ID.
     - **Special cases:** fake models cost 0, and an unknown model has a null cost (warned once). `LlmResponse` now carries `cacheWriteTokens`.
   - **Daily quota (`AiQuota`):** `linguaflow.ai.quota.{enabled,daily-requests,daily-tokens}`, defaults 300 calls and 1.5 M tokens per user per **UTC** day, counted from `ai_requests`. System calls aren't limited. It's checked before each call, so concurrent calls may overshoot slightly.
