@@ -106,11 +106,12 @@ projects:
             envVars:
               - key: PORT
                 value: "8080"
-              # The backend's address. fromService gives its internal host:port over Render's
-              # private network; if a free instance can't be reached that way, override this in
-              # the Dashboard with the backend's public URL (https://linguaflow-api.onrender.com).
+              # The backend's address. Render's **free** plan has no private networking, so the
+              # internal `fromService hostport` name is not resolvable; nginx must reach the
+              # backend at its **public** URL (https://linguaflow-api-<hash>.onrender.com).
+              # Entered in the Dashboard because the hash isn't known until the API exists.
+              # nginx proxies to it over TLS and the API allows this frontend's origin via CORS
+              # (set FRONTEND_URL on linguaflow-api to this service's URL). On a plan WITH private
+              # networking, set this to the internal `http://linguaflow-api:8080` instead.
               - key: BACKEND_URL
-                fromService:
-                  type: web
-                  name: linguaflow-api
-                  property: hostport
+                sync: false

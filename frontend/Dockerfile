@@ -28,7 +28,7 @@ LABEL org.opencontainers.image.title="LinguaFlow frontend" \
 # gives "linguaflow-api-xyz:8080"). docker/10-backend-url.envsh adds the scheme and finds
 # the DNS resolver nginx needs to look the backend up per request (OPS-02).
 ENV BACKEND_URL=http://backend:8080 \
-    NGINX_ENVSUBST_FILTER=^(BACKEND_URL|NGINX_LOCAL_RESOLVERS)$
+    NGINX_ENVSUBST_FILTER=^(BACKEND_URL|BACKEND_TLS|BACKEND_PROXY_HOST|NGINX_LOCAL_RESOLVERS)$
 COPY --chmod=0755 docker/10-backend-url.envsh /docker-entrypoint.d/10-backend-url.envsh
 # Rendered to /etc/nginx/conf.d/default.conf at startup with those two filled in; the
 # filter leaves nginx's own variables like $host alone

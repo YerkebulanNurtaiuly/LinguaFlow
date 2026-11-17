@@ -12,6 +12,29 @@ case "${BACKEND_URL:-}" in
 esac
 export BACKEND_URL
 
+# How the API upstream is addressed depends on the scheme:
+#   https:// — the backend's own public URL, used when the platform has no private
+#     networking (Render's free tier). nginx must speak TLS with SNI, and must send the
+#     backend's own host as Host so the platform's router delivers the request to it (and
+#     the same value becomes the TLS SNI). The browser still only talks to this frontend's
+#     origin, which the backend allows through CORS (linguaflow.cors.allowed-origins /
+#     FRONTEND_URL), so cookies and the SPA stay first-party.
+#   http:// — an internal address (Compose, or a platform with private networking). Keep the
+#     proxy same-origin: pass the browser's own Host through untouched, no TLS to the upstream.
+case "$BACKEND_URL" in
+  https://*)
+    _backend_host=${BACKEND_URL#*://}
+    _backend_host=${_backend_host%%/*}
+    BACKEND_TLS="proxy_ssl_server_name on;"
+    BACKEND_PROXY_HOST="$_backend_host"
+    ;;
+  *)
+    BACKEND_TLS=""
+    BACKEND_PROXY_HOST='$http_host'
+    ;;
+esac
+export BACKEND_TLS BACKEND_PROXY_HOST
+
 if [ -z "${NGINX_LOCAL_RESOLVERS:-}" ]; then
   NGINX_LOCAL_RESOLVERS=$(awk 'BEGIN { ORS = " " } $1 == "nameserver" { print ($2 ~ ":") ? "[" $2 "]" : $2 }' /etc/resolv.conf)
   NGINX_LOCAL_RESOLVERS=${NGINX_LOCAL_RESOLVERS% }
