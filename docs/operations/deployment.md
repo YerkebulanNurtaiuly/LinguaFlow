@@ -31,8 +31,8 @@ browser ──HTTPS──▶ linguaflow-web   (public web service: nginx + the b
   (see [Environment variables](#environment-variables)).
 - **One backend instance.** The login rate limits and the AI job worker live in its memory,
   so don't scale it out (see CLAUDE.md, AUTH-06).
-- **Database:** an external free Postgres 16, reached through `DATABASE_URL`, which
-  `DatabaseUrlEnvironmentPostProcessor` turns into the JDBC settings.
+- **Database:** an external free Postgres 16, reached through `DB_URL` / `DB_USERNAME` /
+  `DB_PASSWORD` (a single libpq `DATABASE_URL` also works when `DB_URL` is unset).
 
 ## Free-tier caveats
 
@@ -43,33 +43,41 @@ browser ──HTTPS──▶ linguaflow-web   (public web service: nginx + the b
 | **Supabase pause** | A free Supabase project is paused after ~1 week with no activity; the backend then can't connect. | Resume it from the Supabase dashboard. Neon auto-resumes on the next connection instead. |
 | **No staging** | Pushes to `main` deploy straight to the one live environment. | Test locally with `docker compose up` before pushing. Roll back with the Redeploy workflow. |
 
-## The database connection string (important)
+## The database connection (important)
 
-LinguaFlow needs a `DATABASE_URL` in libpq form:
-`postgresql://user:password@host:port/database?sslmode=require`. Flyway and Hibernate open
-real sessions and use advisory locks, so the string must be a **direct or session-mode**
-connection, **not** a transaction-mode pooler.
+Flyway and Hibernate open real sessions and use advisory locks, so the connection must be a
+**direct or session-mode** connection, **not** a transaction-mode pooler.
+
+The Render Blueprint sets the database as **three separate variables** —
+`DB_URL`, `DB_USERNAME`, `DB_PASSWORD` — rather than one `DATABASE_URL`. A managed database
+password frequently contains characters (`@ : / ?`) that would have to be percent-encoded
+inside a libpq URL; passing the password as its own variable avoids that trap entirely, so
+you paste the **raw** password unescaped. (A libpq `DATABASE_URL` is still accepted when
+`DB_URL` is unset — `DatabaseUrlEnvironmentPostProcessor` splits it — but `DB_*` always wins.)
 
 ### Supabase
 
-In the Supabase dashboard: **Project → Connect** (or **Settings → Database**).
+In the Supabase dashboard: **Connect → Direct → Session pooler** (or **Settings → Database**).
+Read these from the **Session pooler** connection parameters:
 
-- Use the **Session pooler** string (host `aws-0-<region>.pooler.supabase.com`, **port
-  5432**, user `postgres.<project-ref>`). It is IPv4 and supports everything the app needs.
+- **host** `aws-0-<region>.pooler.supabase.com`, **port 5432**, **database** `postgres`,
+  **user** `postgres.<project-ref>`. It is IPv4 and supports everything the app needs.
 - **Do not** use the **Transaction pooler** (port **6543**) — PgBouncer in transaction mode
   breaks Flyway migrations and prepared statements.
 - The direct connection (`db.<ref>.supabase.co:5432`) is IPv6-only and Render can't reach
   it, so the session pooler is the one to use.
-- Append `?sslmode=require` — Supabase requires TLS. The query string is passed through to
-  JDBC unchanged.
 
-Final shape:
-`postgresql://postgres.<ref>:<password>@aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require`
+Then set the three Dashboard values (TLS is required, hence `sslmode=require`):
+
+- `DB_URL` = `jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require`
+- `DB_USERNAME` = `postgres.<project-ref>`
+- `DB_PASSWORD` = the raw database password (no escaping)
 
 ### Neon
 
-Copy the **pooled** connection string from the Neon dashboard and append `?sslmode=require`.
-Neon resumes a paused database automatically on the next connection.
+Use the **pooled** host from the Neon dashboard: `DB_URL` =
+`jdbc:postgresql://<pooled-host>/<db>?sslmode=require`, `DB_USERNAME` and `DB_PASSWORD` the
+role and its password. Neon resumes a paused database automatically on the next connection.
 
 ## How a change reaches production (OPS-03)
 
@@ -92,8 +100,9 @@ Flyway runs when the backend starts, so the database is migrated as part of each
 You need a Render account, a Supabase (or Neon) account, and admin access to the GitHub
 repository. The order matters: Render can only create a service once its image exists.
 
-1. **Create the database.** In Supabase, create a project; note its password. Build the
-   session-pooler `DATABASE_URL` as [above](#the-database-connection-string-important).
+1. **Create the database.** In Supabase, create a project; note its password. Read the
+   session-pooler `DB_URL`, `DB_USERNAME` and `DB_PASSWORD` as
+   [above](#the-database-connection-important).
 2. **Build the first images.** Push to `main` (or re-run the latest CI). Once CI passes,
    **Deliver** pushes `:production` images and then stops at the missing deploy hooks; that's
    expected the first time.
@@ -105,7 +114,7 @@ repository. The order matters: Render can only create a service once its image e
 4. **Create the Blueprint.** In the Render Dashboard, choose **New → Blueprint**, connect
    the repository and pick `main`. Render reads `render.yaml` and lists the two services.
 5. **Fill in the values Render asks for** (the `sync: false` variables):
-   - `DATABASE_URL` — the session-pooler string from step 1.
+   - `DB_URL`, `DB_USERNAME`, `DB_PASSWORD` — the session-pooler values from step 1.
    - `AI_API_KEY` — your Anthropic API key (from your free token credit at
      [console.anthropic.com](https://console.anthropic.com)). It stays in Render's secret
      store; never commit it.
@@ -141,7 +150,9 @@ repository. The order matters: Render can only create a service once its image e
 |---|---|---|
 | `SPRING_PROFILES_ACTIVE=prod` | backend | `render.yaml` |
 | `PORT=8080` | both | `render.yaml`; the app and nginx bind it |
-| `DATABASE_URL` | backend | entered in the Dashboard (Supabase/Neon session pooler + `sslmode=require`) |
+| `DB_URL` | backend | entered in the Dashboard; JDBC URL of the Supabase/Neon session pooler + `sslmode=require` |
+| `DB_USERNAME` | backend | entered in the Dashboard; `postgres.<project-ref>` for Supabase |
+| `DB_PASSWORD` | backend | entered in the Dashboard; the raw database password (no escaping) |
 | `JWT_SECRET` | backend | generated by Render |
 | `AI_API_KEY` | backend | entered in the Dashboard |
 | `AI_MODEL=claude-opus-4-8` | backend | `render.yaml`; the Claude model the app runs on |

@@ -50,10 +50,20 @@ projects:
               # Bind the port the Docker HEALTHCHECK and nginx expect
               - key: PORT
                 value: "8080"
-              # The external Postgres (Supabase session pooler / Neon), as a libpq URL
-              # postgresql://user:pass@host:port/db. DatabaseUrlEnvironmentPostProcessor
-              # turns it into the JDBC settings. Entered in the Dashboard, never in this file.
-              - key: DATABASE_URL
+              # The external Postgres (Supabase session pooler / Neon), as three separate
+              # values rather than one DATABASE_URL. A Supabase password often contains URL
+              # characters (@ : / ?) that must be percent-encoded inside a libpq URL; passing
+              # the password as its own env var sidesteps that entirely. Entered in the
+              # Dashboard, never in this file. DB_URL is the JDBC URL with sslmode=require, e.g.
+              # jdbc:postgresql://aws-0-<region>.pooler.supabase.com:5432/postgres?sslmode=require;
+              # DB_USERNAME is postgres.<project-ref>; DB_PASSWORD is the raw password, unescaped.
+              # (DATABASE_URL in libpq form is still supported by DatabaseUrlEnvironmentPostProcessor
+              # when DB_URL is unset — see docs/operations/deployment.md.)
+              - key: DB_URL
+                sync: false
+              - key: DB_USERNAME
+                sync: false
+              - key: DB_PASSWORD
                 sync: false
               - key: JWT_SECRET
                 generateValue: true
