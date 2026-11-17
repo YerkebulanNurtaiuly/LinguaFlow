@@ -57,20 +57,22 @@ docker compose down -v               # stop and delete the database volume
     - **Config:** `frontend/nginx.conf` is an nginx **template**: it's copied to `/etc/nginx/templates/default.conf.template` and rendered at startup with `BACKEND_URL` (default `http://backend:8080`). Set `BACKEND_URL` where the backend service has another name. `NGINX_ENVSUBST_FILTER=^BACKEND_` keeps nginx's own `$host`, `$uri` and so on untouched.
     - **Routes:** SPA fallback, with `index.html` served `no-cache` and `/assets` cached for a year; `/healthz` for its `HEALTHCHECK`. Only `/actuator/health` of the actuator is proxied.
   - **Compose:** `restart: unless-stopped`, and the frontend waits for a **healthy** backend (`condition: service_healthy`). Both images carry OCI labels.
-- **Hosting on Render (OPS-02):** `render.yaml` is a Render Blueprint with a `linguaflow` project and two environments, staging and production. Each has a managed PostgreSQL 16 (`linguaflow-db-*`, no outside access, point-in-time recovery), the backend as a private service (`linguaflow-api-*`, one instance) and the frontend as the public web service (`linguaflow-web-*`, `healthCheckPath: /healthz`).
-  - **Images, not builds:** every service is `runtime: image` from GHCR (`ghcr.io/yerkebulannurtaiuly/linguaflow-{backend,frontend}`, `:staging` or `:production`). Pulling needs the Render registry credential `ghcr-linguaflow`.
-  - **Environments:** staging uses `AI_PROVIDER=scripted`. Production is protected and takes `AI_API_KEY` from the Dashboard (`sync: false`, never in the file).
-  - **The guide:** `docs/operations/deployment.md` covers the first deploy, the variables, backward-compatible migrations, rollbacks and database access.
+- **Hosting on Render (OPS-02), free single environment:** `render.yaml` is a Render Blueprint with a `linguaflow` project and one `production` environment: the backend as a **public** web service (`linguaflow-api`, `plan: free`, one instance, `healthCheckPath: /actuator/health`) and the frontend as a public web service (`linguaflow-web`, `plan: free`, `healthCheckPath: /healthz`). Free plans have no private services, so the backend is public (JWT-guarded) and nginx proxies `/api` to it (`fromService hostport`, overridable with the public URL). There's no managed database and no `networking: isolation` block — the backend must egress to the external database and to Anthropic.
+  - **Database:** external free Postgres (Supabase/Neon), reached through `DATABASE_URL` (`sync: false`). Must be a direct/session-mode connection: Supabase's **session pooler** (port 5432), **not** the transaction pooler (6543), with `?sslmode=require`. `backend/src/main/resources/application.yml` sets `server.port: ${PORT:8080}` so the public web service binds Render's `PORT`.
+  - **Memory:** 512 MB free; `JAVA_TOOL_OPTIONS` in `render.yaml` caps it (`-Xmx300m`, serial GC, metaspace/code-cache limits). It's tight and can OOM; raise on a paid plan.
+  - **Images, not builds:** both services are `runtime: image` from GHCR (`ghcr.io/yerkebulannurtaiuly/linguaflow-{backend,frontend}:production`). Pulling needs the Render registry credential `ghcr-linguaflow`.
+  - **AI:** production takes `AI_API_KEY` from the Dashboard (`sync: false`, never in the file). `AI_MODEL` (e.g. `claude-haiku-5-5`) cuts cost on the free tier.
+  - **The guide:** `docs/operations/deployment.md` covers the first deploy, the Supabase connection string, the free-tier caveats, the variables, rollbacks and backups.
   - **CI check:** the docker job validates `render.yaml` against Render's published JSON schema (`ajv-cli`), and only warns when the schema can't be downloaded.
-  - **`DATABASE_URL` (`common.config.DatabaseUrlEnvironmentPostProcessor`, registered in `META-INF/spring.factories`):** a libpq `postgresql://user:pass@host:port/db` URL, as Render hands it out, becomes `DB_URL`, `DB_USERNAME` and `DB_PASSWORD`. Explicit `DB_*` variables win. Tests: `DatabaseUrlEnvironmentPostProcessorTests`.
+  - **`DATABASE_URL` (`common.config.DatabaseUrlEnvironmentPostProcessor`, registered in `META-INF/spring.factories`):** a libpq `postgresql://user:pass@host:port/db?query` URL becomes `DB_URL` (JDBC, query string preserved so `sslmode` carries through), `DB_USERNAME` and `DB_PASSWORD`. Explicit `DB_*` variables win. Tests: `DatabaseUrlEnvironmentPostProcessorTests`.
   - **CORS in prod:** `allowed-origins` defaults to `FRONTEND_URL`.
-- **Delivery pipeline (OPS-03):** images are built once and promoted.
+- **Delivery pipeline (OPS-03):** images are built once and deployed by digest to the single environment.
   - **`.github/workflows/deliver.yml`** runs on `workflow_run` after a successful CI for a push to `main`:
-    - it builds both images with `APP_VERSION=<sha>` and pushes `:<sha>` and `:staging` to GHCR (`docker/build-push-action`, GHA cache);
-    - it deploys them to staging by digest, backend first;
-    - it runs `scripts/check-deployment.sh` against `vars.STAGING_URL`.
+    - it builds both images with `APP_VERSION=<sha>` and pushes `:<sha>` and `:production` to GHCR (`docker/build-push-action`, GHA cache);
+    - it deploys them by digest, backend first (`PRODUCTION` hooks);
+    - it runs `scripts/check-deployment.sh` against `vars.PRODUCTION_URL`.
     - Without the hook secrets it only pushes the images.
-  - **`.github/workflows/promote.yml`** (`workflow_dispatch`, input `commit`, default what staging's `/version.txt` names) runs in the `production` GitHub environment, which should require a reviewer. It tags the commit's images `:production` with `docker buildx imagetools create`, so nothing is rebuilt, then deploys them by digest and checks `vars.PRODUCTION_URL`.
+  - **`.github/workflows/promote.yml`** ("Redeploy to production", `workflow_dispatch`, input `commit`, default what production's `/version.txt` names) tags the commit's images `:production` with `docker buildx imagetools create`, so nothing is rebuilt, then deploys them by digest and checks `vars.PRODUCTION_URL`. Used to roll back to an earlier commit.
   - **`scripts/render-deploy.sh <hook> <image>`:**
     - it POSTs the Render deploy hook with `imgURL` (the registry and repo must match the service's);
     - with `RENDER_API_KEY` it polls `/v1/services/<srv>/deploys/<dep>` until `live` (0) or a failed status (1);
@@ -78,7 +80,7 @@ docker compose down -v               # stop and delete the database volume
     - It never prints the hook. It was tested against a mock Render in a Linux container: live, update_failed, a bad key and no key.
   - **`scripts/check-deployment.sh <url> <sha>`** waits for `/version.txt` to name the commit and `/actuator/health` to be UP.
   - **Versions:** both Dockerfiles take `ARG APP_VERSION` (default `dev`). The frontend writes it to `dist/version.txt`, in the build stage because the unprivileged runtime can't write there. The backend sets `ENV APP_VERSION`. Both add the `org.opencontainers.image.revision` label.
-  - **Secrets and variables:** `RENDER_DEPLOY_HOOK_{STAGING,PRODUCTION}_{API,WEB}` and optionally `RENDER_API_KEY` are secrets; `STAGING_URL` and `PRODUCTION_URL` are variables.
+  - **Secrets and variables:** `RENDER_DEPLOY_HOOK_PRODUCTION_{API,WEB}` and optionally `RENDER_API_KEY` are secrets; `PRODUCTION_URL` is a variable. (The uptime workflow still reads an optional `STAGING_URL`, skipped when unset.)
   - **Lint:** `actionlint` and `shellcheck` (run through their Docker images) are clean for every workflow and script.
   - **Shell scripts:** `.gitattributes` keeps `*.sh` and `*.envsh` LF.
   - **nginx behind a platform proxy:**
@@ -990,7 +992,7 @@ The frontend job also fails if `src/api/schema.ts` doesn't match `openapi.json`.
 
 `.github/workflows/ai-eval.yml` (QA-03) runs the live AI eval nightly and on demand, never on pushes. It needs the repository secret `AI_API_KEY` and skips itself without it.
 
-`.github/workflows/deliver.yml` and `promote.yml` (OPS-03) deliver to Render: Deliver runs after CI passes on `main` (builds and pushes the images, deploys staging); Promote is manual and gated by the `production` environment. See "Delivery pipeline" above and `docs/operations/deployment.md`.
+`.github/workflows/deliver.yml` and `promote.yml` (OPS-03) deliver to Render: Deliver runs after CI passes on `main` (builds and pushes the images, deploys the single free environment); "Redeploy to production" (`promote.yml`) is a manual rollback to a chosen commit. See "Delivery pipeline" above and `docs/operations/deployment.md`.
 
 ## Target architecture (from README / TASKS.md)
 

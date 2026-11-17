@@ -1,15 +1,16 @@
 name: Deliver
 
-# OPS-03, continuous delivery. Once CI passes for a push to main:
+# OPS-03, continuous delivery to the single free environment. Once CI passes for a push to
+# main:
 #   1. build the backend and frontend images once, push them to GitHub's registry (GHCR)
-#      tagged with the commit and "staging";
-#   2. deploy exactly those images (by digest) to the Render staging environment;
-#   3. check staging serves that commit and is healthy.
-# Production gets the same images through the Promote workflow (promote.yml).
+#      tagged with the commit and "production";
+#   2. deploy exactly those images (by digest) to the Render environment, backend first;
+#   3. check it serves that commit and is healthy.
+# To roll back to an earlier commit, run the Promote workflow (promote.yml) with its SHA.
 #
-# Setup (docs/operations/deployment.md): repository secrets RENDER_DEPLOY_HOOK_STAGING_API,
-# RENDER_DEPLOY_HOOK_STAGING_WEB and optionally RENDER_API_KEY; repository variable
-# STAGING_URL. Without the hooks, images are still built and pushed.
+# Setup (docs/operations/deployment.md): repository secrets RENDER_DEPLOY_HOOK_PRODUCTION_API,
+# RENDER_DEPLOY_HOOK_PRODUCTION_WEB and optionally RENDER_API_KEY; repository variable
+# PRODUCTION_URL. Without the hooks, images are still built and pushed.
 on:
   workflow_run:
     workflows: [CI]
@@ -20,7 +21,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: deliver-staging
+  group: deploy-production
   cancel-in-progress: false
 
 jobs:
@@ -65,7 +66,7 @@ jobs:
           build-args: APP_VERSION=${{ github.event.workflow_run.head_sha }}
           tags: |
             ${{ steps.names.outputs.backend }}:${{ github.event.workflow_run.head_sha }}
-            ${{ steps.names.outputs.backend }}:staging
+            ${{ steps.names.outputs.backend }}:production
           cache-from: type=gha,scope=backend
           cache-to: type=gha,scope=backend,mode=max
 
@@ -78,7 +79,7 @@ jobs:
           build-args: APP_VERSION=${{ github.event.workflow_run.head_sha }}
           tags: |
             ${{ steps.names.outputs.frontend }}:${{ github.event.workflow_run.head_sha }}
-            ${{ steps.names.outputs.frontend }}:staging
+            ${{ steps.names.outputs.frontend }}:production
           cache-from: type=gha,scope=frontend
           cache-to: type=gha,scope=frontend,mode=max
 
@@ -90,17 +91,17 @@ jobs:
             echo "- \`${{ steps.names.outputs.frontend }}@${{ steps.frontend.outputs.digest }}\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-  staging:
-    name: Deploy to staging
+  deploy:
+    name: Deploy
     needs: images
     runs-on: ubuntu-latest
     timeout-minutes: 30
     environment:
-      name: staging
-      url: ${{ vars.STAGING_URL }}
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
     env:
-      API_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING_API }}
-      WEB_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_STAGING_WEB }}
+      API_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION_API }}
+      WEB_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_PRODUCTION_WEB }}
       RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
     steps:
       - uses: actions/checkout@v7
@@ -111,7 +112,7 @@ jobs:
         id: setup
         run: |
           if [ -z "$API_HOOK" ] || [ -z "$WEB_HOOK" ]; then
-            echo "::notice::No Render deploy hooks for staging yet; images were pushed but not deployed"
+            echo "::notice::No Render deploy hooks yet; images were pushed but not deployed"
             echo "ready=false" >> "$GITHUB_OUTPUT"
           else
             echo "ready=true" >> "$GITHUB_OUTPUT"
@@ -126,6 +127,6 @@ jobs:
         if: steps.setup.outputs.ready == 'true'
         run: scripts/render-deploy.sh "$WEB_HOOK" "${{ needs.images.outputs.frontend }}"
 
-      - name: Check staging
-        if: steps.setup.outputs.ready == 'true' && vars.STAGING_URL != ''
-        run: scripts/check-deployment.sh "${{ vars.STAGING_URL }}" "${{ needs.images.outputs.commit }}"
+      - name: Check the deployment
+        if: steps.setup.outputs.ready == 'true' && vars.PRODUCTION_URL != ''
+        run: scripts/check-deployment.sh "${{ vars.PRODUCTION_URL }}" "${{ needs.images.outputs.commit }}"

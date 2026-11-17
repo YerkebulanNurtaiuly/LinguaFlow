@@ -1,26 +1,29 @@
-# Render Blueprint (OPS-02): staging and production for LinguaFlow.
-# Create it in the Render Dashboard: New → Blueprint → this repository. See
-# docs/operations/deployment.md for the first deploy, secrets and day-to-day operation.
+# Render Blueprint for a free, single-environment deployment of LinguaFlow.
 #
-# Each environment has three resources:
-#   - linguaflow-db-*   managed PostgreSQL 16, private network only, point-in-time recovery
-#   - linguaflow-api-*  the backend image as a private service: not reachable from the
-#                       internet, one instance (rate limits and the AI job worker live in
-#                       its memory)
-#   - linguaflow-web-*  the frontend image as the public web service: Render terminates
-#                       HTTPS, nginx serves the app and proxies /api to the backend
+# This is the free-tier setup (one public environment, no managed database):
+#   - linguaflow-api   the backend image as a PUBLIC web service on Render's free plan
+#                      (free plans have no private services). One instance: the login rate
+#                      limits and the AI job worker live in its memory.
+#   - linguaflow-web   the frontend image as a public web service: nginx serves the app and
+#                      proxies /api to the backend, so the browser stays same-origin.
+#   - the database is external (Supabase/Neon free Postgres), reached through DATABASE_URL.
 #
-# The services run images built once by GitHub Actions and pushed to GHCR (OPS-03), not
-# builds on Render: the Deliver workflow deploys each green commit on main to staging, and
-# the Promote workflow sends the same images to production after an approval. Pulling them
-# needs the Render registry credential "ghcr-linguaflow" (a GitHub token with
-# read:packages), created before this Blueprint is applied.
+# Create it in the Render Dashboard: New → Blueprint → this repository. The full walkthrough,
+# the Supabase connection string and the free-tier caveats are in
+# docs/operations/deployment.md.
 #
-# Staging answers AI calls with scripted content (no key, no cost). Production is protected
-# against accidental changes.
+# The services run images built once by GitHub Actions and pushed to GHCR (OPS-03): the
+# Deliver workflow deploys each green commit on main. Pulling them needs the Render registry
+# credential "ghcr-linguaflow" (a GitHub token with read:packages).
 #
-# Plans and region are a starting point; change them here or in the Dashboard. The region
-# and the database's name, user and version can't change after creation.
+# Free-tier facts to expect:
+#   - a service spins down after ~15 min idle; the next request wakes it (the backend takes
+#     1-2 min to boot and migrate), so the AI job worker is idle while the app sleeps;
+#   - 512 MB memory for the Java backend is tight (see JAVA_TOOL_OPTIONS below);
+#   - Supabase free pauses a project after a week of inactivity; resume it in its dashboard.
+#
+# There is deliberately no private networking block: the backend must reach the external
+# database and the Anthropic API, so its outbound traffic is not isolated.
 
 previews:
   generation: off
@@ -28,91 +31,10 @@ previews:
 projects:
   - name: linguaflow
     environments:
-      - name: staging
-        networking:
-          isolation: enabled
-        databases:
-          - name: linguaflow-db-staging
-            plan: 0.1c-256mb
-            diskSizeGB: 5
-            region: frankfurt
-            postgresMajorVersion: "16"
-            databaseName: linguaflow
-            user: linguaflow
-            # No access from outside Render's private network
-            ipAllowList: []
-        services:
-          - type: pserv
-            name: linguaflow-api-staging
-            runtime: image
-            image:
-              url: ghcr.io/yerkebulannurtaiuly/linguaflow-backend:staging
-              creds:
-                fromRegistryCreds:
-                  name: ghcr-linguaflow
-            region: frankfurt
-            plan: 1c-2g
-            envVars:
-              - key: SPRING_PROFILES_ACTIVE
-                value: prod
-              # A libpq URL; the backend turns it into its JDBC settings
-              - key: DATABASE_URL
-                fromDatabase:
-                  name: linguaflow-db-staging
-                  property: connectionString
-              - key: JWT_SECRET
-                generateValue: true
-              # Scripted AI answers: the whole app works without a key or cost (QA-05)
-              - key: AI_PROVIDER
-                value: scripted
-              # The public URL of linguaflow-web-staging, e.g. https://linguaflow-web-staging.onrender.com
-              - key: FRONTEND_URL
-                sync: false
-              # Observability (OPS-04): Sentry when a DSN is entered (empty = off), a generated
-              # token for a metrics scraper on the private network
-              - key: SENTRY_DSN
-                sync: false
-              - key: SENTRY_ENVIRONMENT
-                value: staging
-              - key: METRICS_TOKEN
-                generateValue: true
-          - type: web
-            name: linguaflow-web-staging
-            runtime: image
-            image:
-              url: ghcr.io/yerkebulannurtaiuly/linguaflow-frontend:staging
-              creds:
-                fromRegistryCreds:
-                  name: ghcr-linguaflow
-            region: frankfurt
-            plan: 0.5c-512mb
-            healthCheckPath: /healthz
-            envVars:
-              - key: PORT
-                value: "8080"
-              - key: BACKEND_URL
-                fromService:
-                  type: pserv
-                  name: linguaflow-api-staging
-                  property: hostport
-
       - name: production
-        networking:
-          isolation: enabled
-        permissions:
-          protection: enabled
-        databases:
-          - name: linguaflow-db-production
-            plan: 0.5c-1g
-            diskSizeGB: 10
-            region: frankfurt
-            postgresMajorVersion: "16"
-            databaseName: linguaflow
-            user: linguaflow
-            ipAllowList: []
         services:
-          - type: pserv
-            name: linguaflow-api-production
+          - type: web
+            name: linguaflow-api
             runtime: image
             image:
               url: ghcr.io/yerkebulannurtaiuly/linguaflow-backend:production
@@ -120,31 +42,44 @@ projects:
                 fromRegistryCreds:
                   name: ghcr-linguaflow
             region: frankfurt
-            plan: 1c-2g
+            plan: free
+            healthCheckPath: /actuator/health
             envVars:
               - key: SPRING_PROFILES_ACTIVE
                 value: prod
+              # Bind the port the Docker HEALTHCHECK and nginx expect
+              - key: PORT
+                value: "8080"
+              # The external Postgres (Supabase session pooler / Neon), as a libpq URL
+              # postgresql://user:pass@host:port/db. DatabaseUrlEnvironmentPostProcessor
+              # turns it into the JDBC settings. Entered in the Dashboard, never in this file.
               - key: DATABASE_URL
-                fromDatabase:
-                  name: linguaflow-db-production
-                  property: connectionString
+                sync: false
               - key: JWT_SECRET
                 generateValue: true
               # The Anthropic API key; entered in the Dashboard, never in this file
               - key: AI_API_KEY
                 sync: false
+              # The public URL of linguaflow-web, e.g. https://linguaflow-web.onrender.com.
+              # Used for email links and as the allowed CORS origin.
               - key: FRONTEND_URL
                 sync: false
+              # Free-tier JVM tuning for a 512 MB instance: an explicit max heap (overrides the
+              # image's MaxRAMPercentage), the serial GC and capped non-heap areas to fit the
+              # footprint. Raise these on a larger plan.
+              - key: JAVA_TOOL_OPTIONS
+                value: "-Xmx300m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m -Xss512k"
               # Observability (OPS-04): Sentry when a DSN is entered (empty = off), a generated
-              # token for a metrics scraper on the private network
+              # token for a metrics scraper
               - key: SENTRY_DSN
                 sync: false
               - key: SENTRY_ENVIRONMENT
                 value: production
               - key: METRICS_TOKEN
                 generateValue: true
+
           - type: web
-            name: linguaflow-web-production
+            name: linguaflow-web
             runtime: image
             image:
               url: ghcr.io/yerkebulannurtaiuly/linguaflow-frontend:production
@@ -152,13 +87,16 @@ projects:
                 fromRegistryCreds:
                   name: ghcr-linguaflow
             region: frankfurt
-            plan: 0.5c-512mb
+            plan: free
             healthCheckPath: /healthz
             envVars:
               - key: PORT
                 value: "8080"
+              # The backend's address. fromService gives its internal host:port over Render's
+              # private network; if a free instance can't be reached that way, override this in
+              # the Dashboard with the backend's public URL (https://linguaflow-api.onrender.com).
               - key: BACKEND_URL
                 fromService:
-                  type: pserv
-                  name: linguaflow-api-production
+                  type: web
+                  name: linguaflow-api
                   property: hostport

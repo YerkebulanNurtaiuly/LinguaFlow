@@ -67,6 +67,10 @@ springdoc:
       packages-to-scan: com.linguaflow.ai
 
 server:
+  # Listen on the port the platform assigns. Render injects PORT for a web service and
+  # expects the app to bind it; everywhere else this stays 8080 (Compose, the image's
+  # HEALTHCHECK, the dev defaults).
+  port: ${PORT:8080}
   # Behind nginx: take the client IP from X-Forwarded-For, but only when the request comes
   # from a private-network proxy (Tomcat's default internal-proxies), so clients cannot
   # spoof their IP to dodge rate limits.

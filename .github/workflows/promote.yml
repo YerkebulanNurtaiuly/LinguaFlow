@@ -1,18 +1,17 @@
-name: Promote to production
+name: Redeploy to production
 
-# OPS-03, manual promotion. Deploys to production the images already built and tested on
-# staging, without rebuilding: the commit's images are tagged "production" and deployed by
-# digest. Run it from Actions → Promote to production → Run workflow.
+# OPS-03, manual redeploy / rollback. Deploys a chosen commit's images to the single
+# environment without rebuilding: they are tagged "production" and deployed by digest. Use
+# it to roll back to an earlier good commit (routine deploys happen automatically through
+# Deliver). Run it from Actions → Redeploy to production → Run workflow.
 #
-# The "production" GitHub environment should require a reviewer (Settings → Environments),
-# so each promotion waits for an approval. Secrets: RENDER_DEPLOY_HOOK_PRODUCTION_API,
-# RENDER_DEPLOY_HOOK_PRODUCTION_WEB and optionally RENDER_API_KEY; variables STAGING_URL
-# and PRODUCTION_URL.
+# Secrets: RENDER_DEPLOY_HOOK_PRODUCTION_API, RENDER_DEPLOY_HOOK_PRODUCTION_WEB and
+# optionally RENDER_API_KEY; variable PRODUCTION_URL.
 on:
   workflow_dispatch:
     inputs:
       commit:
-        description: Full commit SHA to promote; empty means what staging serves now
+        description: Full commit SHA to deploy; empty means what production serves now
         required: false
         default: ''
 
@@ -47,11 +46,11 @@ jobs:
         run: |
           commit="$REQUESTED"
           if [ -z "$commit" ]; then
-            if [ -z "${{ vars.STAGING_URL }}" ]; then
-              echo "::error::Give a commit, or set the STAGING_URL variable to promote what staging serves"
+            if [ -z "${{ vars.PRODUCTION_URL }}" ]; then
+              echo "::error::Give a commit, or set the PRODUCTION_URL variable to redeploy what production serves"
               exit 1
             fi
-            commit=$(curl -fsS "${{ vars.STAGING_URL }}/version.txt" | tr -d '[:space:]')
+            commit=$(curl -fsS "${{ vars.PRODUCTION_URL }}/version.txt" | tr -d '[:space:]')
           fi
           if ! [[ "$commit" =~ ^[0-9a-f]{40}$ ]]; then
             echo "::error::'$commit' isn't a full commit SHA"
@@ -70,7 +69,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      # The same images staging runs: retag, never rebuild. Fails if Deliver never built them.
+      # The same images Deliver built: retag, never rebuild. Fails if Deliver never built them.
       - name: Tag the images for production
         id: images
         run: |
