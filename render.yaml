@@ -80,9 +80,13 @@ projects:
                 sync: false
               # Free-tier JVM tuning for a 512 MB instance: an explicit max heap (overrides the
               # image's MaxRAMPercentage), the serial GC and capped non-heap areas to fit the
-              # footprint. Raise these on a larger plan.
+              # footprint. The metaspace cap is 200m, not 128m: the modular monolith loads enough
+              # classes to exceed 128m, which made the JVM die with "OutOfMemoryError: Metaspace"
+              # (exit 3 from ExitOnOutOfMemoryError) in a boot loop; a cap only limits usage, it
+              # doesn't reserve RAM, so raising it is safe. The heap is 240m to keep the total
+              # within 512 MB. Raise these on a larger plan.
               - key: JAVA_TOOL_OPTIONS
-                value: "-Xmx300m -XX:+UseSerialGC -XX:MaxMetaspaceSize=128m -XX:ReservedCodeCacheSize=48m -Xss512k"
+                value: "-Xmx240m -XX:+UseSerialGC -XX:MaxMetaspaceSize=200m -XX:ReservedCodeCacheSize=40m -Xss512k"
               # Observability (OPS-04): Sentry when a DSN is entered (empty = off), a generated
               # token for a metrics scraper
               - key: SENTRY_DSN
