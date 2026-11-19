@@ -117,6 +117,17 @@ linguaflow:
     model: ${AI_MODEL:claude-opus-5-5}
     # Background job queue (AI-04): jobs.{enabled,poll-interval,concurrency,batch-size,max-attempts,backoff-base,backoff-max,stale-after}
   # Answer checking (EX-03): exercises.evaluation.{umlaut-alternatives (default true), strict-case (default false)}
+  # Outgoing mail (AUTH-07). mode: disabled (default, nothing sent) | log (dev/test) | smtp.
+  # For smtp set MAIL_MODE=smtp with MAIL_USERNAME/MAIL_PASSWORD (a Gmail App Password) and
+  # MAIL_FROM (the authenticated Gmail address). Host/port default to Gmail's STARTTLS submission.
+  mail:
+    mode: ${MAIL_MODE:disabled}
+    from: ${MAIL_FROM:}
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    start-tls: ${MAIL_STARTTLS:true}
   cors:
     # Comma-separated origins allowed to call /api from the browser; empty = same-origin only
     allowed-origins: ${CORS_ALLOWED_ORIGINS:}

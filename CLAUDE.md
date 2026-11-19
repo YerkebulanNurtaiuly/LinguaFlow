@@ -201,10 +201,12 @@ Lombok runs through explicit `annotationProcessorPaths` in `maven-compiler-plugi
   - **Reset request:** `POST /api/auth/password-reset/request` always returns 202, whether or not the email is registered, and is rate-limited.
   - **Reset:** `POST /api/auth/password-reset` sets the new password and revokes all the user's refresh tokens.
   - **Bad links:** an invalid, used or expired link gets 400 `INVALID_TOKEN`.
-  - **Mail:** sent through `common.mail.Mailer`, chosen by `linguaflow.mail.mode`.
+  - **Mail:** sent through `common.mail.Mailer`, chosen by `linguaflow.mail.mode` (`MailConfig`).
     - `log` (dev and test) writes the email with its link to the log.
-    - `disabled` (the default, and prod) sends nothing and never logs links. There's no SMTP mailer yet.
+    - `disabled` (the default) sends nothing and never logs links.
+    - `smtp` sends over SMTP with STARTTLS (`SmtpMailer`), built in `MailConfig.smtpSender` from `linguaflow.mail.{host,port,username,password,start-tls,from}` (env `MAIL_*`; host/port default to `smtp.gmail.com:587`). `smtp` mode fails at startup without `MAIL_USERNAME`/`MAIL_PASSWORD`. A send failure is logged (without the body's secret link) and swallowed, so a provider hiccup never fails registration or password reset. For Gmail: 2FA on + a 16-char App Password; `MAIL_FROM` must be the authenticated address. On Render the `MAIL_*` vars are `sync: false` in `render.yaml`, so no address or secret is committed; set `MAIL_MODE=smtp` plus the three values in the Dashboard to turn it on.
     - Links point at `linguaflow.app.frontend-url` (env `FRONTEND_URL`) under the frontend pages `/verify-email` and `/reset-password`.
+    - **Tests:** `MailConfigTests` (mode switch, smtp needs credentials) and `SmtpMailerTests` (message fields, failure swallowed).
   - **Tests:** register `testsupport.RecordingMailer` as an `@Primary` bean and use `lastTokenFor(email)`.
 - **Transaction pitfall:** an inner `@Transactional` method that takes part in the caller's transaction and throws will mark the whole transaction rollback-only, according to the inner method's own rollback rules. The caller's commit then fails with `UnexpectedRollbackException`, which surfaces as a 500. For "record, then throw" flows, put `noRollbackFor = ApiException.class` on the inner methods too, as in `ActionTokenService.redeem`.
 - **Rate limiting (AUTH-06):** `common.ratelimit.AuthRateLimitFilter` limits `POST /api/auth/login` (10 per minute) and `/api/auth/register` (5 per hour) per client IP.

@@ -24,9 +24,11 @@ linguaflow:
   # keeps the public origin allowed if a proxy in between rewrites them
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:${FRONTEND_URL:}}
-  # No SMTP mailer yet: emails are suppressed (never logged with their secret links)
+  # Email is suppressed by default (nothing sent, no secret links logged). To send real
+  # verification and password-reset mail, set MAIL_MODE=smtp with MAIL_USERNAME/MAIL_PASSWORD
+  # (e.g. a Gmail App Password) and MAIL_FROM; connection defaults are in application.yml.
   mail:
-    mode: disabled
+    mode: ${MAIL_MODE:disabled}
   # Production needs the real AI client: startup fails without AI_API_KEY (AI-01)
   ai:
     provider: ${AI_PROVIDER:anthropic}

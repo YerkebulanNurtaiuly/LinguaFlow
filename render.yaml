@@ -78,6 +78,18 @@ projects:
               # Used for email links and as the allowed CORS origin.
               - key: FRONTEND_URL
                 sync: false
+              # Email delivery (AUTH-07): off until configured. To send verification and
+              # password-reset mail, set MAIL_MODE=smtp and fill MAIL_USERNAME / MAIL_PASSWORD
+              # (e.g. a Gmail App Password) / MAIL_FROM in the Dashboard. All sync:false so no
+              # address or secret is committed; host/port default to Gmail in application.yml.
+              - key: MAIL_MODE
+                sync: false
+              - key: MAIL_USERNAME
+                sync: false
+              - key: MAIL_PASSWORD
+                sync: false
+              - key: MAIL_FROM
+                sync: false
               # Free-tier JVM tuning for a 512 MB instance: an explicit max heap (overrides the
               # image's MaxRAMPercentage), the serial GC and capped non-heap areas to fit the
               # footprint. The metaspace cap is 200m, not 128m: the modular monolith loads enough

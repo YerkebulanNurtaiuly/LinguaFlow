@@ -35,7 +35,7 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 			app = new App(null);
 		}
 		if (mail == null) {
-			mail = new Mail(null, null);
+			mail = new Mail(null, null, null, null, null, null, null);
 		}
 		if (cors == null) {
 			cors = new Cors(List.of());
@@ -176,13 +176,20 @@ public record LinguaFlowProperties(@Valid @NotNull Security security, @Valid Ai 
 	/**
 	 * Outgoing mail. {@code mode}: {@code log} writes emails (including links) to the log,
 	 * for dev/test only; {@code disabled} (the default) sends nothing and logs nothing
-	 * sensitive. A real SMTP mode can be added later.
+	 * sensitive; {@code smtp} sends over SMTP with STARTTLS (host/port/username/password),
+	 * for example a Gmail account with an App Password. {@code from} is the sender address
+	 * (and must be the authenticated account for Gmail). The connection fields are only read
+	 * in {@code smtp} mode.
 	 */
-	public record Mail(String mode, String from) {
+	public record Mail(String mode, String from, String host, Integer port, String username, String password,
+			Boolean startTls) {
 
 		public Mail {
 			mode = (mode == null || mode.isBlank()) ? "disabled" : mode;
 			from = (from == null || from.isBlank()) ? "LinguaFlow <no-reply@linguaflow.local>" : from;
+			host = (host == null || host.isBlank()) ? "smtp.gmail.com" : host;
+			port = (port == null) ? 587 : port;
+			startTls = (startTls == null) ? Boolean.TRUE : startTls;
 		}
 
 	}
