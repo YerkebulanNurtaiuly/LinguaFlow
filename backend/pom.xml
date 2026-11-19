@@ -20,7 +20,7 @@
 		<!-- Official Anthropic SDK for the real LLM client (AI-01) -->
 		<anthropic-java.version>3.3.0</anthropic-java.version>
 		<resilience4j.version>2.4.0</resilience4j.version>
-		<bucket4j.version>8.21.0</bucket4j.version>
+		<bucket4j.version>8.22.0</bucket4j.version>
 		<!-- Coverage and style gates (QA-06) -->
 		<jacoco.version>0.8.16</jacoco.version>
 		<checkstyle.version>14.3.0</checkstyle.version>
