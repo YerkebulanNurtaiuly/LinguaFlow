@@ -4,7 +4,7 @@
 # running as a non-root user, with a health check on the readiness probe.
 
 # ---- Build stage ----
-FROM eclipse-temurin:21-jdk-noble AS build
+FROM eclipse-temurin:24-jdk-noble AS build
 WORKDIR /workspace
 
 # Resolve dependencies first so they are cached until pom.xml changes
@@ -22,7 +22,7 @@ RUN --mount=type=cache,target=/root/.m2 ./mvnw -B -q package -DskipTests -Dcheck
  && java -Djarmode=tools -jar app.jar extract --layers --launcher --destination extracted
 
 # ---- Runtime stage ----
-FROM eclipse-temurin:21-jre-alpine
+FROM eclipse-temurin:24-jre-alpine
 # The commit the image was built from (OPS-03); "dev" for local builds
 ARG APP_VERSION=dev
 LABEL org.opencontainers.image.title="LinguaFlow backend" \
